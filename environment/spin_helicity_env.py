@@ -139,6 +139,11 @@ class SpinHelExpr:
         self.sp_expr = sp.expand(self.sp_expr)
         self.str_expr = str(self.sp_expr)
 
+    def cancel(self):
+        """Expand the fractions"""
+        self.sp_expr = sp.cancel(self.sp_expr)
+        self.str_expr = str(self.sp_expr)
+
     def select_random_bracket(self):
         """Select at random on of the brackets in the full expression"""
         fct_list = [f for f in self.sp_expr.atoms(Function)]
@@ -146,10 +151,10 @@ class SpinHelExpr:
 
         return rdm_fct
 
-    def random_scramble(self, max_scrambles=5):
+    def random_scramble(self, max_scrambles=5, verbose=False):
         """ Choose a random number of scrambling moves """
         scr_num = random.randint(1, max_scrambles)
-        self.scramble(scr_num)
+        self.scramble(scr_num, verbose=verbose)
 
     def scramble(self, num_scrambles, verbose=False):
         """ Scramble an expression with the identities at hand """
@@ -175,12 +180,12 @@ class SpinHelExpr:
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
             elif act_num == 3:
                 arg3 = random.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
-                self.momentum2(bk, args[0], args[1], arg3)
+                if bk == 'ab':
+                    self.momentum2(bk, args[0], args[1], arg3)
+                else:
+                    self.momentum2(bk, arg3, args[0], args[1])
                 if verbose:
                     print('Using Momentum conservation on {} with arg{}'.format(str(rdm_bracket), arg3))
-
-            self.together()
-            self.expand()
 
 
 if __name__ == '__main__':
@@ -245,7 +250,37 @@ if __name__ == '__main__':
 
     print("\n")
     print("Start test 5 " + "\n")
-    test5 = SpinHelExpr("ab(1,2)**2")
+    test5 = SpinHelExpr("ab(1,3)*ab(5,4)/(ab(4,2)*ab(5,3)*sb(4,3))")
+    test5.scramble(3, verbose=True)
+    print(test5)
+    print(latex(test5.sp_expr))
+    test5.together()
     print(test5)
     print(latex(test5.sp_expr))
 
+
+    print("\n")
+    print("Start test 5b " + "\n")
+    test5 = SpinHelExpr("ab(1,3)*ab(5,4)/(ab(4,2)*ab(5,3)*sb(4,3))")
+    test5.schouten2('ab', 5, 4, 1, 2)
+    #test5.momentum2('ab', 1, 4, 5)
+    #test5.antisymm('sb', 4, 3)
+    test5.expand()
+    test5.together()
+    print(test5)
+    print(latex(test5.sp_expr))
+
+
+    print("\n")
+    print("Start test 6 " + "\n")
+    test6 = SpinHelExpr("(ab(1,2)*ab(5,2)*sb(2,5)+ab(1,3)*ab(5,2)*sb(3,5)-ab(4,2)*ab(5,1)*sb(4,5))*ab(1,3)/(ab(1,2)*ab(4,2)*ab(5,3)*sb(3,4)*sb(4,5))")
+    print(test6)
+    test6.antisymm('sb', 3, 4)
+    test6.momentum2('sb', 1, 4, 5)
+    test6.cancel()
+    print(test6)
+    test6.schouten2('ab', 1, 2, 5, 4)
+    test6.antisymm('ab', 1, 5)
+    test6.antisymm('ab', 2, 4)
+    test6.cancel()
+    print(test6)

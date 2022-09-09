@@ -76,7 +76,8 @@ def generate_random_fraction(scaling, n_points, max_terms_add):
     return return_expr
 
 
-def generate_random_amplitude(max_n_points, max_terms_scale=1, max_components=1, gluon_only=False, str_out=False):
+def generate_random_amplitude(max_n_points, max_terms_scale=1, max_components=1, gluon_only=False, str_out=False,
+                              verbose=False):
     """Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable"""
 
@@ -99,11 +100,14 @@ def generate_random_amplitude(max_n_points, max_terms_scale=1, max_components=1,
     # For each individual fraction we generate a new expression. We define the number of legs and little group scaling
     for i in range(components):
         return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points))
-
     # If we are missing any external momentum in the whole expression then we try again
     if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
             for i in range(1, n_points+1)]):
-        return generate_random_amplitude(max_n_points, max_terms_scale, max_components, gluon_only, str_out)
+        return generate_random_amplitude(max_n_points, max_terms_scale, max_components, gluon_only, str_out,
+                                         verbose=verbose)
+
+    if verbose:
+        print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))
 
     if str_out:
         return str(return_expr)
@@ -112,8 +116,12 @@ def generate_random_amplitude(max_n_points, max_terms_scale=1, max_components=1,
 
 
 if __name__ == '__main__':
-    from sympy import latex
-    expr1 = SpinHelExpr(generate_random_amplitude(5, str_out=True))
+
+    expr1 = SpinHelExpr(generate_random_amplitude(7, str_out=True, verbose=True))
     print(expr1)
-    print(latex(expr1.sp_expr))
     print(latex(expr1))
+    expr1.random_scramble(5, verbose=True)
+    expr1.cancel()
+    print(expr1)
+    print(latex(expr1))
+
