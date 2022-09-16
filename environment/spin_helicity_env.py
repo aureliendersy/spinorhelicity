@@ -258,18 +258,14 @@ if __name__ == '__main__':
     print(test5)
     print(latex(test5.sp_expr))
 
-
     print("\n")
     print("Start test 5b " + "\n")
     test5 = SpinHelExpr("ab(1,3)*ab(5,4)/(ab(4,2)*ab(5,3)*sb(4,3))")
     test5.schouten2('ab', 5, 4, 1, 2)
-    #test5.momentum2('ab', 1, 4, 5)
-    #test5.antisymm('sb', 4, 3)
     test5.expand()
     test5.together()
     print(test5)
     print(latex(test5.sp_expr))
-
 
     print("\n")
     print("Start test 6 " + "\n")
