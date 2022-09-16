@@ -325,7 +325,7 @@ class CharEnv(object):
             return None
 
         # define input / output
-        return simple_prefix, shuffled_prefix
+        return shuffled_prefix, simple_prefix
 
     @staticmethod
     def register_args(parser):
