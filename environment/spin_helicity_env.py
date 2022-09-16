@@ -144,48 +144,52 @@ class SpinHelExpr:
         self.sp_expr = sp.cancel(self.sp_expr)
         self.str_expr = str(self.sp_expr)
 
-    def select_random_bracket(self):
+    def select_random_bracket(self, rng):
         """Select at random on of the brackets in the full expression"""
         fct_list = [f for f in self.sp_expr.atoms(Function)]
-        rdm_fct = random.choice(fct_list)
+        rdm_fct = rng.choice(fct_list)
 
         return rdm_fct
 
-    def random_scramble(self, max_scrambles=5, verbose=False):
+    def random_scramble(self, rng=None, max_scrambles=5, verbose=False):
         """ Choose a random number of scrambling moves """
-        scr_num = random.randint(1, max_scrambles)
-        self.scramble(scr_num, verbose=verbose)
+        if rng is None:
+            rng = np.random.RandomState()
+        scr_num = rng.randint(1, max_scrambles)
+        self.scramble(scr_num, rng, verbose=verbose)
 
-    def scramble(self, num_scrambles, verbose=False):
+    def scramble(self, num_scrambles, rng=None, verbose=False):
         """ Scramble an expression with the identities at hand """
+        if rng is None:
+            rng = np.random.RandomState()
         for i in range(num_scrambles):
-            rdm_bracket = self.select_random_bracket()
+            rdm_bracket = self.select_random_bracket(rng)
             bk = rdm_bracket.func.__name__
             args = list(rdm_bracket.args)
 
-            act_num = random.randint(1, 3)
+            act_num = rng.randint(1, 3)
 
             # Identity number 1 is antisymmetry
             if act_num == 1:
-                self.antisymm(bk, args[0], args[1])
                 if verbose:
                     print('Using Antisymmetry on {}'.format(str(rdm_bracket)))
+                self.antisymm(bk, args[0], args[1])
             # Apply the Schouten identity where we randomly select the other momenta (avoid null brackets)
             elif act_num == 2:
-                arg3 = random.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1]]])
-                arg4 = random.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1], arg3]])
-                self.schouten2(bk, args[0], args[1], arg3, arg4)
+                arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1]]])
+                arg4 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1], arg3]])
                 if verbose:
                     print('Using Schouten on {} with args({},{})'.format(str(rdm_bracket), arg3, arg4))
+                self.schouten2(bk, args[0], args[1], arg3, arg4)
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
             elif act_num == 3:
-                arg3 = random.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
+                arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
+                if verbose:
+                    print('Using Momentum conservation on {} with arg{}'.format(str(rdm_bracket), arg3))
                 if bk == 'ab':
                     self.momentum2(bk, args[0], args[1], arg3)
                 else:
                     self.momentum2(bk, arg3, args[0], args[1])
-                if verbose:
-                    print('Using Momentum conservation on {} with arg{}'.format(str(rdm_bracket), arg3))
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ File containing the necessary functions for the generation of spinor helicity am
 import numpy as np
 import random
 from itertools import combinations
-from spin_helicity_env import ab, sb, SpinHelExpr
+from environment.spin_helicity_env import ab, sb, SpinHelExpr
 from sympy import latex, Function
 
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     expr1 = SpinHelExpr(generate_random_amplitude(7, str_out=True, verbose=True))
     print(expr1)
     print(latex(expr1))
-    expr1.random_scramble(5, verbose=True)
+    expr1.random_scramble(max_scrambles=5, verbose=True)
     expr1.cancel()
     print(expr1)
     print(latex(expr1))
