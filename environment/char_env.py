@@ -26,7 +26,7 @@ from environment.spin_helicity_env import SpinHelExpr
 CLEAR_SYMPY_CACHE_FREQ = 10000
 
 
-SPECIAL_WORDS = ['<s>', '</s>', '<pad>']
+SPECIAL_WORDS = ['<s>', '</s>', '<pad>', '&']
 
 logger = getLogger()
 
@@ -89,6 +89,7 @@ class CharEnv(object):
         self.max_scale = params.max_scale
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
+        self.save_info_scr = params.save_info_scr
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -96,8 +97,9 @@ class CharEnv(object):
         # parse operators with their weights
         self.operators = sorted(list(self.OPERATORS.keys()))
 
-        # Possible constants and variables. Let's keep one variable around just in case
-        self.constants = []
+        # Possible constants and variables. Let's keep one variable around just in case.
+        # For the constants we use letters to represent the type of identity used
+        self.constants = ['A', 'S', 'M']
         self.variables = OrderedDict({
             'x': sp.Symbol('x', real=True, nonzero=True),
         })
@@ -239,7 +241,7 @@ class CharEnv(object):
         Prefix to infix conversion.
         """
         p, r = self._prefix_to_infix(expr)
-        if len(r) > 0:
+        if len(r) > 0 and not (self.save_info_scr and r[0] == '&'):
             raise InvalidPrefixExpression(f"Incorrect prefix expression \"{expr}\". \"{r}\" was not parsed.")
         return f'({p})'
 
@@ -287,7 +289,25 @@ class CharEnv(object):
         # unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
 
-    @timeout(300)
+    def scr_info_to_prefix(self, info_s):
+        """
+        Convert the information about the identities applied into a parsed prefix expression
+        :param info_s:
+        :return:
+        """
+        prefix_ret = []
+        for info_vec in info_s:
+            for info_w in info_vec:
+                if info_w in self.constants:
+                    prefix_ret.append(info_w)
+                elif info_w.isdigit():
+                    prefix_ret.extend(self.sympy_to_prefix(sp.parse_expr(info_w)))
+                else:
+                    prefix_ret.extend(self.sympy_to_prefix(SpinHelExpr(info_w).sp_expr))
+
+        return prefix_ret
+
+    @timeout(1000)
     def gen_hel_ampl(self, rng):
         """
         Generate pairs of (function, primitive).
@@ -302,8 +322,13 @@ class CharEnv(object):
                                                     max_components=self.max_terms)
 
             simple_expr_env = SpinHelExpr(str(simple_expr))
-            simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles)
+            info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr)
             simple_expr_env.cancel()
+
+            if self.save_info_scr:
+                prefix_info = self.scr_info_to_prefix(info_s)
+            else:
+                prefix_info = None
 
             shuffled_expr = simple_expr_env.sp_expr
 
@@ -313,7 +338,7 @@ class CharEnv(object):
 
             # skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:
-                logger.info("Rejected Equation as was too long")
+                # logger.info("Rejected Equation as was too long")
                 return None
 
         except TimeoutError:
@@ -325,7 +350,10 @@ class CharEnv(object):
             return None
 
         # define input / output
-        return shuffled_prefix, simple_prefix
+        if self.save_info_scr:
+            return shuffled_prefix, simple_prefix + ['&'] + prefix_info
+        else:
+            return shuffled_prefix, simple_prefix
 
     @staticmethod
     def register_args(parser):

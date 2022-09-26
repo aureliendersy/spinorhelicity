@@ -24,7 +24,6 @@ def idx_to_sp(env, idx, return_infix=False):
     Convert an indexed prefix expression to SymPy.
     """
     prefix = [env.id2word[wid] for wid in idx]
-    prefix = env.unclean_prefix(prefix)
     try:
         infix = env.prefix_to_infix(prefix)
     except InvalidPrefixExpression:
@@ -47,7 +46,7 @@ def check_valid_solution(env, src, tgt, hyp):
 
     else:
         valid = sp.simplify(hyp - tgt, seconds=5) == 0
-        if not valid and not env.symbol_check:
+        if not valid:
             diff = src.subs(f(x), hyp).doit()
             diff = sp.simplify(diff, seconds=1)
             valid = diff == 0
@@ -138,7 +137,7 @@ class Evaluator(object):
         decoder.eval()
         assert params.eval_verbose in [0, 1]
         assert params.eval_verbose_print is False or params.eval_verbose > 0
-        assert task in ['prim_fwd', 'prim_bwd', 'prim_ibp', 'ode1', 'ode2', 'symbol_int', 'func_simple']
+        assert task in ['spin_hel']
 
         # stats
         xe_loss = 0
@@ -228,7 +227,7 @@ class Evaluator(object):
         decoder.eval()
         assert params.eval_verbose in [0, 1, 2]
         assert params.eval_verbose_print is False or params.eval_verbose > 0
-        assert task in ['prim_fwd', 'prim_bwd', 'prim_ibp', 'ode1', 'ode2', 'symbol_int', 'func_simple']
+        assert task in ['spin_hel']
 
         # evaluation details
         if params.eval_verbose:

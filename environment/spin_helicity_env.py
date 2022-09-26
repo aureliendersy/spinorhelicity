@@ -151,15 +151,21 @@ class SpinHelExpr:
 
         return rdm_fct
 
-    def random_scramble(self, rng=None, max_scrambles=5, verbose=False):
+    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False):
         """ Choose a random number of scrambling moves """
         if rng is None:
             rng = np.random.RandomState()
         scr_num = rng.randint(1, max_scrambles)
-        self.scramble(scr_num, rng, verbose=verbose)
+        if out_info:
+            info_s = self.scramble(scr_num, rng, verbose=verbose, out_info=True)
+            return info_s
+        else:
+            self.scramble(scr_num, rng, verbose=verbose)
 
-    def scramble(self, num_scrambles, rng=None, verbose=False):
+    def scramble(self, num_scrambles, rng=None, verbose=False, out_info=False):
         """ Scramble an expression with the identities at hand """
+
+        info_s = []
         if rng is None:
             rng = np.random.RandomState()
         for i in range(num_scrambles):
@@ -171,6 +177,7 @@ class SpinHelExpr:
 
             # Identity number 1 is antisymmetry
             if act_num == 1:
+                info_s.append(['A', str(rdm_bracket)])
                 if verbose:
                     print('Using Antisymmetry on {}'.format(str(rdm_bracket)))
                 self.antisymm(bk, args[0], args[1])
@@ -178,18 +185,22 @@ class SpinHelExpr:
             elif act_num == 2:
                 arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1]]])
                 arg4 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1], arg3]])
+                info_s.append(['S', str(rdm_bracket), str(arg3), str(arg4)])
                 if verbose:
                     print('Using Schouten on {} with args({},{})'.format(str(rdm_bracket), arg3, arg4))
                 self.schouten2(bk, args[0], args[1], arg3, arg4)
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
             elif act_num == 3:
                 arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
+                info_s.append(['M', str(rdm_bracket), str(arg3)])
                 if verbose:
                     print('Using Momentum conservation on {} with arg{}'.format(str(rdm_bracket), arg3))
                 if bk == 'ab':
                     self.momentum2(bk, args[0], args[1], arg3)
                 else:
                     self.momentum2(bk, arg3, args[0], args[1])
+        if out_info:
+            return info_s
 
 
 if __name__ == '__main__':
