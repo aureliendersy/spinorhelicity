@@ -7,6 +7,7 @@ from model import build_modules, check_model_params
 import environment
 from training.trainer import Trainer
 from training.evaluator import Evaluator
+from add_ons.mathematica_utils import initialize_numerical_check, end_wolfram_session
 
 np.seterr(all='raise')
 
@@ -27,10 +28,16 @@ def main(params):
 
     # evaluation
     if params.eval_only:
+        if params.numerical_check:
+            session = initialize_numerical_check(params.max_npt, lib_path=params.lib_path)
+            evaluator.add_mathematica_session(session)
         scores = evaluator.run_all_evals()
         for k, v in scores.items():
             logger.info("%s -> %.6f" % (k, v))
         logger.info("__log__:%s" % json.dumps(scores))
+
+        if params.numerical_check:
+            end_wolfram_session(session)
         exit()
 
     # training
@@ -125,7 +132,7 @@ if __name__ == '__main__':
 
         # Evaluation
         'eval_only': True,
-        'numerical_check': False,
+        'numerical_check': True,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
@@ -139,6 +146,7 @@ if __name__ == '__main__':
         'master_port': -1,
         'num_workers': 4,
         'debug_slurm': False,
+        'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
 
     })
 

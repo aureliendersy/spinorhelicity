@@ -11,6 +11,7 @@ import os
 import torch
 import sympy as sp
 
+from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv
 from environment.utils import to_cuda, timeout, TimeoutError
 from environment.char_env import InvalidPrefixExpression
 
@@ -38,8 +39,8 @@ def idx_to_sp(env, idx, return_infix=False, return_info=False):
     return (eq, infix) if return_infix else eq
 
 
-@timeout(50)
-def check_valid_solution(env, src, tgt, hyp):
+@timeout(5000)
+def check_valid_solution(env, src, tgt, hyp, session):
     """
     Check that a solution is valid.
     """
@@ -48,16 +49,25 @@ def check_valid_solution(env, src, tgt, hyp):
         tgt = tgt[0]
 
     if env.numerical_check:
-        valid = False
-        raise NotImplementedError
+        # Pre check symbolically
+        valid = sp.simplify(hyp - tgt, seconds=0.5) == 0
 
+        if session is None:
+            raise ValueError('Session should not be None to numerically evaluate')
+
+        # Do the numerical check
+        if not valid:
+            hyp_mma = sp_to_mma(hyp)
+            tgt_mma = sp_to_mma(tgt)
+            valid = check_numerical_equiv(session, hyp_mma, tgt_mma)
+            logger.info("Hypothesis is numerically valid")
     else:
         valid = sp.simplify(hyp - tgt, seconds=5) == 0
     return valid
 
 
-@timeout(50)
-def check_hypothesis(eq):
+@timeout(5000)
+def check_hypothesis(eq, session):
     """
     Check a hypothesis for a given equation and its solution.
     """
@@ -82,7 +92,7 @@ def check_hypothesis(eq):
 
     try:
         hyp, hyp_infix = idx_to_sp(env, hyp, return_infix=True)
-        is_valid = check_valid_solution(env, src, tgt, hyp)
+        is_valid = check_valid_solution(env, src, tgt, hyp, session)
         hyp_infix = str(hyp)
 
         if env.save_info_scr:
@@ -115,7 +125,11 @@ class Evaluator(object):
         self.modules = trainer.modules
         self.params = trainer.params
         self.env = trainer.env
+        self.session = None
         Evaluator.ENV = trainer.env
+
+    def add_mathematica_session(self, session):
+        self.session = session
 
     def run_all_evals(self):
         """
@@ -374,7 +388,7 @@ class Evaluator(object):
             outputs = []
             for input_eq in inputs:
                 try:
-                    outputs.append(check_hypothesis(input_eq))
+                    outputs.append(check_hypothesis(input_eq, self.session))
                 except (TimeoutError, Exception) as e:
                     outputs.append(outputs[-1])
 
