@@ -19,16 +19,22 @@ logger = getLogger()
 BUCKET_LENGTH_SIZE = 5
 
 
-def idx_to_sp(env, idx, return_infix=False):
+def idx_to_sp(env, idx, return_infix=False, return_info=False):
     """
     Convert an indexed prefix expression to SymPy.
     """
     prefix = [env.id2word[wid] for wid in idx]
     try:
         infix = env.prefix_to_infix(prefix)
+        if return_info:
+            prefix_info = prefix[prefix.index('&'):]
+            info_infix = env.scr_prefix_to_infix(prefix_info)
+
     except InvalidPrefixExpression:
         return None
     eq = sp.S(infix, locals=env.local_dict)
+    if return_info:
+        eq = [eq, info_infix]
     return (eq, infix) if return_infix else eq
 
 
@@ -37,8 +43,9 @@ def check_valid_solution(env, src, tgt, hyp):
     """
     Check that a solution is valid.
     """
-    f = env.local_dict['f']
-    x = env.local_dict['x']
+
+    if env.save_info_scr:
+        tgt = tgt[0]
 
     if env.numerical_check:
         valid = False
@@ -46,11 +53,6 @@ def check_valid_solution(env, src, tgt, hyp):
 
     else:
         valid = sp.simplify(hyp - tgt, seconds=5) == 0
-        if not valid:
-            diff = src.subs(f(x), hyp).doit()
-            diff = sp.simplify(diff, seconds=1)
-            valid = diff == 0
-
     return valid
 
 
@@ -61,8 +63,20 @@ def check_hypothesis(eq):
     """
     env = Evaluator.ENV
     src = idx_to_sp(env, eq['src'])
-    tgt = idx_to_sp(env, eq['tgt'])
+    tgt = idx_to_sp(env, eq['tgt'], return_info=env.save_info_scr)
     hyp = eq['hyp']
+
+    if env.save_info_scr:
+        if env.word2id['&'] not in eq['hyp']:
+            eq['src'] = str(src)
+            eq['tgt'] = tgt
+            eq['hyp'] = 'No & delimiter'
+            eq['is_valid'] = False
+            return eq
+        else:
+            hyp_infos = hyp[hyp.index(env.word2id['&']):]
+            hyp_infos_pre = [env.id2word[wid] for wid in hyp_infos]
+            hyp = hyp[:hyp.index(env.word2id['&'])]
 
     hyp_infix = [env.id2word[wid] for wid in hyp]
 
@@ -70,6 +84,9 @@ def check_hypothesis(eq):
         hyp, hyp_infix = idx_to_sp(env, hyp, return_infix=True)
         is_valid = check_valid_solution(env, src, tgt, hyp)
         hyp_infix = str(hyp)
+
+        if env.save_info_scr:
+            hyp_infix += env.scr_prefix_to_infix(hyp_infos_pre)
 
     except (TimeoutError, Exception) as e:
         e_name = type(e).__name__
@@ -79,9 +96,6 @@ def check_hypothesis(eq):
         is_valid = False
 
     # update hypothesis
-    f = env.local_dict['f']
-    x = env.local_dict['x']
-    # eq['src'] = src.subs([(f(x), 'f')])  # hack to avoid pickling issues with lambdify
     eq['src'] = str(src)
     eq['tgt'] = tgt
     eq['hyp'] = hyp_infix
@@ -242,8 +256,12 @@ class Evaluator(object):
             if params.eval_verbose == 0:
                 return
             for i, res in sorted(logs.items()):
+                if env.save_info_scr:
+                    tgt_str = str(res['tgt'][0]) + ' IDS : ' + res['tgt'][1]
+                else:
+                    tgt_str = str(res['tgt'])
                 n_valid = sum([int(v) for _, _, v in res['hyps']])
-                s = f"Equation {offset + i} ({n_valid}/{len(res['hyps'])})\nsrc={res['src']}\ntgt={res['tgt']}\n"
+                s = f"Equation {offset + i} ({n_valid}/{len(res['hyps'])})\nsrc={res['src']}\ntgt={tgt_str}\n"
                 for hyp, score, valid in res['hyps']:
                     if score is None:
                         s += f"{int(valid)} {hyp}\n"
@@ -291,7 +309,8 @@ class Evaluator(object):
                 src = idx_to_sp(env, x1[1:len1[i] - 1, i].tolist())
                 if src is None:
                     src = 'Invalid prefix expression'
-                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist())
+                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist(), return_info=True)
+
                 if valid[i]:
                     beam_log[i] = {'src': src, 'tgt': tgt, 'hyps': [(tgt, None, True)]}
 
@@ -351,18 +370,13 @@ class Evaluator(object):
                     })
 
             print("prepare to check")
-            # check hypotheses with multiprocessing
+            # check hypotheses
             outputs = []
-            if env.symbol_check or True:
-                for input_eq in inputs:
-                    try:
-                        outputs.append(check_hypothesis(input_eq))
-                    except (TimeoutError, Exception) as e:
-                        outputs.append(outputs[-1])
-            else:
-                with ProcessPoolExecutor(max_workers=20) as executor:
-                    for output in executor.map(check_hypothesis, inputs, chunksize=1):
-                        outputs.append(output)
+            for input_eq in inputs:
+                try:
+                    outputs.append(check_hypothesis(input_eq))
+                except (TimeoutError, Exception) as e:
+                    outputs.append(outputs[-1])
 
             # read results
             for i in range(bs):

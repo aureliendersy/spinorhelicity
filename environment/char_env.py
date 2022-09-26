@@ -307,7 +307,28 @@ class CharEnv(object):
 
         return prefix_ret
 
-    @timeout(1000)
+    def scr_prefix_to_infix(self, infos_prefix):
+        out_in = ''
+        for word in infos_prefix:
+            if word in self.constants:
+                out_in += '/' + word + ':'
+            elif word in self.symbols:
+                pass
+            elif word in self.operators:
+                out_in += word
+            elif word in self.elements:
+                if out_in[-1].isdigit():
+                    out_in += ','
+                    next_w = ')'
+                else:
+                    out_in += '('
+                    next_w = ''
+                out_in += word
+                out_in += next_w
+
+        return out_in
+
+    @timeout(10)
     def gen_hel_ampl(self, rng):
         """
         Generate pairs of (function, primitive).

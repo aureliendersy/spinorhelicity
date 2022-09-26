@@ -79,9 +79,9 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_data_spin_hel',
+        'exp_name': 'Test_eval_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
-        'exp_id': 'npt8',
+        'exp_id': 'npt8-infos',
         'save_periodic': 0,
         'tasks': 'spin_hel',
 
@@ -99,16 +99,16 @@ if __name__ == '__main__':
         'emb_dim': 512,
         'n_enc_layers': 3,
         'n_dec_layers': 3,
-        'n_heads': 4,
+        'n_heads': 8,
         'dropout': 0,
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/checkpoint.pth',
 
         # Trainer param
-        'export_data': True,
-        'reload_data': '',
+        'export_data': False,
+        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test',
         'reload_size': '',
         'epoch_size': 10000,
         'max_epoch': 500,
@@ -121,15 +121,15 @@ if __name__ == '__main__':
         'validation_metrics': 'valid_func_simple_acc',
         'reload_checkpoint': '',
         'env_base_seed': -1,
-        'batch_size': 32,
+        'batch_size': 1,
 
         # Evaluation
-        'eval_only': False,
+        'eval_only': True,
         'numerical_check': False,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 5,
+        'beam_size': 2,
         'beam_length_penalty': 1,
         'beam_early_stopping': True,
 
