@@ -86,7 +86,7 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_eval_spin_hel',
+        'exp_name': 'Test_data_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
         'exp_id': 'npt8-infos',
         'save_periodic': 0,
@@ -114,8 +114,9 @@ if __name__ == '__main__':
         'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/checkpoint.pth',
 
         # Trainer param
-        'export_data': False,
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test',
+        'export_data': True,
+        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test',
+        'reload_data': '',
         'reload_size': '',
         'epoch_size': 10000,
         'max_epoch': 500,
@@ -131,12 +132,12 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        'eval_only': True,
-        'numerical_check': True,
+        'eval_only': False,
+        'numerical_check': False,
         'eval_verbose': 2,
         'eval_verbose_print': True,
-        'beam_eval': True,
-        'beam_size': 2,
+        'beam_eval': False,
+        'beam_size': 1,
         'beam_length_penalty': 1,
         'beam_early_stopping': True,
 
@@ -144,7 +145,7 @@ if __name__ == '__main__':
         'cpu': True,
         'local_rank': -1,
         'master_port': -1,
-        'num_workers': 4,
+        'num_workers': 1,
         'debug_slurm': False,
         'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
 

@@ -19,7 +19,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
 from sympy.calculus.util import AccumBounds
 from environment.spin_helicity_env import ab, sb
-from environment.utils import timeout
+from environment.utils import timeout, TimeoutError
 from environment.helicity_generator import generate_random_amplitude
 from environment.spin_helicity_env import SpinHelExpr
 
@@ -311,6 +311,8 @@ class CharEnv(object):
         out_in = ''
         for word in infos_prefix:
             if word in self.constants:
+                if out_in != '' and out_in[-1].isdigit():
+                    out_in += ')'
                 out_in += '/' + word + ':'
             elif word in self.symbols:
                 pass

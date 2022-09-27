@@ -33,7 +33,7 @@ def parke_taylor(bk, pi, pj, max_label):
 
 def generate_random_bk(bk_fct, n_points, rng):
     """Provided with the bracket type, generate a bracket with random momenta"""
-    pi = rng.randint(1, n_points)
+    pi = rng.randint(1, n_points + 1)
     pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
     return bk_fct(pi, pj)
 
@@ -46,7 +46,7 @@ def generate_random_fraction(scaling, n_points, max_terms_add, rng):
     scaling_skel = dual_partition(abs(scaling))[choice_index]
 
     # Select how many terms with zero little group scaling we add
-    add_terms = rng.randint(0 if scaling != 0 else 1, max_terms_add)
+    add_terms = rng.randint(0 if scaling != 0 else 1, max_terms_add + 1)
 
     return_expr = 1
 
@@ -62,7 +62,7 @@ def generate_random_fraction(scaling, n_points, max_terms_add, rng):
 
     # Draw the type of zero scaling term we have and add it
     for k in range(add_terms):
-        term_type = rng.randint(1, 4)
+        term_type = rng.randint(1, 5)
 
         if term_type == 1:
             return_expr *= generate_random_bk(ab, n_points, rng) / generate_random_bk(ab, n_points, rng)
@@ -82,17 +82,17 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
     We constrain the amplitude to be physically viable"""
     if rng is None:
         rng = np.random.RandomState()
-    n_points = 4 if max_n_points == 4 else rng.randint(4, max_n_points)
+    n_points = 4 if max_n_points == 4 else rng.randint(4, max_n_points + 1)
 
-    n_pos_h = 2 if n_points == 4 else rng.randint(2, n_points-2)
+    n_pos_h = 2 if n_points == 4 else rng.randint(2, n_points-1)
     n_neg_h = n_points-n_pos_h
 
-    components = 1 if max_components == 1 else rng.randint(1, max_components)
+    components = 1 if max_components == 1 else rng.randint(1, max_components + 1)
 
     # Use the Parke Taylor formula if we are interested in amplitudes involving only gluons
     if (n_pos_h == 2 or n_neg_h == 2) and gluon_only and str_out:
-        bk = 'ab' if rng.randint(0, 1) == 1 else 'sb'
-        pi = rng.randint(1, max_n_points)
+        bk = 'ab' if rng.randint(0, 2) == 1 else 'sb'
+        pi = rng.randint(1, max_n_points + 1)
         pj = rng.choice([i for i in range(1, max_n_points+1) if i not in [pi]])
         return parke_taylor(bk, pi, pj, n_points)
 

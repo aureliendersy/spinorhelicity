@@ -39,7 +39,7 @@ def idx_to_sp(env, idx, return_infix=False, return_info=False):
     return (eq, infix) if return_infix else eq
 
 
-@timeout(5000)
+@timeout(50)
 def check_valid_solution(env, src, tgt, hyp, session):
     """
     Check that a solution is valid.
@@ -60,13 +60,14 @@ def check_valid_solution(env, src, tgt, hyp, session):
             hyp_mma = sp_to_mma(hyp)
             tgt_mma = sp_to_mma(tgt)
             valid = check_numerical_equiv(session, hyp_mma, tgt_mma)
-            logger.info("Hypothesis is numerically valid")
+            if valid:
+                logger.info("Hypothesis is numerically valid")
     else:
         valid = sp.simplify(hyp - tgt, seconds=5) == 0
     return valid
 
 
-@timeout(5000)
+@timeout(50)
 def check_hypothesis(eq, session):
     """
     Check a hypothesis for a given equation and its solution.

@@ -5,6 +5,7 @@ Environment used to handle spinor helicity expressions
 import numpy as np
 import random
 import sympy as sp
+from environment.utils import timeout
 from sympy import Function, latex
 
 
@@ -155,7 +156,7 @@ class SpinHelExpr:
         """ Choose a random number of scrambling moves """
         if rng is None:
             rng = np.random.RandomState()
-        scr_num = rng.randint(1, max_scrambles)
+        scr_num = rng.randint(1, max_scrambles + 1)
         if out_info:
             info_s = self.scramble(scr_num, rng, verbose=verbose, out_info=True)
             return info_s
@@ -173,8 +174,7 @@ class SpinHelExpr:
             bk = rdm_bracket.func.__name__
             args = list(rdm_bracket.args)
 
-            act_num = rng.randint(1, 3)
-
+            act_num = rng.randint(1, 4)
             # Identity number 1 is antisymmetry
             if act_num == 1:
                 info_s.append(['A', str(rdm_bracket)])
