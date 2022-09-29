@@ -11,6 +11,8 @@ from logging import getLogger
 
 logger = getLogger()
 
+ZERO_ERROR_POW = 14
+
 
 def start_wolfram_session(kernel_path=None, sm_package=True, lib_path=None):
     """Start a Wolfram session and return it"""
@@ -74,7 +76,7 @@ def generate_random_momenta(session, npt, verbose=True):
     if verbose:
         logger.info('Declare momenta for the {}-pt amplitude at the numerical values'.format(npt))
 
-        for i in range(npt):
+        for i in range(1, npt+1):
             logger.info(session.evaluate(wlexpr('Num4V[a{}{}]'.format(npt, i))))
 
 
@@ -104,14 +106,13 @@ def sp_to_mma(sp_expr):
     :return:
     """
     npt = np.max(np.array([list(f.args) for f in sp_expr.atoms(sp.Function)]))
+    args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
+
+    for i in range(1, npt + 1):
+        sp_expr = sp_expr.replace(i, args_npt[i - 1])
+
     mma_str = sp.mathematica_code(sp_expr)
     mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
-
-    for i in range(1, npt+1):
-        mma_str = mma_str.replace(str(i), 'n' + str(i))
-
-    for i in range(1, npt+1):
-        mma_str = mma_str.replace('n' + str(i), 'a{}{}'.format(npt, i))
 
     return mma_str
 
@@ -125,6 +126,6 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
     :return:
     """
 
-    res = session.evaluate(wlexpr('({}-{})//N'.format(mma_hyp, mma_tgt)))
+    res = session.evaluate(wlexpr('Abs[N[({}-{})]]'.format(mma_hyp, mma_tgt)))
 
-    return res == 0
+    return res < 10**(-ZERO_ERROR_POW)
