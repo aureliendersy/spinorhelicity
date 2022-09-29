@@ -100,16 +100,23 @@ def initialize_numerical_check(npt_max, kernel_path=None, sm_package=True, lib_p
 
 def sp_to_mma(sp_expr):
     """
-    Convert a sympy spinor-helictiy expression to a form that can be read by the S@M package
+    Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
     :param sp_expr:
     :return:
     """
-    npt = np.max(np.array([list(f.args) for f in sp_expr.atoms(sp.Function)]))
+
+    func_list = list(sp_expr.atoms(sp.Function))
+    npt = np.max(np.array([func.args for func in func_list]))
+
+    if npt < 4:
+        logger.error("Got an expression which depends on less than 4 momenta")
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
-    for i in range(1, npt + 1):
-        sp_expr = sp_expr.replace(i, args_npt[i - 1])
+    replace_dict_var = {i: args_npt[i - 1] for i in range(1, npt + 1)}
+    replace_dict_func = {func_list[i]: func_list[i].subs(replace_dict_var) for i in range(len(func_list))}
+
+    sp_expr = sp_expr.subs(replace_dict_func)
 
     mma_str = sp.mathematica_code(sp_expr)
     mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
