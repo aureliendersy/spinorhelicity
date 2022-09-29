@@ -324,7 +324,7 @@ class Evaluator(object):
                 src = idx_to_sp(env, x1[1:len1[i] - 1, i].tolist())
                 if src is None:
                     src = 'Invalid prefix expression'
-                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist(), return_info=True)
+                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist(), return_info=env.save_info_scr)
 
                 if valid[i]:
                     beam_log[i] = {'src': src, 'tgt': tgt, 'hyps': [(tgt, None, True)]}
