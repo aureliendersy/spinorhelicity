@@ -38,8 +38,37 @@ def generate_random_bk(bk_fct, n_points, rng):
     return bk_fct(pi, pj)
 
 
-def generate_random_fraction(scaling, n_points, max_terms_add, rng):
-    """Generate a random fraction involving momenta with the correct little group scaling"""
+def reorder_expr(hel_expr):
+    """
+    Reorder the arguments of an expression in canonical form
+    Also changes the sign appropriately
+    :param hel_expr:
+    :return:
+    """
+    func_list = list(hel_expr.atoms(Function))
+    replace_dict = {}
+    swaps = 0
+    for fun in func_list:
+        if fun.args[0] > fun.args[1]:
+            new_func = fun.func(fun.args[1], fun.args[0])
+            replace_dict.update({fun: new_func})
+            swaps += 1
+
+    return_expr = hel_expr.subs(replace_dict) * (-1)**swaps
+
+    return return_expr
+
+
+def generate_random_fraction(scaling, n_points, max_terms_add, rng, canonical_form):
+    """
+    Generate a random fraction involving momenta with the correct little group scaling
+    :param scaling:
+    :param n_points:
+    :param max_terms_add:
+    :param rng:
+    :param canonical_form:
+    :return:
+    """
 
     # Randomly assign the correct skeleton
     choice_index = np.random.choice(len(dual_partition(abs(scaling))), 1)[0]
@@ -73,13 +102,28 @@ def generate_random_fraction(scaling, n_points, max_terms_add, rng):
         elif term_type == 4:
             return_expr *= 1/(generate_random_bk(sb, n_points, rng) * generate_random_bk(ab, n_points, rng))
 
+    if canonical_form:
+        return_expr = reorder_expr(return_expr)
+
     return return_expr
 
 
 def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_components=1, gluon_only=False,
-                              str_out=False, verbose=False):
-    """Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
-    We constrain the amplitude to be physically viable"""
+                              str_out=False, verbose=False, canonical_form=False):
+    """
+    Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
+    We constrain the amplitude to be physically viable
+    :param max_n_points:
+    :param rng:
+    :param max_terms_scale:
+    :param max_components:
+    :param gluon_only:
+    :param str_out:
+    :param verbose:
+    :param canonical_form:
+    :return:
+    """
+
     if rng is None:
         rng = np.random.RandomState()
     n_points = 4 if max_n_points == 4 else rng.randint(4, max_n_points + 1)
@@ -100,12 +144,13 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
 
     # For each individual fraction we generate a new expression. We define the number of legs and little group scaling
     for i in range(components):
-        return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng)
+        return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
+                                                canonical_form=canonical_form)
     # If we are missing any external momentum in the whole expression then we try again
     if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
             for i in range(1, n_points+1)]):
         return generate_random_amplitude(max_n_points, rng, max_terms_scale, max_components, gluon_only, str_out,
-                                         verbose=verbose)
+                                         verbose=verbose, canonical_form=canonical_form)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))

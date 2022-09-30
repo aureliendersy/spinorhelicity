@@ -88,7 +88,7 @@ if __name__ == '__main__':
         # Name
         'exp_name': 'Test_data_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
-        'exp_id': 'npt8-infos',
+        'exp_id': 'test',
         'save_periodic': 0,
         'tasks': 'spin_hel',
 
@@ -101,6 +101,7 @@ if __name__ == '__main__':
         'save_info_scr': True,
         'int_base': 10,
         'max_len': 512,
+        'canonical_form': True,
 
         # model parameters
         'emb_dim': 512,
@@ -111,14 +112,15 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/checkpoint.pth',
+        #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/checkpoint.pth',
+        'reload_model': '',
 
         # Trainer param
         'export_data': True,
-        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test',
+        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test',
         'reload_data': '',
         'reload_size': '',
-        'epoch_size': 10000,
+        'epoch_size': 1000,
         'max_epoch': 500,
         'amp': -1,
         'fp16': False,
@@ -134,8 +136,8 @@ if __name__ == '__main__':
         # Evaluation
         'eval_only': False,
         'numerical_check': False,
-        'eval_verbose': 2,
-        'eval_verbose_print': True,
+        'eval_verbose': 0,
+        'eval_verbose_print': False,
         'beam_eval': False,
         'beam_size': 1,
         'beam_length_penalty': 1,

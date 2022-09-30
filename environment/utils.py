@@ -11,6 +11,8 @@ import math
 import pickle
 import random
 import logging
+import sympy as sp
+import numpy as np
 import time
 from datetime import timedelta
 import subprocess
@@ -202,3 +204,40 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
         return wraps(func)(wrapper)
 
     return decorator
+
+
+def convert_to_momentum(sp_expr, momentum_list):
+    """
+    Convert the momentum in a spinor helicity amplitude from a integer to a momentum label
+    :param sp_expr:
+    :param momentum_list:
+    :return:
+    """
+    func_list = list(sp_expr.atoms(sp.Function))
+
+    replace_dict = {i: momentum_list[i - 1] for i in range(1, len(momentum_list) + 1)}
+    replace_dict_func = {func_list[i]: func_list[i].subs(replace_dict) for i in range(len(func_list))}
+
+    sp_expr = sp_expr.subs(replace_dict_func)
+
+    return sp_expr
+
+
+def convert_momentum_info(infos, max_range):
+    """
+    Read the identity information vector and convert to the momentum list
+    :param infos:
+    :param max_range:
+    :return:
+    """
+    list_info_new = []
+
+    for info in infos:
+        info_new = []
+        for element in info:
+            for i in range(1, max_range + 1):
+                element = element.replace('{}'.format(i), 'p{}'.format(i))
+            info_new.append(element)
+        list_info_new.append(info_new)
+
+    return list_info_new

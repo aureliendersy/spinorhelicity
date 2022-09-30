@@ -19,7 +19,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
 from sympy.calculus.util import AccumBounds
 from environment.spin_helicity_env import ab, sb
-from environment.utils import timeout, TimeoutError
+from environment.utils import timeout, TimeoutError, convert_to_momentum, convert_momentum_info
 from environment.helicity_generator import generate_random_amplitude
 from environment.spin_helicity_env import SpinHelExpr
 
@@ -90,6 +90,7 @@ class CharEnv(object):
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
         self.save_info_scr = params.save_info_scr
+        self.canonical_form = params.canonical_form
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -97,12 +98,12 @@ class CharEnv(object):
         # parse operators with their weights
         self.operators = sorted(list(self.OPERATORS.keys()))
 
-        # Possible constants and variables. Let's keep one variable around just in case.
+        # Possible constants and variables. The variables used are to denote the momenta.
         # For the constants we use letters to represent the type of identity used
         self.constants = ['A', 'S', 'M']
+        self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
-            'x': sp.Symbol('x', real=True, nonzero=True),
-        })
+            'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
 
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
@@ -300,10 +301,10 @@ class CharEnv(object):
             for info_w in info_vec:
                 if info_w in self.constants:
                     prefix_ret.append(info_w)
-                elif info_w.isdigit():
+                elif info_w in self.variables:
                     prefix_ret.extend(self.sympy_to_prefix(sp.parse_expr(info_w)))
                 else:
-                    prefix_ret.extend(self.sympy_to_prefix(SpinHelExpr(info_w).sp_expr))
+                    prefix_ret.extend(self.sympy_to_prefix(sp.parse_expr(info_w, local_dict=self.func_dict)))
 
         return prefix_ret
 
@@ -330,7 +331,7 @@ class CharEnv(object):
 
         return out_in
 
-    @timeout(10)
+    @timeout(1000)
     def gen_hel_ampl(self, rng):
         """
         Generate pairs of (function, primitive).
@@ -342,13 +343,14 @@ class CharEnv(object):
             # generate an expression and rewrite it,
             # avoid issues in 0 and convert to SymPy
             simple_expr = generate_random_amplitude(self.max_npt, rng, max_terms_scale=self.max_scale,
-                                                    max_components=self.max_terms)
+                                                    max_components=self.max_terms, canonical_form=self.canonical_form)
 
             simple_expr_env = SpinHelExpr(str(simple_expr))
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr)
             simple_expr_env.cancel()
 
             if self.save_info_scr:
+                info_s = convert_momentum_info(info_s, self.max_npt)
                 prefix_info = self.scr_info_to_prefix(info_s)
             else:
                 prefix_info = None
@@ -356,7 +358,9 @@ class CharEnv(object):
             shuffled_expr = simple_expr_env.sp_expr
 
             # convert back to prefix
+            simple_expr = convert_to_momentum(simple_expr, list(self.variables.values()))
             simple_prefix = self.sympy_to_prefix(simple_expr)
+            shuffled_expr = convert_to_momentum(shuffled_expr, list(self.variables.values()))
             shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
 
             # skip too long sequences
