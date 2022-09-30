@@ -5,7 +5,6 @@ Environment used to handle spinor helicity expressions
 import numpy as np
 import random
 import sympy as sp
-from environment.utils import timeout
 from sympy import Function, latex
 
 
@@ -191,14 +190,15 @@ class SpinHelExpr:
                 self.schouten2(bk, args[0], args[1], arg3, arg4)
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
             elif act_num == 3:
-                arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
+                if bk == 'ab':
+                    arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
+                    self.momentum2(bk, args[0], args[1], arg3)
+                else:
+                    arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0]]])
+                    self.momentum2(bk, arg3, args[0], args[1])
                 info_s.append(['M', str(rdm_bracket), str(arg3)])
                 if verbose:
                     print('Using Momentum conservation on {} with arg{}'.format(str(rdm_bracket), arg3))
-                if bk == 'ab':
-                    self.momentum2(bk, args[0], args[1], arg3)
-                else:
-                    self.momentum2(bk, arg3, args[0], args[1])
         if out_info:
             return info_s
 
