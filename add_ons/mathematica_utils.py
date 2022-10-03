@@ -29,7 +29,7 @@ def start_wolfram_session(kernel_path=None, sm_package=True, lib_path=None):
             session.evaluate(wlexpr('Get[ToFileName[{$SpinorsPath}, "Spinors.m"]]'))
             # poly_path = session.evaluate(wl.SetDirectory(lib_path))
         else:
-            session.evaluate(wl.Get('PolyLogTools`'))
+            pass
     return session
 
 
@@ -107,16 +107,19 @@ def sp_to_mma(sp_expr):
     """
 
     func_list = list(sp_expr.atoms(sp.Function))
-    npt = np.max(np.array([func.args for func in func_list]))
+    momentum_set = set(sum([func.args for func in func_list], ()))
+    n_dep = len(momentum_set)
+    npt = max([int(momentum.name[-1]) for momentum in list(momentum_set)])
 
-    if npt < 4:
+    # If we did not get enough momenta show it
+    if n_dep < 4:
         logger.error("Got an expression which depends on less than 4 momenta")
+
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
-    replace_dict_var = {i: args_npt[i - 1] for i in range(1, npt + 1)}
-    replace_dict_func = {func_list[i]: func_list[i].subs(replace_dict_var) for i in range(len(func_list))}
+    replace_dict_var = {sp.Symbol('p{}'.format(i)): args_npt[i - 1] for i in range(1, npt + 1)}
 
-    sp_expr = sp_expr.subs(replace_dict_func)
+    sp_expr = sp_expr.subs(replace_dict_var)
 
     mma_str = sp.mathematica_code(sp_expr)
     mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
@@ -133,6 +136,6 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
     :return:
     """
 
-    res = session.evaluate(wlexpr('Abs[N[({}-{})]]'.format(mma_hyp, mma_tgt)))
+    res = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
 
     return res < 10**(-ZERO_ERROR_POW)

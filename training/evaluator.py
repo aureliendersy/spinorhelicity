@@ -39,7 +39,7 @@ def idx_to_sp(env, idx, return_infix=False, return_info=False):
     return (eq, infix) if return_infix else eq
 
 
-@timeout(50)
+@timeout(5000)
 def check_valid_solution(env, src, tgt, hyp, session):
     """
     Check that a solution is valid.
@@ -67,7 +67,7 @@ def check_valid_solution(env, src, tgt, hyp, session):
     return valid
 
 
-@timeout(50)
+@timeout(5000)
 def check_hypothesis(eq, session):
     """
     Check a hypothesis for a given equation and its solution.
@@ -384,7 +384,6 @@ class Evaluator(object):
                         'hyp': hyp[1:].tolist(),
                     })
 
-            print("prepare to check")
             # check hypotheses
             outputs = []
             for input_eq in inputs:

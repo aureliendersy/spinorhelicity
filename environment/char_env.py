@@ -309,6 +309,11 @@ class CharEnv(object):
         return prefix_ret
 
     def scr_prefix_to_infix(self, infos_prefix):
+        """
+        Convert the prefix information vector to an infix form
+        :param infos_prefix:
+        :return:
+        """
         out_in = ''
         for word in infos_prefix:
             if word in self.constants:
@@ -319,7 +324,7 @@ class CharEnv(object):
                 pass
             elif word in self.operators:
                 out_in += word
-            elif word in self.elements:
+            elif word in self.variables:
                 if out_in[-1].isdigit():
                     out_in += ','
                     next_w = ')'
