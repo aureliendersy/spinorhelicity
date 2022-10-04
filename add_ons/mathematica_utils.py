@@ -136,6 +136,13 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
     :return:
     """
 
-    res = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
+    res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
 
-    return res < 10**(-ZERO_ERROR_POW)
+    valid = res_diff < 10**(-ZERO_ERROR_POW)
+
+    if not valid:
+        res_add = session.evaluate(wlexpr('Abs[N[(({})+({}))]]'.format(mma_hyp, mma_tgt)))
+        if res_add < 10**(-ZERO_ERROR_POW):
+            logger.info("We got the wrong overall sign")
+
+    return valid
