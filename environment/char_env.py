@@ -251,7 +251,7 @@ class CharEnv(object):
         Convert an infix expression to SymPy.
         """
 
-        expr = parse_expr(infix, evaluate=True, local_dict=self.local_dict)
+        expr = parse_expr(infix, evaluate=True, local_dict=self.func_dict)
         if expr.has(AccumBounds):
             logger.error('Expression {} failed. Was {} originally'.format(expr, infix))
             raise ValueErrorExpression

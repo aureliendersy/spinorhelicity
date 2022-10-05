@@ -13,6 +13,8 @@ class ab(Function):
     def _latex(self, printer, exp=1):
         """Overwriting the latex outputs to get something nicer"""
         a, b = [printer._print(i) for i in self.args]
+        a = a.replace('p_{', "").replace('}', "")
+        b = b.replace('p_{', "").replace('}', "")
         if exp == 1:
             return r"\langle %s %s \rangle" % (a, b)
         else:
@@ -24,6 +26,8 @@ class sb(Function):
     def _latex(self, printer, exp=1):
         """Overwriting the latex outputs to get something nicer"""
         a, b = [printer._print(i) for i in self.args]
+        a = a.replace('p_{', "").replace('}', "")
+        b = b.replace('p_{', "").replace('}', "")
         if exp == 1:
             return r"\left[ %s %s \right]" % (a, b)
         else:
