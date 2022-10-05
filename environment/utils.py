@@ -241,3 +241,44 @@ def convert_momentum_info(infos, max_range):
         list_info_new.append(info_new)
 
     return list_info_new
+
+
+def convert_to_bracket_tokens(prefix_expr):
+    """
+    Take as input a prefix expression and convert the brackets into a single token
+    :param prefix_expr:
+    :return:
+    """
+
+    return_expr = []
+    pass_word = 0
+
+    for i, word in enumerate(prefix_expr):
+        if word in ['ab', 'sb']:
+            return_expr.append(word + prefix_expr[i+1].replace('p', '') + prefix_expr[i+2].replace('p', ''))
+            pass_word += 2
+        elif pass_word == 0:
+            return_expr.append(word)
+        else:
+            pass_word -= 1
+
+    return return_expr
+
+
+def convert_to_bracket_file(prefix_file_path):
+    """
+    Read a file with the prefix data and convert it to a new alphabet
+    :param prefix_file_path:
+    :return:
+    """
+
+    out_path = prefix_file_path + '_new_alphabet'
+    new_file = open(out_path, "w")
+
+    with open(prefix_file_path) as infile:
+        for line in infile:
+            prefix2_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[1][:-1].split(' ')))
+            prefix1_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[0].split(' ')))
+            new_file.write(f'{prefix1_str}\t{prefix2_str}\n')
+
+    new_file.close()

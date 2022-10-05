@@ -91,6 +91,7 @@ class CharEnv(object):
         self.max_scrambles = params.max_scrambles
         self.save_info_scr = params.save_info_scr
         self.canonical_form = params.canonical_form
+        self.bracket_tokens = params.bracket_tokens
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -104,7 +105,15 @@ class CharEnv(object):
         self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
             'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
-
+        if not self.bracket_tokens:
+            self.special_tokens = []
+        else:
+            self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
+                                                     for i in range(1, params.max_npt+1)
+                                                     for j in range(1, params.max_npt+1)]))\
+                                  + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
+                                                       for i in range(1, params.max_npt+1)
+                                                       for j in range(1, params.max_npt+1)]))
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
@@ -117,7 +126,7 @@ class CharEnv(object):
 
         # vocabulary
         self.words = SPECIAL_WORDS + self.constants + list(self.variables.keys()) +\
-                     self.operators + self.symbols + self.elements
+                     self.operators + self.symbols + self.elements + self.special_tokens
         self.id2word = {i: s for i, s in enumerate(self.words)}
         self.word2id = {s: i for i, s in self.id2word.items()}
         assert len(self.words) == len(set(self.words))
