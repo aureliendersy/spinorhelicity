@@ -98,10 +98,61 @@ def initialize_numerical_check(npt_max, kernel_path=None, sm_package=True, lib_p
     return session
 
 
-def sp_to_mma(sp_expr):
+def sp_to_mma(sp_expr, bracket_tokens=False, func_dict=None):
+    """
+    Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
+    :param sp_expr:
+    :param bracket_tokens:
+    :param func_dict:
+    :return:
+    """
+    if not bracket_tokens:
+        return sp_to_mma_single_token(sp_expr)
+    else:
+        if func_dict is None:
+            raise AttributeError("Need the function dictionnary to evaluate with bracket tokens")
+        return sp_to_mma_bracket_token(sp_expr, func_dict)
+
+
+def sp_to_mma_bracket_token(sp_expr, func_dict):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
+    Assumes that each bracket is a single token
+    :param sp_expr:
+    :param func_dict:
+    :return:
+    """
+    brackets = list(sp_expr.free_symbols)
+    momentum_set = set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets])
+    n_dep = len(momentum_set)
+    npt = max(momentum_set)
+
+    # If we did not get enough momenta show it
+    if n_dep < 4:
+        logger.error("Got an expression which depends on less than 4 momenta")
+
+    args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
+
+    dict_replace = {}
+    for bracket in brackets:
+        name_bk = bracket.name[0:2]
+        rule = func_dict[name_bk](args_npt[int(bracket.name[-2]) - 1], args_npt[int(bracket.name[-1]) - 1])
+        dict_replace.update({bracket: rule})
+
+    sp_expr = sp_expr.subs(dict_replace)
+
+    mma_str = sp.mathematica_code(sp_expr)
+    mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
+
+    return mma_str
+
+
+def sp_to_mma_single_token(sp_expr):
+    """
+    Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
+    Assumes that the relevant variables have been previously initialized
+    Assumes that each token corresponds to a single word
     :param sp_expr:
     :return:
     """

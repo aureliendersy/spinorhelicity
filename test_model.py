@@ -77,8 +77,8 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
 
             # When integrating the symbol
             if params.numerical_check:
-                hyp_mma = sp_to_mma(hyp)
-                tgt_mma = sp_to_mma(f)
+                hyp_mma = sp_to_mma(hyp, params.bracket_tokens)
+                tgt_mma = sp_to_mma(f, params.bracket_tokens)
                 matches = check_numerical_equiv(environment.session, hyp_mma, tgt_mma)
             else:
                 matches = None

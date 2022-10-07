@@ -240,7 +240,7 @@ class CharEnv(object):
                 i1, l1 = self._prefix_to_infix(l1)
                 args.append(i1)
             return self.write_infix(t, args), l1
-        elif t in self.variables or t in self.constants:
+        elif t in self.variables or t in self.constants or t in self.special_tokens:
             return t, expr[1:]
         else:
             val, i = self.parse_int(expr)

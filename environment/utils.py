@@ -272,13 +272,21 @@ def convert_to_bracket_file(prefix_file_path):
     :return:
     """
 
+    print("Reading from {}".format(prefix_file_path))
+
     out_path = prefix_file_path + '_new_alphabet'
     new_file = open(out_path, "w")
+
+    counter = 0
 
     with open(prefix_file_path) as infile:
         for line in infile:
             prefix2_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[1][:-1].split(' ')))
             prefix1_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[0].split(' ')))
             new_file.write(f'{prefix1_str}\t{prefix2_str}\n')
+            counter += 1
+
+            if counter % 1000 == 0:
+                print("Did {} lines".format(counter))
 
     new_file.close()
