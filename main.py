@@ -1,6 +1,6 @@
 import numpy as np
 import json
-from environment.utils import initialize_exp, AttrDict, convert_to_bracket_file
+from environment.utils import initialize_exp, AttrDict, convert_to_bracket_file, check_numerical_equiv_file
 from environment import build_env
 from add_ons.slurm import init_signal_handler, init_distributed_mode
 from model import build_modules, check_model_params
@@ -13,8 +13,9 @@ np.seterr(all='raise')
 
 
 def main(params):
-    #convert_to_bracket_file("/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test")
+    #convert_to_bracket_file("/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8_exp2/data.prefix.counts.test")
     #exit()
+
 
     init_distributed_mode(params)
     logger = initialize_exp(params)
@@ -23,6 +24,9 @@ def main(params):
     environment.utils.CUDA = not params.cpu
 
     env = build_env(params)
+
+    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
+    #exit()
 
     modules = build_modules(env, params)
     trainer = Trainer(modules, env, params)
@@ -88,7 +92,7 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_eval_spin_hel',
+        'exp_name': 'Test_data_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
         'exp_id': 'test',
         'save_periodic': 0,
@@ -96,15 +100,17 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'max_npt': 8,
+        'max_npt': 6,
         'max_scale': 2,
         'max_terms': 1,
         'max_scrambles': 5,
-        'save_info_scr': False,
+        'save_info_scr': True,
         'int_base': 10,
-        'max_len': 512,
+        'max_len': 2048,
         'canonical_form': True,
         'bracket_tokens': True,
+        'generator_id': 2,
+        'l_scale': 0.75,
 
         # model parameters
         'emb_dim': 512,
@@ -115,14 +121,14 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8_new_alphabet/checkpoint.pth',
-        # 'reload_model': '',
+        # 'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos_new_alphabet/checkpoint.pth',
+        'reload_model': '',
 
         # Trainer param
-        #'export_data': True,
-        'export_data': False,
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test_new_alphabet',
-        # 'reload_data': '',
+        'export_data': True,
+        # 'export_data': False,
+        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test_new_alphabet',
+        'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -138,8 +144,8 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        'eval_only': True,
-        # 'eval_only': False,
+        # 'eval_only': True,
+        'eval_only': False,
         'numerical_check': True,
         'eval_verbose': 2,
         'eval_verbose_print': True,

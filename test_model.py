@@ -6,7 +6,7 @@ The test desired model on a given input expression
 from statistics import mean
 import torch
 from add_ons.slurm import init_signal_handler, init_distributed_mode
-from environment.utils import AttrDict, to_cuda, initialize_exp
+from environment.utils import AttrDict, to_cuda, initialize_exp, convert_sp_forms
 from environment import build_env
 import environment
 from model import build_modules, check_model_params
@@ -15,12 +15,13 @@ import sympy as sp
 from sympy import latex
 
 
-def test_model_expression(environment, module_transfo, input_equation, verbose=True, latex_form=False):
+def test_model_expression(envir, module_transfo, input_equation, params, verbose=True, latex_form=False):
     """
     Test the capacity of the transformer model to resolve a given input
-    :param environment:
+    :param envir:
     :param module_transfo:
     :param input_equation:
+    :param params:
     :param verbose:
     :param latex_form:
     :return:
@@ -32,11 +33,11 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
     encoder.eval()
     decoder.eval()
 
-    f = sp.parse_expr(input_equation, local_dict=environment.func_dict)
+    f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
     f = f.cancel()
-    f_prefix = environment.sympy_to_prefix(f)
+    f_prefix = envir.sympy_to_prefix(f)
     x1_prefix = f_prefix
-    x1 = torch.LongTensor([environment.eos_index] + [environment.word2id[w] for w in x1_prefix] + [environment.eos_index]).view(-1, 1)
+    x1 = torch.LongTensor([envir.eos_index] + [envir.word2id[w] for w in x1_prefix] + [envir.eos_index]).view(-1, 1)
     len1 = torch.LongTensor([len(x1)])
     x1, len1 = to_cuda(x1, len1)
 
@@ -49,8 +50,10 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
     # Beam decoding
     beam_size = params.beam_size
     with torch.no_grad():
-        _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_size, length_penalty=1,
-                                           early_stopping=1, max_len=params.max_len)
+        _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_size,
+                                           length_penalty=params.beam_length_penalty,
+                                           early_stopping=params.beam_early_stopping,
+                                           max_len=params.max_len)
         assert len(beam) == 1
     hypotheses = beam[0].hyp
     assert len(hypotheses) == beam_size
@@ -61,7 +64,6 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
             print(latex(f))
         print("")
 
-
     first_valid_num = None
 
     # Print out the scores and the hypotheses
@@ -69,17 +71,26 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
 
         # parse decoded hypothesis
         ids = sent[1:].tolist()  # decoded token IDs
-        tok = [environment.id2word[wid] for wid in ids]  # convert to prefix
+        tok = [envir.id2word[wid] for wid in ids]  # convert to prefix
 
+        # Parse the identities if required
         try:
-            hyp = environment.prefix_to_infix(tok)  # convert to infix
-            hyp = environment.infix_to_sympy(hyp)  # convert to SymPy
+            hyp = envir.prefix_to_infix(tok)
+            if '&' in tok:
+                prefix_info = tok[tok.index('&'):]
+                info_infix = env.scr_prefix_to_infix(prefix_info)
+            else:
+                info_infix = ''
+
+            # convert to infix
+            hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
 
             # When integrating the symbol
             if params.numerical_check:
-                hyp_mma = sp_to_mma(hyp, params.bracket_tokens)
-                tgt_mma = sp_to_mma(f, params.bracket_tokens)
-                matches = check_numerical_equiv(environment.session, hyp_mma, tgt_mma)
+                hyp_mma = sp_to_mma(hyp, params.bracket_tokens, env.func_dict)
+                f_sp = env.infix_to_sympy(env.prefix_to_infix(env.sympy_to_prefix(f)))
+                tgt_mma = sp_to_mma(f_sp, params.bracket_tokens, env.func_dict)
+                matches = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
             else:
                 matches = None
 
@@ -94,14 +105,14 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
             res = "INVALID PREFIX EXPRESSION"
             hyp = tok
             remain = ""
+            info_infix = ''
 
         if verbose:
             # print result
             if latex_form:
-                print("%.5f  %s  %s %s" % (score, res, hyp, latex(hyp)))
+                print("%.5f  %s %s %s %s" % (score, res, hyp, info_infix, latex(convert_sp_forms(hyp, envir.func_dict))))
             else:
-                print("%.5f  %s  %s %s" % (score, res, hyp, remain))
-
+                print("%.5f  %s %s  %s %s" % (score, res, hyp, info_infix, remain))
 
     if verbose:
         if first_valid_num is None:
@@ -117,9 +128,21 @@ def test_model_expression(environment, module_transfo, input_equation, verbose=T
 if __name__ == '__main__':
 
     # Example with integrating the symbol (don't need to precise the target, we can check it with MMA)
-    input_eq = '(-ab(p1, p2)*ab(p1, p3)**2*ab(p3, p4) - ab(p1, p3)**2*ab(p1, p4)*ab(p2, p3))/(ab(p1, p4)**2*ab(p2, p3)**2 + 2*ab(p1, p4)*ab(p2, p1)*ab(p2, p3)*ab(p4, p3) + ab(p2, p1)**2*ab(p4, p3)**2)'
-    # input_eq = '-(ab(p1,p2)**2*(ab(p1,p2)*sb(p1,p2) + ab(p2,p3)*sb(p2,p3))*sb(p3,p4))/(ab(p1,p3)*ab(p1,p4)*ab(p2,p3)*sb(p1,p2)*sb(p1,p3))'
-    params = AttrDict({
+    input_eq = '(-ab(1, 2)*ab(1, 3)**2*ab(3, 4) - ab(1, 3)**2*ab(1, 4)*ab(2, 3))/(ab(1, 4)**2*ab(2, 3)**2 + 2*ab(1, 4)*ab(2, 1)*ab(2, 3)*ab(4, 3) + ab(2, 1)**2*ab(4, 3)**2)'
+    input_eq = '(ab(1, 2)*ab(2, 3)*ab(4, 1)*sb(1, 2)*sb(2, 3)*sb(3, 4) - ab(1, 3)*ab(2, 1)*ab(2, 4)*sb(1, 2)*sb(3, 2)*sb(3, 4) - ab(1, 3)*ab(2, 3)*ab(4, 1)*sb(1, 3)*sb(3, 2)*sb(3, 4) - ab(1, 4)*ab(2, 1)*ab(2, 3)*sb(1, 2)*sb(2, 3)*sb(3, 4) + ab(2, 3)**2*ab(4, 1)*sb(2, 3)**2*sb(3, 4))/(ab(2, 3)*ab(3, 4)*ab(4, 1)*sb(1, 2)**2*sb(2, 3))'
+    input_eq = '(- ab(1, 3)*ab(2, 1)*ab(2, 4)*sb(1, 2)*sb(3, 2)*sb(3, 4) - ab(1, 3)*ab(2, 3)*ab(4, 1)*sb(1, 3)*sb(3, 2)*sb(3, 4) + ab(2, 3)**2*ab(4, 1)*sb(2, 3)**2*sb(3, 4))/(ab(2, 3)*ab(3, 4)*ab(4, 1)*sb(1, 2)**2*sb(2, 3))'
+    input_eq = '(sb(3,4)**2*ab(3,4)*ab(1,2))/(ab(2,3)*ab(1,4)*sb(1,2)**2)'
+    input_eq = '(ab(3,4)**2*sb(4,2)**2*sb(3,4))/(ab(3,1)**2)'
+    input_eq = '(ab(3,4)*ab(4,3)*sb(4,2)*sb(3,2)*sb(3,4))/(ab(3,1)*ab(4,1))'
+    input_eq = 'sb(3,4)*(ab(1,4)*ab(3,2)+ab(1,3)*ab(2,4))/ab(3,4)'
+    input_eq = '-sb(1,4)*ab(2,1)*(ab(1,4)*ab(3,2)+ab(1,3)*ab(2,4))/(ab(3,4)*ab(2,3)*ab(1,3))'
+    input_eq = '-(ab(1,4)*ab(3,2)*ab(2,1)*sb(1,4))/(ab(3,4)*ab(2,3)*ab(1,3))-(ab(2,4)*ab(1,2)*sb(2,4))/(ab(3,4)*ab(1,3))'
+    input_eq = '-ab(1,2)*(ab(3,1)*sb(1,3)+ab(3,2)*sb(2,3))/(sb(4,3)*ab(3,4)**2)'
+    input_eq = 'ab(1,2)/(sb(4,3)*ab(3,4)*ab(1,3)*sb(1,3)*ab(2,3)*sb(2,3))'
+    input_eq = '-(ab(1,2)*ab(1,4)*sb(4,2))/(ab(3,4)*ab(1,3)*sb(3,2))'
+    #input_eq = '(ab(1,4)*ab(2,1)*sb(1,4))/(ab(3,4)*ab(1,3))-(ab(2,4)*ab(1,2)*sb(2,4))/(ab(3,4)*ab(1,3))'
+    # input_eq = '-ab(1,3)*sb(3,4)**3/(ab(1,4)*sb(1,2)*sb(1,4)*sb(2,4))'
+    parameters = AttrDict({
 
         # Name
         'exp_name': 'Test_eval_spin_hel',
@@ -131,13 +154,16 @@ if __name__ == '__main__':
         # environment parameters
         'env_name': 'char_env',
         'max_npt': 8,
-        'max_scale': 0.5,
+        'max_scale': 2,
         'max_terms': 1,
         'max_scrambles': 5,
-        'save_info_scr': False,
+        'save_info_scr': True,
         'int_base': 10,
-        'max_len': 512,
+        'max_len': 2048,
         'canonical_form': True,
+        'bracket_tokens': True,
+        'generator_id': 2,
+        'l_scale': 0.75,
 
         # model parameters
         'emb_dim': 512,
@@ -148,13 +174,13 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/checkpoint.pth',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/checkpoint.pth',
         # 'reload_model': '',
 
         # Trainer param
         'export_data': False,
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test',
-        # 'reload_data': '',
+        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test',
+        'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -177,7 +203,7 @@ if __name__ == '__main__':
         'beam_eval': True,
         'beam_size': 5,
         'beam_length_penalty': 1,
-        'beam_early_stopping': True,
+        'beam_early_stopping': False,
 
         # SLURM/GPU param
         'cpu': True,
@@ -189,27 +215,41 @@ if __name__ == '__main__':
 
     })
 
-    check_model_params(params)
+    check_model_params(parameters)
 
     # Start the logger
-    init_distributed_mode(params)
-    logger = initialize_exp(params)
+    init_distributed_mode(parameters)
+    logger = initialize_exp(parameters)
     init_signal_handler()
 
-    environment.utils.CUDA = not params.cpu
+    environment.utils.CUDA = not parameters.cpu
 
     # Load the model and environment
-    env = build_env(params)
+    env = build_env(parameters)
 
-    modules = build_modules(env, params)
+    modules = build_modules(env, parameters)
 
     # start the wolfram session
-    if params.numerical_check:
-        session = initialize_numerical_check(params.max_npt, lib_path=params.lib_path)
+    if parameters.numerical_check:
+        session = initialize_numerical_check(parameters.max_npt, lib_path=parameters.lib_path)
         env.session = session
 
-    first_num = test_model_expression(env, modules, input_eq, verbose=True, latex_form=True)
+    first_num = test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
     print(first_num)
 
-    if params.numerical_check:
+    if parameters.numerical_check:
         env.session.stop()
+
+
+# -0.04518  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.04587  NO  ab12*sb34/(ab34*sb12) \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.49420  NO  -sb34/(ab34*sb12**2) - \frac{\left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
+# -0.53409  NO  sb34/(ab34*sb12**2) \frac{\left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
+# -0.54086  NO  -sb34**2/sb12**2 - \frac{\left[ 3 4 \right]^{2}}{\left[ 1 2 \right]^{2}}
+
+
+# -0.04412  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.06149  NO  ab12*sb34/(ab34*sb12) \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.21195  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.24925  NO  -ab12*ab24*sb14*sb34/(ab23*ab34*sb12) - \frac{\langle 1 2 \rangle \langle 2 4 \rangle \left[ 1 4 \right] \left[ 3 4 \right]}{\langle 2 3 \rangle \langle 3 4 \rangle \left[ 1 2 \right]}
+# -0.24979  NO  -ab14*sb14*sb34/(ab34*sb12**2) - \frac{\langle 1 4 \rangle \left[ 1 4 \right] \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
