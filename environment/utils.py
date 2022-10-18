@@ -20,6 +20,8 @@ import subprocess
 import errno
 import signal
 from functools import wraps, partial
+from sympy import Function
+from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv, initialize_numerical_check
 
 
 class LogFormatter:
@@ -223,11 +225,12 @@ def convert_to_momentum(sp_expr, momentum_list):
     return sp_expr
 
 
-def convert_momentum_info(infos, max_range):
+def convert_momentum_info(infos, max_range, skip_bk):
     """
     Read the identity information vector and convert to the momentum list
     :param infos:
     :param max_range:
+    :param skip_bk
     :return:
     """
     list_info_new = []
@@ -235,8 +238,9 @@ def convert_momentum_info(infos, max_range):
     for info in infos:
         info_new = []
         for element in info:
-            for i in range(1, max_range + 1):
-                element = element.replace('{}'.format(i), 'p{}'.format(i))
+            if not(skip_bk and ('ab' in element or 'sb' in element)):
+                for i in range(1, max_range + 1):
+                    element = element.replace('{}'.format(i), 'p{}'.format(i))
             info_new.append(element)
         list_info_new.append(info_new)
 
@@ -290,3 +294,90 @@ def convert_to_bracket_file(prefix_file_path):
                 print("Did {} lines".format(counter))
 
     new_file.close()
+
+
+def check_numerical_equiv_file(prefix_file_path, env, lib_path):
+    """
+    Safeguard check for verifying that all the examples are properly well defined
+    :param prefix_file_path:
+    :param env
+    :param lib_path
+    :return:
+    """
+
+    session = initialize_numerical_check(env.max_npt, lib_path=lib_path)
+
+    print("Reading from {}".format(prefix_file_path))
+
+    out_path = prefix_file_path + '_new_alphabet'
+    new_file = open(out_path, "w")
+
+    counter = 0
+
+    with open(prefix_file_path) as infile:
+        for line in infile:
+            sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
+            mma2 = sp_to_mma(sp2, env.bracket_tokens, env.func_dict)
+            sp1 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[0].split(' ')))
+            mma1 = sp_to_mma(sp1, env.bracket_tokens, env.func_dict)
+
+            matches = check_numerical_equiv(session, mma1, mma2)
+
+            if not matches:
+                print('Example {} did not match'.format(counter))
+
+            counter += 1
+
+            if counter % 1000 == 0:
+                print("Did {} lines".format(counter))
+
+    new_file.close()
+
+
+def convert_sp_forms(sp_expr, func_dict):
+    """
+    Given a sympy form using composite tokens, convert it to the regular sympy form
+    that uses the ab and sb functionals
+    :param sp_expr:
+    :param func_dict:
+    :return:
+    """
+
+    replace_dict = {}
+
+    if isinstance(sp_expr, list):
+        return None
+
+    for symbol in sp_expr.free_symbols:
+        replace_dict.update({symbol: func_dict[symbol.name[0:2]](symbol.name[2], symbol.name[3])})
+
+    return sp_expr.subs(replace_dict)
+
+
+def generate_random_bk(bk_fct, n_points, rng, canonical=False):
+    """Provided with the bracket type, generate a bracket with random momenta"""
+    pi = rng.randint(1, n_points + 1)
+    if canonical:
+        pj = rng.choice([i for i in range(pi+1, n_points + 1)])
+    else:
+        pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
+    return bk_fct(pi, pj)
+
+
+def reorder_expr(hel_expr):
+    """
+    Reorder the arguments of an expression in canonical form
+    Also changes the sign appropriately
+    :param hel_expr:
+    :return:
+    """
+    func_list = list(hel_expr.atoms(Function))
+    replace_dict = {}
+    for fun in func_list:
+        if fun.args[0] > fun.args[1]:
+            new_func = fun.func(fun.args[1], fun.args[0])
+            replace_dict.update({fun: new_func*(-1)})
+
+    return_expr = hel_expr.subs(replace_dict)
+
+    return return_expr

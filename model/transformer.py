@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from environment.utils import timeout
 
 
-N_MAX_POSITIONS = 1024  # maximum input sequence length
+N_MAX_POSITIONS = 2560  # maximum input sequence length
 
 
 logger = getLogger()

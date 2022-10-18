@@ -92,6 +92,8 @@ class CharEnv(object):
         self.save_info_scr = params.save_info_scr
         self.canonical_form = params.canonical_form
         self.bracket_tokens = params.bracket_tokens
+        self.generator_id = params.generator_id
+        self.l_scale = params.l_scale
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -101,7 +103,7 @@ class CharEnv(object):
 
         # Possible constants and variables. The variables used are to denote the momenta.
         # For the constants we use letters to represent the type of identity used
-        self.constants = ['A', 'S', 'M']
+        self.constants = ['S', 'M', 'M+', 'M-', 'ID+', 'ID-']
         self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
             'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
@@ -275,10 +277,17 @@ class CharEnv(object):
 
         # parse children
         parse_list = []
-        for i in range(n_args):
-            if i == 0 or (i < n_args - 1):
-                parse_list.append(op)
-            parse_list += self.sympy_to_prefix(expr.args[i])
+
+        if not (self.bracket_tokens and op in ['ab', 'sb']):
+            for i in range(n_args):
+                if i == 0 or (i < n_args - 1):
+                    parse_list.append(op)
+                parse_list += self.sympy_to_prefix(expr.args[i])
+
+        else:
+            combined_tok = op + str(expr.args[0]) + str(expr.args[1])
+            assert combined_tok in self.special_tokens
+            parse_list += [combined_tok]
 
         return parse_list
 
@@ -342,10 +351,11 @@ class CharEnv(object):
                     next_w = ''
                 out_in += word
                 out_in += next_w
-
+            elif word in self.special_tokens:
+                out_in += word
         return out_in
 
-    @timeout(1000)
+    @timeout(10)
     def gen_hel_ampl(self, rng):
         """
         Generate pairs of (function, primitive).
@@ -356,15 +366,18 @@ class CharEnv(object):
         try:
             # generate an expression and rewrite it,
             # avoid issues in 0 and convert to SymPy
+
             simple_expr = generate_random_amplitude(self.max_npt, rng, max_terms_scale=self.max_scale,
-                                                    max_components=self.max_terms, canonical_form=self.canonical_form)
+                                                    max_components=self.max_terms, l_scale=self.l_scale,
+                                                    canonical_form=self.canonical_form, generator_id=self.generator_id)
 
             simple_expr_env = SpinHelExpr(str(simple_expr))
-            info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr)
+            info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
+                                                     canonical=self.canonical_form)
             simple_expr_env.cancel()
 
             if self.save_info_scr:
-                info_s = convert_momentum_info(info_s, self.max_npt)
+                info_s = convert_momentum_info(info_s, self.max_npt, self.bracket_tokens)
                 prefix_info = self.scr_info_to_prefix(info_s)
             else:
                 prefix_info = None
@@ -372,14 +385,25 @@ class CharEnv(object):
             shuffled_expr = simple_expr_env.sp_expr
 
             # convert back to prefix
-            simple_expr = convert_to_momentum(simple_expr, list(self.variables.values()))
-            simple_prefix = self.sympy_to_prefix(simple_expr)
-            shuffled_expr = convert_to_momentum(shuffled_expr, list(self.variables.values()))
-            shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
+            if self.bracket_tokens:
+                simple_prefix = self.sympy_to_prefix(simple_expr)
+                shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
+            else:
+                simple_expr = convert_to_momentum(simple_expr, list(self.variables.values()))
+                simple_prefix = self.sympy_to_prefix(simple_expr)
+                shuffled_expr = convert_to_momentum(shuffled_expr, list(self.variables.values()))
+                shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
 
             # skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:
                 # logger.info("Rejected Equation as was too long")
+                return None
+
+            # Skip equations that do not simplify
+            num_bk_simple = ''.join(simple_prefix).count('sb') + ''.join(simple_prefix).count('ab')
+            num_bk_shuffle = ''.join(shuffled_prefix).count('sb') + ''.join(shuffled_prefix).count('ab')
+
+            if num_bk_shuffle <= num_bk_simple:
                 return None
 
         except TimeoutError:

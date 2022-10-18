@@ -11,7 +11,7 @@ from logging import getLogger
 
 logger = getLogger()
 
-ZERO_ERROR_POW = 14
+ZERO_ERROR_POW = 12
 
 
 def start_wolfram_session(kernel_path=None, sm_package=True, lib_path=None):

@@ -6,6 +6,7 @@ import numpy as np
 import random
 from itertools import combinations
 from environment.spin_helicity_env import ab, sb, SpinHelExpr
+from environment.utils import reorder_expr, generate_random_bk
 from sympy import latex, Function
 
 
@@ -31,32 +32,17 @@ def parke_taylor(bk, pi, pj, max_label):
     return str_bk(bk, pi, pj) + '**4' + '/(' + str_denom + ')'
 
 
-def generate_random_bk(bk_fct, n_points, rng):
-    """Provided with the bracket type, generate a bracket with random momenta"""
-    pi = rng.randint(1, n_points + 1)
-    pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
-    return bk_fct(pi, pj)
-
-
-def reorder_expr(hel_expr):
+def generate_random_bk_type(n_points, rng, canonical=False):
     """
-    Reorder the arguments of an expression in canonical form
-    Also changes the sign appropriately
-    :param hel_expr:
+    Generate the bracket type at random, along with its arguments
+    :param n_points:
+    :param rng:
+    :param canonical
     :return:
     """
-    func_list = list(hel_expr.atoms(Function))
-    replace_dict = {}
-    swaps = 0
-    for fun in func_list:
-        if fun.args[0] > fun.args[1]:
-            new_func = fun.func(fun.args[1], fun.args[0])
-            replace_dict.update({fun: new_func})
-            swaps += 1
 
-    return_expr = hel_expr.subs(replace_dict) * (-1)**swaps
-
-    return return_expr
+    bk_type = ab if rng.randint(0, 2) == 0 else sb
+    return generate_random_bk(bk_type, n_points, rng, canonical=canonical)
 
 
 def generate_random_fraction(scaling, n_points, max_terms_add, rng, canonical_form):
@@ -108,8 +94,50 @@ def generate_random_fraction(scaling, n_points, max_terms_add, rng, canonical_fo
     return return_expr
 
 
-def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_components=1, gluon_only=False,
-                              str_out=False, verbose=False, canonical_form=False):
+def poisson_power(lambda_scale, rng):
+    """
+    Generate a power to be associated with a given bracket expression
+    :param lambda_scale:
+    :return:
+    """
+
+    result = rng.poisson(lam=lambda_scale)
+
+    return max(1, result)
+
+
+def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, canonical_form):
+    """
+    Generate a random fraction by multiplying with random brackets
+    We choose a given number of brackets for the numerator and denominator
+    We also choose the power with which they should come into the expression
+    :param l_scaling:
+    :param n_points:
+    :param max_terms_add:
+    :param rng:
+    :param canonical_form:
+    :return:
+    """
+
+    n_num = rng.randint(1, max_terms_add + 1)
+    n_denom = rng.randint(1, max_terms_add + 1)
+
+    return_expr = 1
+
+    for i in range(n_num):
+        return_expr *= generate_random_bk_type(n_points, rng, canonical=canonical_form)**poisson_power(l_scaling, rng)
+
+    for j in range(n_denom):
+        return_expr *= 1/(generate_random_bk_type(n_points, rng,
+                                                  canonical=canonical_form))**poisson_power(l_scaling, rng)
+
+    sign = 1 if rng.randint(0, 2) == 0 else -1
+
+    return return_expr * sign
+
+
+def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
+                              verbose=False, canonical_form=False, generator_id=1):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable
@@ -117,10 +145,11 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
     :param rng:
     :param max_terms_scale:
     :param max_components:
-    :param gluon_only:
+    :param l_scale:
     :param str_out:
     :param verbose:
     :param canonical_form:
+    :param generator_id:
     :return:
     """
 
@@ -133,23 +162,20 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
 
     components = 1 if max_components == 1 else rng.randint(1, max_components + 1)
 
-    # Use the Parke Taylor formula if we are interested in amplitudes involving only gluons
-    if (n_pos_h == 2 or n_neg_h == 2) and gluon_only and str_out:
-        bk = 'ab' if rng.randint(0, 2) == 1 else 'sb'
-        pi = rng.randint(1, max_n_points + 1)
-        pj = rng.choice([i for i in range(1, max_n_points+1) if i not in [pi]])
-        return parke_taylor(bk, pi, pj, n_points)
-
     return_expr = 0
 
     # For each individual fraction we generate a new expression. We define the number of legs and little group scaling
     for i in range(components):
-        return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
-                                                canonical_form=canonical_form)
+        if generator_id == 1:
+            return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
+                                                    canonical_form=canonical_form)
+        else:
+            return_expr += generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale*n_points),
+                                                              rng, canonical_form=canonical_form)
     # If we are missing any external momentum in the whole expression then we try again
     if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
             for i in range(1, n_points+1)]):
-        return generate_random_amplitude(max_n_points, rng, max_terms_scale, max_components, gluon_only, str_out,
+        return generate_random_amplitude(max_n_points, rng, max_terms_scale, max_components, l_scale, str_out,
                                          verbose=verbose, canonical_form=canonical_form)
 
     if verbose:
