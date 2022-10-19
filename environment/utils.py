@@ -309,9 +309,6 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
 
     print("Reading from {}".format(prefix_file_path))
 
-    out_path = prefix_file_path + '_new_alphabet'
-    new_file = open(out_path, "w")
-
     counter = 0
 
     with open(prefix_file_path) as infile:
@@ -321,17 +318,18 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
             sp1 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[0].split(' ')))
             mma1 = sp_to_mma(sp1, env.bracket_tokens, env.func_dict)
 
-            matches = check_numerical_equiv(session, mma1, mma2)
+            matches, res_left = check_numerical_equiv(session, mma1, mma2)
 
             if not matches:
+                print('Residue is {}'.format(res_left))
                 print('Example {} did not match'.format(counter))
+                print('Simple expr {}'.format(mma2))
+                print('Shuffled expr {}'.format(mma1))
 
             counter += 1
 
             if counter % 1000 == 0:
                 print("Did {} lines".format(counter))
-
-    new_file.close()
 
 
 def convert_sp_forms(sp_expr, func_dict):
@@ -381,3 +379,56 @@ def reorder_expr(hel_expr):
     return_expr = hel_expr.subs(replace_dict)
 
     return return_expr
+
+
+def get_scaling_expr(spin_hel_expr, func_list):
+    """
+    Given a spinor helicity expression we figure out the number of angle brackets
+    and square brackets in the numerator and denominator
+    :param spin_hel_expr:
+    :param func_list:
+    :return:
+    """
+    if isinstance(spin_hel_expr, sp.Add):
+        expr_f = spin_hel_expr.args[0]
+    else:
+        expr_f = spin_hel_expr
+
+    # Separate out the numerator and the denominator
+    num, denom = sp.fraction(expr_f)
+
+    # To deal with brackets to higher power we replace them by some placeholder value
+    x1 = sp.Symbol('x1')
+    x2 = sp.Symbol('x2')
+    map_dict = {func_list[0]: x1, func_list[1]: x2}
+    repl_rule = {bk: map_dict[bk.func] for bk in expr_f.atoms(sp.Function)}
+    num_subs = num.subs(repl_rule)
+    denom_subs = denom.subs(repl_rule)
+
+    return [sp.total_degree(num_subs, x1), sp.total_degree(num_subs, x2), sp.total_degree(denom_subs, x1),
+            sp.total_degree(denom_subs, x2)]
+
+
+def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=False):
+    """
+    Given the scaling list we generate a random appropriate scaling factor
+    :param scale_list:
+    :param abfunc:
+    :param sbfunc:
+    :param n_points
+    :param rng
+    :param canonical
+    :return:
+    """
+
+    ret_expr = 1
+    for i in range(scale_list[0]):
+        ret_expr *= generate_random_bk(abfunc, n_points, rng, canonical=canonical)
+    for j in range(scale_list[1]):
+        ret_expr *= generate_random_bk(sbfunc, n_points, rng, canonical=canonical)
+    for k in range(scale_list[2]):
+        ret_expr *= 1/generate_random_bk(abfunc, n_points, rng, canonical=canonical)
+    for l in range(scale_list[3]):
+        ret_expr *= 1/generate_random_bk(sbfunc, n_points, rng, canonical=canonical)
+
+    return ret_expr

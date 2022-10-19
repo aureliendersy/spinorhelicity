@@ -5,7 +5,7 @@ Environment used to handle spinor helicity expressions
 import numpy as np
 import random
 import sympy as sp
-from environment.utils import reorder_expr, generate_random_bk
+from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr, random_scale_factor
 from sympy import Function, latex
 
 
@@ -177,7 +177,7 @@ class SpinHelExpr:
 
         # Choose the corresponding identity (we might be adding a new bracket)
         bk_expr_env = SpinHelExpr(str(new_bk), self.n_point)
-        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical)
+        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True)
         bk_expr_env.cancel()
 
         # Choose whether to add the new bracket as <>/ID or ID/<>
@@ -187,18 +187,29 @@ class SpinHelExpr:
         self.sp_expr = self.sp_expr.subs(mul_expr_in, replace_expr*mul_expr_in)
         self.str_expr = str(self.sp_expr)
 
-    def zero_add(self, rng, canonical=False):
+    def zero_add(self, rng, bk_base, sign, canonical=False):
         """ Add zero randomly to an expression"""
 
         # Choose a random term in the expression that contains additive factors
         add_expr = [expr for expr in self.sp_expr.atoms(sp.Add)]
         if len(add_expr) == 0:
-            add_expr_in = add_expr
+            add_expr_in = self.sp_expr
         else:
             add_expr_in = rng.choice(add_expr)
 
-        term_add = rng.choice(add_expr_in.args)
-        pass
+        # Generate a zero identity for the given bracket
+        bk_expr_env = SpinHelExpr(str(bk_base), self.n_point)
+        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True)
+        bk_expr_env.cancel()
+
+        # Get the scaling necessary to correct it
+        scale_list = get_scaling_expr(add_expr_in, [ab, sb])
+        scale_factor = random_scale_factor(scale_list, ab, sb, bk_expr_env.n_point, rng, canonical=canonical)
+
+        add_expr = sign*(bk_base - bk_expr_env.sp_expr) * scale_factor
+
+        self.sp_expr = self.sp_expr.subs(add_expr_in, add_expr_in + add_expr)
+        self.str_expr = str(self.sp_expr)
 
     def together(self):
         """Join the fractions"""
@@ -222,20 +233,20 @@ class SpinHelExpr:
 
         return rdm_fct
 
-    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False):
+    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False, reduced=False):
         """ Choose a random number of scrambling moves """
         if rng is None:
             rng = np.random.RandomState()
         scr_num = rng.randint(1, max_scrambles + 1)
         if out_info:
             if canonical:
-                info_s = self.scramble_canonical(scr_num, rng, verbose=verbose, out_info=True)
+                info_s = self.scramble_canonical(scr_num, rng, verbose=verbose, out_info=True, reduced=reduced)
             else:
                 info_s = self.scramble(scr_num, rng, verbose=verbose, out_info=True)
             return info_s
         else:
             if canonical:
-                self.scramble_canonical(scr_num, rng, verbose=verbose)
+                self.scramble_canonical(scr_num, rng, verbose=verbose, reduced=reduced)
             else:
                 self.scramble(scr_num, rng, verbose=verbose)
 
@@ -279,7 +290,7 @@ class SpinHelExpr:
         if out_info:
             return info_s
 
-    def scramble_canonical(self, num_scrambles, rng=None, verbose=False, out_info=False):
+    def scramble_canonical(self, num_scrambles, rng=None, verbose=False, out_info=False, reduced=False):
         """Perform a scrambling procedure where the expressions are kept in canonical form at all times"""
         info_s = []
         if rng is None:
@@ -289,7 +300,10 @@ class SpinHelExpr:
             bk = rdm_bracket.func.__name__
             args = list(rdm_bracket.args)
 
-            act_num = rng.randint(1, 5)
+            if reduced:
+                act_num = rng.randint(1, 4)
+            else:
+                act_num = rng.randint(1, 6)
 
             # Apply the Schouten identity where we randomly select the other momenta (avoid null brackets)
             if act_num == 1:
@@ -325,7 +339,6 @@ class SpinHelExpr:
                     print('Using Momentum conservation - on {} with arg{}'.format(str(rdm_bracket), arg3))
 
             elif act_num == 4:
-
                 # Choose the new random bracket to add
                 bk_type = ab if rng.randint(0, 2) == 0 else sb
                 new_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
@@ -333,6 +346,15 @@ class SpinHelExpr:
                 tok = 'ID-' if order_bk == 0 else 'ID+'
                 self.identity_mul(rng, new_bk, order_bk, canonical=True)
                 info_s.append([tok, str(new_bk)])
+
+            elif act_num == 5:
+                # Choose the new random bracket to use as a base
+                bk_type = ab if rng.randint(0, 2) == 0 else sb
+                base_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
+                sign_bk = rng.randint(0, 2)
+                tok = 'Z-' if sign_bk == 0 else 'Z+'
+                self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), canonical=True)
+                info_s.append([tok, str(base_bk)])
 
         if out_info:
             return info_s

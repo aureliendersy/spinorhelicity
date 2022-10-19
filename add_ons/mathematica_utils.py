@@ -11,7 +11,7 @@ from logging import getLogger
 
 logger = getLogger()
 
-ZERO_ERROR_POW = 12
+ZERO_ERROR_POW = 9
 
 
 def start_wolfram_session(kernel_path=None, sm_package=True, lib_path=None):
@@ -164,6 +164,7 @@ def sp_to_mma_single_token(sp_expr):
 
     # If we did not get enough momenta show it
     if n_dep < 4:
+        logger.error(str(sp_expr))
         logger.error("Got an expression which depends on less than 4 momenta")
 
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
@@ -189,11 +190,14 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
 
     res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
 
-    valid = res_diff < 10**(-ZERO_ERROR_POW)
+    try:
+        valid = res_diff < 10**(-ZERO_ERROR_POW)
+    except:
+        return False, res_diff
 
     if not valid:
         res_add = session.evaluate(wlexpr('Abs[N[(({})+({}))]]'.format(mma_hyp, mma_tgt)))
         if res_add < 10**(-ZERO_ERROR_POW):
             logger.info("We got the wrong overall sign")
 
-    return valid
+    return valid, res_diff

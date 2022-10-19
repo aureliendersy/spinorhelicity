@@ -103,7 +103,7 @@ class CharEnv(object):
 
         # Possible constants and variables. The variables used are to denote the momenta.
         # For the constants we use letters to represent the type of identity used
-        self.constants = ['S', 'M', 'M+', 'M-', 'ID+', 'ID-']
+        self.constants = ['S', 'M', 'M+', 'M-', 'ID+', 'ID-', 'Z+', 'Z-']
         self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
             'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
@@ -361,21 +361,25 @@ class CharEnv(object):
         Generate pairs of (function, primitive).
         Start by generating a random function f, and use SymPy to compute F.
         """
-        simple_expr = None
 
         try:
-            # generate an expression and rewrite it,
-            # avoid issues in 0 and convert to SymPy
-
+            # Generate a simple spinor helicity expression
             simple_expr = generate_random_amplitude(self.max_npt, rng, max_terms_scale=self.max_scale,
                                                     max_components=self.max_terms, l_scale=self.l_scale,
                                                     canonical_form=self.canonical_form, generator_id=self.generator_id)
 
+            # Convert to env and scramble
             simple_expr_env = SpinHelExpr(str(simple_expr))
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
                                                      canonical=self.canonical_form)
             simple_expr_env.cancel()
 
+            # If we the scrambled expression drops a momentum then we discard it from the training set
+            if any([i not in np.array([list(f.args) for f in simple_expr_env.sp_expr.atoms(sp.Function)]).flatten()
+                    for i in range(1, simple_expr_env.n_point + 1)]):
+                return None
+
+            # Save the identity information
             if self.save_info_scr:
                 info_s = convert_momentum_info(info_s, self.max_npt, self.bracket_tokens)
                 prefix_info = self.scr_info_to_prefix(info_s)
