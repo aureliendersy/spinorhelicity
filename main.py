@@ -25,8 +25,8 @@ def main(params):
 
     env = build_env(params)
 
-    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
-    #exit()
+    # check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
+    # exit()
 
     modules = build_modules(env, params)
     trainer = Trainer(modules, env, params)
