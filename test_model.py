@@ -6,7 +6,7 @@ The test desired model on a given input expression
 from statistics import mean
 import torch
 from add_ons.slurm import init_signal_handler, init_distributed_mode
-from environment.utils import AttrDict, to_cuda, initialize_exp, convert_sp_forms
+from environment.utils import AttrDict, to_cuda, initialize_exp, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
 from model import build_modules, check_model_params
@@ -34,6 +34,8 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
     decoder.eval()
 
     f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
+    if params.canonical_form:
+        f = reorder_expr(f)
     f = f.cancel()
     f_prefix = envir.sympy_to_prefix(f)
     x1_prefix = f_prefix
@@ -90,7 +92,7 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
                 hyp_mma = sp_to_mma(hyp, params.bracket_tokens, env.func_dict)
                 f_sp = env.infix_to_sympy(env.prefix_to_infix(env.sympy_to_prefix(f)))
                 tgt_mma = sp_to_mma(f_sp, params.bracket_tokens, env.func_dict)
-                matches = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
+                matches, _ = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
             else:
                 matches = None
 
@@ -139,9 +141,12 @@ if __name__ == '__main__':
     input_eq = '-(ab(1,4)*ab(3,2)*ab(2,1)*sb(1,4))/(ab(3,4)*ab(2,3)*ab(1,3))-(ab(2,4)*ab(1,2)*sb(2,4))/(ab(3,4)*ab(1,3))'
     input_eq = '-ab(1,2)*(ab(3,1)*sb(1,3)+ab(3,2)*sb(2,3))/(sb(4,3)*ab(3,4)**2)'
     input_eq = 'ab(1,2)/(sb(4,3)*ab(3,4)*ab(1,3)*sb(1,3)*ab(2,3)*sb(2,3))'
-    input_eq = '-(ab(1,2)*ab(1,4)*sb(4,2))/(ab(3,4)*ab(1,3)*sb(3,2))'
+    input_eq = '-(ab(1,2)*ab(1,4)*sb(2,4))/(ab(3,4)*ab(1,3)*sb(2,3))'
     #input_eq = '(ab(1,4)*ab(2,1)*sb(1,4))/(ab(3,4)*ab(1,3))-(ab(2,4)*ab(1,2)*sb(2,4))/(ab(3,4)*ab(1,3))'
     # input_eq = '-ab(1,3)*sb(3,4)**3/(ab(1,4)*sb(1,2)*sb(1,4)*sb(2,4))'
+    input_eq = "((-(ab(1,4)*ab(2,1)*ab(2,3)*sb(1,2)*sb(2,3)) + ab(1,2)*ab(2,3)*ab(4,1)*sb(1,2)*sb(2,3) + ab(2,3)**2*ab(4,1)*sb(2,3)**2 - ab(1,3)*ab(2,1)*ab(2,4)*sb(1,2)*sb(3,2) - ab(1,3)*ab(2,3)*ab(4,1)*sb(1,3)*sb(3,2))*sb(3,4))/(ab(2,3)*ab(3,4)*ab(4,1)*sb(1,2)**2*sb(2,3))"
+    #input_eq = 'ab(1,2)*sb(3,4)**2/(ab(1,4)*sb(1,2)*sb(1,4))'
+    #input_eq = '(ab(1,2)**2*(-(ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4)) - ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) + ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,5)*sb(3,4)**2 - ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,3)*ab(2,3)*sb(1,2)**2*sb(2,3)**2*sb(3,5) + ab(1,2)*ab(1,3)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)**2*sb(3,5) + 2*ab(1,2)*ab(1,3)*ab(2,3)**2*sb(1,2)*sb(2,3)**3*sb(3,5) + ab(1,3)**2*ab(2,3)**2*sb(1,3)*sb(2,3)**3*sb(3,5) + ab(1,3)*ab(2,3)**3*sb(2,3)**4*sb(3,5) + ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(2,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) + ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)**2*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5)))/(ab(1,3)*ab(1,4)*ab(1,5)*ab(2,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*(ab(1,2)*sb(1,2) + ab(1,3)*sb(1,3) + ab(2,3)*sb(2,3))*(ab(2,3)*sb(2,3) + ab(2,4)*sb(2,4) + ab(3,4)*sb(3,4)))'
     parameters = AttrDict({
 
         # Name
@@ -153,7 +158,7 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'max_npt': 8,
+        'max_npt': 6,
         'max_scale': 2,
         'max_terms': 1,
         'max_scrambles': 5,
@@ -174,7 +179,7 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/checkpoint.pth',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/checkpoint.pth',
         # 'reload_model': '',
 
         # Trainer param
@@ -201,7 +206,7 @@ if __name__ == '__main__':
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 5,
+        'beam_size': 20,
         'beam_length_penalty': 1,
         'beam_early_stopping': False,
 
@@ -240,16 +245,3 @@ if __name__ == '__main__':
     if parameters.numerical_check:
         env.session.stop()
 
-
-# -0.04518  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.04587  NO  ab12*sb34/(ab34*sb12) \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.49420  NO  -sb34/(ab34*sb12**2) - \frac{\left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
-# -0.53409  NO  sb34/(ab34*sb12**2) \frac{\left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
-# -0.54086  NO  -sb34**2/sb12**2 - \frac{\left[ 3 4 \right]^{2}}{\left[ 1 2 \right]^{2}}
-
-
-# -0.04412  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.06149  NO  ab12*sb34/(ab34*sb12) \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.21195  NO  -ab12*sb34/(ab34*sb12) - \frac{\langle 1 2 \rangle \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.24925  NO  -ab12*ab24*sb14*sb34/(ab23*ab34*sb12) - \frac{\langle 1 2 \rangle \langle 2 4 \rangle \left[ 1 4 \right] \left[ 3 4 \right]}{\langle 2 3 \rangle \langle 3 4 \rangle \left[ 1 2 \right]}
-# -0.24979  NO  -ab14*sb14*sb34/(ab34*sb12**2) - \frac{\langle 1 4 \rangle \left[ 1 4 \right] \left[ 3 4 \right]}{\langle 3 4 \rangle \left[ 1 2 \right]^{2}}
