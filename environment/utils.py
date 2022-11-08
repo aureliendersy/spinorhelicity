@@ -315,7 +315,7 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
         for line in infile:
             sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
             mma2 = sp_to_mma(sp2, env.bracket_tokens, env.func_dict)
-            sp1 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[0].split(' ')))
+            sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
             mma1 = sp_to_mma(sp1, env.bracket_tokens, env.func_dict)
 
             matches, res_left = check_numerical_equiv(session, mma1, mma2)
@@ -328,7 +328,7 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
 
             counter += 1
 
-            if counter % 1000 == 0:
+            if counter % 1 == 0:
                 print("Did {} lines".format(counter))
 
 
@@ -407,6 +407,34 @@ def get_scaling_expr(spin_hel_expr, func_list):
 
     return [sp.total_degree(num_subs, x1), sp.total_degree(num_subs, x2), sp.total_degree(denom_subs, x1),
             sp.total_degree(denom_subs, x2)]
+
+
+def get_helicity_expr(spin_hel_exp, func_list):
+    """
+    Get the total helicity by looking at its little group scaling
+    :param spin_hel_exp:
+    :param func_list:
+    :return:
+    """
+
+    x1 = sp.Symbol('x1')
+    map_dict = {func_list[0]: x1, func_list[1]: 1/x1}
+    repl_rule = {bk: map_dict[bk.func]*bk for bk in spin_hel_exp.atoms(sp.Function)}
+    scale_expr = spin_hel_exp.subs(repl_rule)
+    try:
+        return sp.total_degree(x1**100000*sp.cancel(scale_expr/spin_hel_exp), x1)-100000
+    except:
+        return 'Undefined'
+
+
+def get_n_point(spin_hel_exp):
+    """
+    Get the n point dependence of an amplitude
+    :param spin_hel_exp:
+    :return:
+    """
+    brackets = list(spin_hel_exp.free_symbols)
+    return max(set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets]))
 
 
 def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=False):
