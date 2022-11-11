@@ -420,10 +420,19 @@ def get_helicity_expr(spin_hel_exp, func_list):
     x1 = sp.Symbol('x1')
     map_dict = {func_list[0]: x1, func_list[1]: 1/x1}
     repl_rule = {bk: map_dict[bk.func]*bk for bk in spin_hel_exp.atoms(sp.Function)}
+    repl_rule_num = {bk: np.random.random_sample() for bk in spin_hel_exp.atoms(sp.Function)}
     scale_expr = spin_hel_exp.subs(repl_rule)
+    res_num = (sp.log((scale_expr / spin_hel_exp).subs(repl_rule_num)) / sp.log(x1)).subs(
+        {x1: np.random.random_sample()})
     try:
-        return sp.total_degree(x1**100000*sp.cancel(scale_expr/spin_hel_exp), x1)-100000
+        int_res = round(res_num)
+
     except:
+        return 'Undefined'
+
+    if abs(int_res - res_num) < 10**(-8):
+        return int_res
+    else:
         return 'Undefined'
 
 

@@ -205,9 +205,15 @@ class SpinHelExpr:
         # Get the scaling necessary to correct it
         scale_list = get_scaling_expr(add_expr_in, [ab, sb])
         if type(bk_base).__name__ == 'ab':
-            scale_list[0] = scale_list[0] - 1
+            if scale_list[0] == 0:
+                scale_list[2] = scale_list[2] + 1
+            else:
+                scale_list[0] = scale_list[0] - 1
         elif type(bk_base).__name__ == 'sb':
-            scale_list[1] = scale_list[1] - 1
+            if scale_list[1] == 0:
+                scale_list[3] = scale_list[3] + 1
+            else:
+                scale_list[1] = scale_list[1] - 1
         else:
             raise TypeError
         scale_factor = random_scale_factor(scale_list, ab, sb, bk_expr_env.n_point, rng, canonical=canonical)
