@@ -413,7 +413,7 @@ class TransformerModel(nn.Module):
 
         return generated[:cur_len], gen_len
 
-    @timeout(10)
+    @timeout(1000)
     def generate_beam(self, src_enc, src_len, beam_size, length_penalty, early_stopping, max_len=200):
         """
         Decode a sentence given initial start.

@@ -33,7 +33,12 @@ def idx_to_sp(env, idx, return_infix=False, return_info=False):
 
     except InvalidPrefixExpression:
         return None
-    eq = sp.S(infix, locals=env.local_dict)
+
+    # In case the parser fails (e.g for expressions that are too long)
+    try:
+        eq = sp.S(infix, locals=env.local_dict)
+    except :
+        return None
     if return_info:
         eq = [eq, info_infix]
     return (eq, infix) if return_infix else eq
@@ -415,7 +420,7 @@ class Evaluator(object):
                     # if the hypothesis is correct, and we did not find a correct one before
                     is_valid = gen['is_valid']
                     if is_valid and not valid[i]:
-                        n_valid[nb_ops[i], j] += 1  # Seems fishy as then we take the sum for the final log
+                        n_valid[nb_ops[i], j] += 1
                         valid[i] = 1
 
                     # update beam log

@@ -8,6 +8,8 @@ from wolframclient.evaluation import WolframLanguageSession
 from wolframclient.language import wl, wlexpr
 from wolframclient.serializers import export
 from logging import getLogger
+from diophantine import solve as diophantine_solve
+import random
 
 logger = getLogger()
 
@@ -96,6 +98,86 @@ def initialize_numerical_check(npt_max, kernel_path=None, sm_package=True, lib_p
         generate_random_momenta(session, i, verbose=verbose)
 
     return session
+
+
+def initialize_solver_session(kernel_path=None):
+    session = start_wolfram_session(kernel_path=kernel_path)
+    return session
+
+
+def solve_diophantine_system(n_points, coefficients, session):
+    """
+    Wrapper for choosing whether to solve the equation in Mathematica or python
+    :param n_points:
+    :param coefficients:
+    :param session:
+    :return:
+    """
+
+    # Check if we have the correct number of coefficients fed
+    assert len(coefficients) == n_points + 1
+
+    eqvar = ["a{}{}".format(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]\
+            + ["b{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)]
+
+    if all(coeffs == 0 for coeffs in coefficients):
+        return [0 for i in range(len(eqvar))]
+
+    if coefficients[0] == 0 and any(coeff > 0 for coeff in coefficients[1:]):
+        return None
+
+    if session == 'NotRequired':
+        return solve_diophantine_system_python(coefficients, eqvar)
+    else:
+        return solve_diophantine_system_mma(coefficients, session, eqvar)
+
+
+def solve_diophantine_system_python(coefficients, eqvar):
+
+    mass_dim = [1 for i in range(len(eqvar))]
+    lg_eqs = [list(np.array([1 if 'a' in vara and str(i+1) in vara  else 0 for vara in eqvar]) + np.array([-1 if 'b' in varb and str(i+1) in varb else 0 for varb in eqvar])) for i in range(len(coefficients[1:]))]
+    a_matrix = sp.Matrix([mass_dim] + lg_eqs)
+    b_matrix = sp.Matrix(coefficients)
+    sol_random = random.choice(diophantine_solve(a_matrix, b_matrix))
+
+    return [sol_random[i, 0] for i in range(len(eqvar))]
+
+
+def solve_diophantine_system_mma(coefficients, session, eqvar):
+    """
+    Call the Mathematica Kernel to solve the equation
+    Coefficients are of the form (mass dimension, Little group scaling coefficients)
+    :param coefficients:
+    :param session:
+    :param eqvar:
+    :return:
+    """
+
+    eqvarstr = '{' + ','.join(eqvar) + '}'
+    mass_dim_eq = '+'.join(eqvar) + '==' + str(coefficients[0])
+    lg_eqs = ['+'.join([vara for vara in eqvar if 'a' in vara and str(i+1) in vara]) + '-' + '-'.join([varb for varb in eqvar if 'b' in varb and str(i+1) in varb]) + '==' + str(coeff) for i, coeff in enumerate(coefficients[1:])]
+
+    systemstr = '{' + ','.join([mass_dim_eq] + lg_eqs) + '}'
+
+    if coefficients[0] < 10:
+        # For a truly random solution of the equation. Not too expensive if we don't have a lot of brackets
+        commandstr = 'Check[RandomChoice[Solve[{}, {}, NonNegativeIntegers]][[;; , -1]],"No"]//Quiet'.format(systemstr, eqvarstr)
+
+    else:
+        # For a fast solution. Not always random anymore but necessary if we have to solve a system with too many sols
+        commandstr = 'Check[FindInstance[{}, {}, NonNegativeIntegers, RandomSeeding -> Automatic][[1, ;; , -1]],"No"]//Quiet'.format(systemstr, eqvarstr)
+
+    if session is None:
+        session = initialize_solver_session()
+        resultsystem = session.evaluate(wlexpr(commandstr))
+        end_wolfram_session(session)
+    else:
+        resultsystem = session.evaluate(wlexpr(commandstr))
+
+    if resultsystem == "No":
+        return None
+
+    return resultsystem
 
 
 def sp_to_mma(sp_expr, bracket_tokens=False, func_dict=None):

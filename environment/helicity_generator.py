@@ -5,9 +5,9 @@ File containing the necessary functions for the generation of spinor helicity am
 import numpy as np
 import random
 from itertools import combinations
-from environment.spin_helicity_env import ab, sb, SpinHelExpr
+from environment.bracket_env import ab, sb
 from environment.utils import reorder_expr, generate_random_bk
-from sympy import latex, Function
+from sympy import latex, Function, sympify
 
 
 def dual_partition(nint):
@@ -106,7 +106,7 @@ def poisson_power(lambda_scale, rng):
     return max(1, result)
 
 
-def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, canonical_form):
+def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, canonical_form, zero_allowed=True):
     """
     Generate a random fraction by multiplying with random brackets
     We choose a given number of brackets for the numerator and denominator
@@ -116,10 +116,15 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
     :param max_terms_add:
     :param rng:
     :param canonical_form:
+    :param zero_allowed
     :return:
     """
 
-    n_num = rng.randint(1, max_terms_add + 1)
+    n_num = rng.randint(0 if zero_allowed else 1, max_terms_add + 1)
+
+    if n_num == 0:
+        return sympify(0)
+
     n_denom = rng.randint(1, max_terms_add + 1)
 
     return_expr = 1
@@ -136,12 +141,12 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
     return return_expr * sign
 
 
-def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
+def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
                               verbose=False, canonical_form=False, generator_id=1):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable
-    :param max_n_points:
+    :param npt_list:
     :param rng:
     :param max_terms_scale:
     :param max_components:
@@ -155,10 +160,11 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
 
     if rng is None:
         rng = np.random.RandomState()
-    n_points = 4 if max_n_points == 4 else rng.randint(4, max_n_points + 1)
+    n_points = rng.choice(npt_list)
 
-    n_pos_h = 2 if n_points == 4 else rng.randint(2, n_points-1)
-    n_neg_h = n_points-n_pos_h
+    if generator_id == 1:
+        n_pos_h = 2 if n_points == 4 else rng.randint(2, n_points-1)
+        n_neg_h = n_points-n_pos_h
 
     components = 1 if max_components == 1 else rng.randint(1, max_components + 1)
 
@@ -173,27 +179,16 @@ def generate_random_amplitude(max_n_points, rng=None, max_terms_scale=1, max_com
             return_expr += generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale*n_points),
                                                               rng, canonical_form=canonical_form)
     # If we are missing any external momentum in the whole expression then we try again
-    if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
+    # Do this only if there is any ambiguity
+    if len(npt_list) > 1 and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
             for i in range(1, n_points+1)]):
-        return generate_random_amplitude(max_n_points, rng, max_terms_scale, max_components, l_scale, str_out,
+        return generate_random_amplitude(npt_list, rng, max_terms_scale, max_components, l_scale, str_out,
                                          verbose=verbose, canonical_form=canonical_form)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))
 
     if str_out:
-        return str(return_expr)
+        return str(return_expr), n_points
     else:
-        return return_expr
-
-
-if __name__ == '__main__':
-
-    expr1 = SpinHelExpr(generate_random_amplitude(7, str_out=True, verbose=True))
-    print(expr1)
-    print(latex(expr1))
-    expr1.random_scramble(max_scrambles=5, verbose=True)
-    expr1.cancel()
-    print(expr1)
-    print(latex(expr1))
-
+        return return_expr, n_points

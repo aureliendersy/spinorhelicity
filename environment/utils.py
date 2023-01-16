@@ -354,7 +354,7 @@ def convert_sp_forms(sp_expr, func_dict):
 
 def generate_random_bk(bk_fct, n_points, rng, canonical=False):
     """Provided with the bracket type, generate a bracket with random momenta"""
-    pi = rng.randint(1, n_points + 1)
+    pi = rng.randint(1, n_points if canonical else n_points+1)
     if canonical:
         pj = rng.choice([i for i in range(pi+1, n_points + 1)])
     else:
@@ -407,6 +407,55 @@ def get_scaling_expr(spin_hel_expr, func_list):
 
     return [sp.total_degree(num_subs, x1), sp.total_degree(num_subs, x2), sp.total_degree(denom_subs, x1),
             sp.total_degree(denom_subs, x2)]
+
+
+def get_scaling_expr_detail(spin_hel_expr, func_list, n_point):
+    """
+        Given a spinor helicity expression we figure out the little group scaling
+        for each momenum along with the mass dimension. Return it for the
+        numerator and denominator as two vectors, starting with the mass dimension
+        :param spin_hel_expr:
+        :param func_list:
+        :param n_point:
+        :return:
+        """
+
+    if isinstance(spin_hel_expr, sp.Add):
+        expr_f = spin_hel_expr.args[0]
+    else:
+        expr_f = spin_hel_expr
+
+    # Separate out the numerator and the denominator
+    num, denom = sp.fraction(expr_f)
+
+    return get_lg_ms(num, func_list, n_point), get_lg_ms(denom, func_list, n_point)
+
+
+def get_lg_ms(in_expr, func_list, n_point):
+    """
+    Get the mass dimension along with the little group scaling of an expression
+    :param in_expr:
+    :param func_list:
+    :param n_point:
+    :return:
+    """
+
+    # To deal with brackets to higher power we replace them by some placeholder value
+    xvars = [sp.Symbol('x{}'.format(i + 1)) for i in range(n_point)]
+    map_dict_ab = {func_list[0](i + 1, j + 1): xvars[i] * xvars[j] for i in range(n_point) for j in range(n_point)}
+    map_dict_sb = {func_list[1](i + 1, j + 1): 1 / (xvars[i] * xvars[j]) for i in range(n_point) for j in
+                   range(n_point)}
+
+    ms = sp.Symbol('ms')
+    dict_mass_scale = {bk: ms for bk in in_expr.atoms(sp.Function)}
+
+    expr_subs = in_expr.subs(map_dict_ab).subs(map_dict_sb)
+    expr_subs_ms = in_expr.subs(dict_mass_scale)
+
+    lg_degrees = [sp.total_degree(sp.fraction(expr_subs)[0], xvar) - sp.total_degree(sp.fraction(expr_subs)[1], xvar) for xvar in xvars]
+    expr_ms = sp.total_degree(expr_subs_ms, ms)
+
+    return [expr_ms] + lg_degrees
 
 
 def get_helicity_expr(spin_hel_exp, func_list):
@@ -467,5 +516,27 @@ def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=Fal
         ret_expr *= 1/generate_random_bk(abfunc, n_points, rng, canonical=canonical)
     for l in range(scale_list[3]):
         ret_expr *= 1/generate_random_bk(sbfunc, n_points, rng, canonical=canonical)
+
+    return ret_expr
+
+
+def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
+    """
+        Given a list of factors build the correct spin helicity expression
+        Assumes canonical form already
+    :param scale_list:
+    :param abfunc:
+    :param sbfunc:
+    :param n_points:
+    :return:
+    """
+
+    bk_list = [abfunc(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]\
+            + [sbfunc(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]
+
+    ret_expr = 1
+
+    for i, coeff in enumerate(scale_list):
+        ret_expr = ret_expr * bk_list[i]**coeff
 
     return ret_expr

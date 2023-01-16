@@ -7,7 +7,7 @@ from model import build_modules, check_model_params
 import environment
 from training.trainer import Trainer
 from training.evaluator import Evaluator
-from add_ons.mathematica_utils import initialize_numerical_check, end_wolfram_session
+from add_ons.mathematica_utils import initialize_numerical_check, end_wolfram_session, initialize_solver_session
 
 np.seterr(all='raise')
 
@@ -15,7 +15,6 @@ np.seterr(all='raise')
 def main(params):
     #convert_to_bracket_file("/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8_exp2/data.prefix.counts.test")
     #exit()
-
 
     init_distributed_mode(params)
     logger = initialize_exp(params)
@@ -25,8 +24,8 @@ def main(params):
 
     env = build_env(params)
 
-    # check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
-    # exit()
+    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix.counts', env, params.lib_path)
+    #exit()
 
     modules = build_modules(env, params)
     trainer = Trainer(modules, env, params)
@@ -100,7 +99,7 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'max_npt': 6,
+        'npt_list': [5],
         'max_scale': 2,
         'max_terms': 1,
         'max_scrambles': 5,
@@ -111,6 +110,7 @@ if __name__ == '__main__':
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
+        'numerator_only': True,
 
         # model parameters
         'emb_dim': 512,
@@ -121,13 +121,13 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        # 'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos_new_alphabet/checkpoint.pth',
+        # 'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/checkpoint.pth',
         'reload_model': '',
 
         # Trainer param
         'export_data': True,
         # 'export_data': False,
-        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.valid_new_alphabet,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8-infos/data.prefix.counts.test_new_alphabet',
+        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid',
         'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
@@ -158,11 +158,13 @@ if __name__ == '__main__':
         'cpu': True,
         'local_rank': -1,
         'master_port': -1,
-        'num_workers': 1,
+        'num_workers': 2,
         'debug_slurm': False,
         'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
-
+        #'mma_path': 'NotRequired',
+        'mma_path': None,
     })
 
     check_model_params(parameters)
     main(parameters)
+

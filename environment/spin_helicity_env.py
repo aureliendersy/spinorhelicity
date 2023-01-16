@@ -3,36 +3,14 @@ Environment used to handle spinor helicity expressions
 """
 
 import numpy as np
-import random
+import random, time
 import sympy as sp
-from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr, random_scale_factor
+from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr,\
+    random_scale_factor, get_scaling_expr_detail, build_scale_factor
 from sympy import Function, latex
-
-
-class ab(Function):
-    """Angle Bracket class"""
-    def _latex(self, printer, exp=1):
-        """Overwriting the latex outputs to get something nicer"""
-        a, b = [printer._print(i) for i in self.args]
-        a = a.replace('p_{', "").replace('}', "")
-        b = b.replace('p_{', "").replace('}', "")
-        if exp == 1:
-            return r"\langle %s %s \rangle" % (a, b)
-        else:
-            return r"\langle %s %s \rangle^{%s}" % (a, b, exp)
-
-
-class sb(Function):
-    """Square Bracket class"""
-    def _latex(self, printer, exp=1):
-        """Overwriting the latex outputs to get something nicer"""
-        a, b = [printer._print(i) for i in self.args]
-        a = a.replace('p_{', "").replace('}', "")
-        b = b.replace('p_{', "").replace('}', "")
-        if exp == 1:
-            return r"\left[ %s %s \right]" % (a, b)
-        else:
-            return r"\left[ %s %s \right]^{%s}" % (a, b, exp)
+from environment.helicity_generator import generate_random_fraction_unbounded
+from add_ons.mathematica_utils import solve_diophantine_system
+from environment.bracket_env import ab, sb
 
 
 class SpinHelExpr:
@@ -98,7 +76,7 @@ class SpinHelExpr:
         self.sp_expr = self.sp_expr.subs(self.func_dict[bk](pi, pj)*self.func_dict[bk](pk, pl), ret_expr)
         self.str_expr = str(self.sp_expr)
 
-    def schouten2(self, bk, pi, pj, pk, pl, canonical=False):
+    def schouten2(self, bk, pi, pj, pk, pl, canonical=False, numerator_only=False):
         """ Apply the Schouten to a selected pair of two variables
         e.g apply it to <1,2> where the pattern has to be explicitly present in the expression"""
 
@@ -108,7 +86,12 @@ class SpinHelExpr:
         if canonical:
             ret_expr = reorder_expr(ret_expr)
 
-        self.sp_expr = self.sp_expr.subs(self.func_dict[bk](pi, pj), ret_expr)
+        if numerator_only:
+            num, denom = sp.fraction(self.sp_expr)
+            num = num.subs(self.func_dict[bk](pi, pj), ret_expr)
+            self.sp_expr = num/denom
+        else:
+            self.sp_expr = self.sp_expr.subs(self.func_dict[bk](pi, pj), ret_expr)
         self.str_expr = str(self.sp_expr)
 
     def momentum(self, pi, pj, pk, max_label):
@@ -126,7 +109,7 @@ class SpinHelExpr:
         self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
         self.str_expr = str(self.sp_expr)
 
-    def momentum2(self, bk, pi, pj, pk, canonical=False):
+    def momentum2(self, bk, pi, pj, pk, canonical=False, numerator_only=False):
         """Implement momentum conservation on the given pattern
         For example we use <1,2> = - <1,4>[4,3]/[2,3] if we have 4 labels at most
         Can have pi==pk which instead implies <1,2> = - <1,3>[3,1]/[2,1] - <1,4>[4,1]/[2,1]"""
@@ -142,10 +125,16 @@ class SpinHelExpr:
 
         replace_expr = self.func_dict['ab'](pi, pj) if bk == 'ab' else self.func_dict['sb'](pj, pk)
 
-        self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
+        if numerator_only:
+            num, denom = sp.fraction(self.sp_expr)
+            num = num.subs(replace_expr, ret_expr)
+            self.sp_expr = num/denom
+        else:
+            self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
+
         self.str_expr = str(self.sp_expr)
 
-    def momentum2b(self, bk, pi, pj, pk, canonical=False):
+    def momentum2b(self, bk, pi, pj, pk, canonical=False, numerator_only=False):
         """Implement momentum conservation on the given pattern in combination with antisymmetry
         For example we use <1,2> =  <2,4>[4,3]/[1,3] if we have 4 labels at most
         Can have pi==pk which instead implies <1,2> = - <1,3>[3,1]/[2,1] - <1,4>[4,1]/[2,1]"""
@@ -161,71 +150,105 @@ class SpinHelExpr:
 
         replace_expr = self.func_dict['ab'](pj, pi) if bk == 'ab' else self.func_dict['sb'](pk, pj)
 
-        self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
+        if numerator_only:
+            num, denom = sp.fraction(self.sp_expr)
+            num = num.subs(replace_expr, ret_expr)
+            self.sp_expr = num/denom
+        else:
+            self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
+
         self.str_expr = str(self.sp_expr)
 
-    def identity_mul(self, rng, new_bk, order, canonical=False):
+    def identity_mul(self, rng, new_bk, order, canonical=False, numerator_only=False):
         """Multiply a given random part of the sympy expression by inserting the identity in
         a non trivial way. """
 
         # Choose a random term in the expression that contains multiplicative factors
-        mul_expr = [expr for expr in self.sp_expr.atoms(sp.Mul)]
+        if numerator_only:
+            func_in, denom = sp.fraction(self.sp_expr)
+        else:
+            func_in = self.sp_expr
+            denom = None
+        mul_expr = [expr for expr in func_in.atoms(sp.Mul)]
         if len(mul_expr) == 0:
-            mul_expr_in = self.sp_expr
+            mul_expr_in = func_in
         else:
             mul_expr_in = rng.choice(mul_expr)
 
         # Choose the corresponding identity (we might be adding a new bracket)
         bk_expr_env = SpinHelExpr(str(new_bk), self.n_point)
-        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True)
+        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
+                                    numerator_only=numerator_only)
         bk_expr_env.cancel()
 
         # Choose whether to add the new bracket as <>/ID or ID/<>
         bk_shuffle_expr = bk_expr_env.sp_expr
-        replace_expr = bk_shuffle_expr/new_bk if order == 0 else new_bk/bk_shuffle_expr
+        replace_expr = bk_shuffle_expr/new_bk if order == 0 or numerator_only else new_bk/bk_shuffle_expr
 
-        self.sp_expr = self.sp_expr.subs(mul_expr_in, replace_expr*mul_expr_in)
+        if numerator_only:
+            self.sp_expr = func_in.subs(mul_expr_in, replace_expr*mul_expr_in) / denom
+        else:
+            self.sp_expr = self.sp_expr.subs(mul_expr_in, replace_expr*mul_expr_in)
+
         self.str_expr = str(self.sp_expr)
 
-    def zero_add(self, rng, bk_base, sign, canonical=False):
+    def zero_add(self, rng, bk_base, sign, session, canonical=False, numerator_only=False):
         """ Add zero randomly to an expression"""
 
         # Choose a random term in the expression that contains additive factors
-        add_expr = [expr for expr in self.sp_expr.atoms(sp.Add)]
+        if numerator_only:
+            func_in, denom = sp.fraction(self.sp_expr)
+        else:
+            func_in = self.sp_expr
+            denom = None
+        add_expr = [expr for expr in func_in.atoms(sp.Add)]
         if len(add_expr) == 0:
-            add_expr_in = self.sp_expr
+            add_expr_in = func_in
         else:
             add_expr_in = rng.choice(add_expr)
 
         # Generate a zero identity for the given bracket
         bk_expr_env = SpinHelExpr(str(bk_base), self.n_point)
-        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True)
+        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
+                                    numerator_only=numerator_only)
         bk_expr_env.cancel()
 
-        # Get the scaling necessary to correct it
-        scale_list = get_scaling_expr(add_expr_in, [ab, sb])
-        if type(bk_base).__name__ == 'ab':
-            if scale_list[0] == 0:
-                scale_list[2] = scale_list[2] + 1
-            else:
-                scale_list[0] = scale_list[0] - 1
-        elif type(bk_base).__name__ == 'sb':
-            if scale_list[1] == 0:
-                scale_list[3] = scale_list[3] + 1
-            else:
-                scale_list[1] = scale_list[1] - 1
+        if add_expr_in == 0:
+            scale_factor = generate_random_fraction_unbounded(0.75, self.n_point, 2*self.n_point, rng,
+                                                              canonical_form=canonical, zero_allowed=False)
         else:
-            raise TypeError
-        scale_factor = random_scale_factor(scale_list, ab, sb, bk_expr_env.n_point, rng, canonical=canonical)
+            # Get the scaling necessary to correct it
+            num_scales, denom_scales = get_scaling_expr_detail(add_expr_in, [ab, sb], self.n_point)
+            bk_scales, _ = get_scaling_expr_detail(bk_base, [ab, sb], self.n_point)
+            num_scales = np.array(num_scales) - np.array(bk_scales)
+
+            coeff_add_num = solve_diophantine_system(self.n_point, num_scales, session)
+            coeff_add_denom = solve_diophantine_system(self.n_point, denom_scales, session)
+
+            # If no correct scaling exists the identity is not applied
+            if coeff_add_num is None or coeff_add_denom is None:
+                return False
+
+            scale_factor = build_scale_factor(coeff_add_num, ab, sb, self.n_point)\
+                           / build_scale_factor(coeff_add_denom, ab, sb, self.n_point)
 
         add_expr = sign*(bk_base - bk_expr_env.sp_expr) * scale_factor
 
-        self.sp_expr = self.sp_expr.subs(add_expr_in, add_expr_in + add_expr)
+        if numerator_only:
+            self.sp_expr = func_in.subs(add_expr_in, add_expr_in + add_expr)/denom
+        else:
+            self.sp_expr = self.sp_expr.subs(add_expr_in, add_expr_in + add_expr)
         self.str_expr = str(self.sp_expr)
+        return True
 
     def together(self):
         """Join the fractions"""
         self.sp_expr = sp.together(self.sp_expr)
+        self.str_expr = str(self.sp_expr)
+
+    def apart(self):
+        """Apart the fractions"""
+        self.sp_expr = sp.apart(self.sp_expr)
         self.str_expr = str(self.sp_expr)
 
     def expand(self):
@@ -235,41 +258,50 @@ class SpinHelExpr:
 
     def cancel(self):
         """Expand the fractions"""
+        # self.sp_expr = sp.cancel(self.sp_expr, list(self.sp_expr.atoms(sp.Function)), polys=False)
         self.sp_expr = sp.cancel(self.sp_expr)
         self.str_expr = str(self.sp_expr)
 
-    def select_random_bracket(self, rng):
+    def select_random_bracket(self, rng, numerator_only=False):
         """Select at random on of the brackets in the full expression"""
-        fct_list = [f for f in self.sp_expr.atoms(Function)]
+
+        if numerator_only:
+            function_probed, _ = sp.fraction(self.sp_expr)
+        else:
+            function_probed = self.sp_expr
+        fct_list = [f for f in function_probed.atoms(Function)]
         rdm_fct = rng.choice(fct_list)
 
         return rdm_fct
 
-    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False, reduced=False):
+    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False,
+                        reduced=False, session=None, numerator_only=False):
         """ Choose a random number of scrambling moves """
         if rng is None:
             rng = np.random.RandomState()
         scr_num = rng.randint(1, max_scrambles + 1)
         if out_info:
             if canonical:
-                info_s = self.scramble_canonical(scr_num, rng, verbose=verbose, out_info=True, reduced=reduced)
+                info_s = self.scramble_canonical(scr_num, session, rng, verbose=verbose, out_info=True, reduced=reduced,
+                                                 numerator_only=numerator_only)
             else:
-                info_s = self.scramble(scr_num, rng, verbose=verbose, out_info=True)
+                info_s = self.scramble(scr_num, rng, verbose=verbose, out_info=True, numerator_only=numerator_only)
             return info_s
         else:
             if canonical:
-                self.scramble_canonical(scr_num, rng, verbose=verbose, reduced=reduced)
+                self.scramble_canonical(scr_num, session, rng, verbose=verbose, reduced=reduced,
+                                        numerator_only=numerator_only)
             else:
-                self.scramble(scr_num, rng, verbose=verbose)
+                self.scramble(scr_num, rng, verbose=verbose, numerator_only=numerator_only)
 
-    def scramble(self, num_scrambles, rng=None, verbose=False, out_info=False):
+    def scramble(self, num_scrambles, rng=None, verbose=False, out_info=False, numerator_only=False):
         """ Scramble an expression with the identities at hand """
 
         info_s = []
         if rng is None:
             rng = np.random.RandomState()
         for i in range(num_scrambles):
-            rdm_bracket = self.select_random_bracket(rng)
+            rdm_bracket = self.select_random_bracket(rng, numerator_only)
             bk = rdm_bracket.func.__name__
             args = list(rdm_bracket.args)
 
@@ -302,62 +334,87 @@ class SpinHelExpr:
         if out_info:
             return info_s
 
-    def scramble_canonical(self, num_scrambles, rng=None, verbose=False, out_info=False, reduced=False):
+    def scramble_canonical(self, num_scrambles, session, rng=None, verbose=False, out_info=False, reduced=False,
+                           numerator_only=False):
         """Perform a scrambling procedure where the expressions are kept in canonical form at all times"""
         info_s = []
         if rng is None:
             rng = np.random.RandomState()
         for i in range(num_scrambles):
-            rdm_bracket = self.select_random_bracket(rng)
-            bk = rdm_bracket.func.__name__
-            args = list(rdm_bracket.args)
 
-            if reduced:
+            # If we start with 0 we can only use the addition identity
+            if self.sp_expr == 0:
+                act_num = 5
+
+            # If we start with a 1 in the numerator we can only use the multiplication identity
+            elif sp.fraction(self.sp_expr)[0] == 1 or sp.fraction(self.sp_expr)[0] == -1:
+                act_num = 4
+
+            # If we want to use an actual Schouten or momentum conservation identity
+            elif reduced:
                 act_num = rng.randint(1, 4)
+
+            # If we want to use any identity
             else:
                 act_num = rng.randint(1, 6)
 
+            if act_num < 4:
+                rdm_bracket = self.select_random_bracket(rng, numerator_only)
+                bk = rdm_bracket.func.__name__
+                args = list(rdm_bracket.args)
+            else:
+                rdm_bracket = None
+                bk = None
+                args = None
+
+            # start_time = time.time()
+
             # Apply the Schouten identity where we randomly select the other momenta (avoid null brackets)
             if act_num == 1:
+
                 arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1]]])
                 arg4 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0], args[1], arg3]])
                 info_s.append(['S', str(rdm_bracket), str(arg3), str(arg4)])
                 if verbose:
                     print('Using Schouten on {} with args({},{})'.format(str(rdm_bracket), arg3, arg4))
-                self.schouten2(bk, args[0], args[1], arg3, arg4, canonical=True)
+                self.schouten2(bk, args[0], args[1], arg3, arg4, canonical=True, numerator_only=numerator_only)
+                # print("--- %s seconds for Schouten ---" % (time.time() - start_time))
 
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
             elif act_num == 2:
                 if bk == 'ab':
                     arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
-                    self.momentum2(bk, args[0], args[1], arg3, canonical=True)
+                    self.momentum2(bk, args[0], args[1], arg3, canonical=True, numerator_only=numerator_only)
                 else:
                     arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0]]])
-                    self.momentum2(bk, arg3, args[0], args[1], canonical=True)
+                    self.momentum2(bk, arg3, args[0], args[1], canonical=True, numerator_only=numerator_only)
                 info_s.append(['M+', str(rdm_bracket), str(arg3)])
                 if verbose:
                     print('Using Momentum conservation + on {} with arg{}'.format(str(rdm_bracket), arg3))
+                # print("--- %s seconds for Momentum ---" % (time.time() - start_time))
 
             # Apply momentum conservation with the antisymmetric version of the identity
             elif act_num == 3:
                 if bk == 'ab':
                     arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[0]]])
-                    self.momentum2b(bk, args[1], args[0], arg3, canonical=True)
+                    self.momentum2b(bk, args[1], args[0], arg3, canonical=True, numerator_only=numerator_only)
                 else:
                     arg3 = rng.choice([i for i in range(1, self.n_point + 1) if i not in [args[1]]])
-                    self.momentum2b(bk, arg3, args[1], args[0], canonical=True)
+                    self.momentum2b(bk, arg3, args[1], args[0], canonical=True, numerator_only=numerator_only)
                 info_s.append(['M-', str(rdm_bracket), str(arg3)])
                 if verbose:
                     print('Using Momentum conservation - on {} with arg{}'.format(str(rdm_bracket), arg3))
+                # print("--- %s seconds for Momentum ---" % (time.time() - start_time))
 
             elif act_num == 4:
                 # Choose the new random bracket to add
                 bk_type = ab if rng.randint(0, 2) == 0 else sb
                 new_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
                 order_bk = rng.randint(0, 2)
-                tok = 'ID-' if order_bk == 0 else 'ID+'
-                self.identity_mul(rng, new_bk, order_bk, canonical=True)
+                tok = 'ID-' if order_bk == 0 or numerator_only else 'ID+'
+                self.identity_mul(rng, new_bk, order_bk, canonical=True, numerator_only=numerator_only)
                 info_s.append([tok, str(new_bk)])
+                # print("--- %s seconds for Multiplication ---" % (time.time() - start_time))
 
             elif act_num == 5:
                 # Choose the new random bracket to use as a base
@@ -365,9 +422,21 @@ class SpinHelExpr:
                 base_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
                 sign_bk = rng.randint(0, 2)
                 tok = 'Z-' if sign_bk == 0 else 'Z+'
-                self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), canonical=True)
-                info_s.append([tok, str(base_bk)])
+                success = self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), session, canonical=True,
+                                        numerator_only=numerator_only)
+                if success:
+                    info_s.append([tok, str(base_bk)])
+                else:
+                    i = i - 1
+                # print("--- %s seconds for Addition ---" % (time.time() - start_time))
 
+            if numerator_only:
+
+                #start_time = time.time()
+                self.cancel()
+                if isinstance(sp.fraction(self.sp_expr)[1], sp.Add):
+                    print("Denominator has add term")
+                #print("--- %s seconds for Cancel ---" % (time.time() - start_time))
         if out_info:
             return info_s
 

@@ -8,7 +8,7 @@ Calls on the generator from the helicity environment to generate original sympy 
 from logging import getLogger
 import os
 import io
-import sys
+import sys, time
 from collections import OrderedDict
 import numpy as np
 import torch
@@ -18,10 +18,11 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
 from sympy.calculus.util import AccumBounds
-from environment.spin_helicity_env import ab, sb
+from environment.bracket_env import ab, sb
 from environment.utils import timeout, TimeoutError, convert_to_momentum, convert_momentum_info
 from environment.helicity_generator import generate_random_amplitude
 from environment.spin_helicity_env import SpinHelExpr
+from add_ons.mathematica_utils import initialize_solver_session
 
 CLEAR_SYMPY_CACHE_FREQ = 10000
 
@@ -80,9 +81,11 @@ class CharEnv(object):
     def __init__(self, params):
 
         self.session = None
+        self.mma_path = params.mma_path
         self.numerical_check = params.numerical_check
 
-        self.max_npt = params.max_npt
+        self.npt_list = params.npt_list
+        self.max_npt = max(self.npt_list)
 
         self.int_base = params.int_base
         self.max_len = params.max_len
@@ -94,6 +97,7 @@ class CharEnv(object):
         self.bracket_tokens = params.bracket_tokens
         self.generator_id = params.generator_id
         self.l_scale = params.l_scale
+        self.numerator_only = params.numerator_only
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -111,11 +115,11 @@ class CharEnv(object):
             self.special_tokens = []
         else:
             self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
-                                                     for i in range(1, params.max_npt+1)
-                                                     for j in range(1, params.max_npt+1)]))\
+                                                     for i in range(1, self.max_npt+1)
+                                                     for j in range(1, self.max_npt+1)]))\
                                   + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
-                                                       for i in range(1, params.max_npt+1)
-                                                       for j in range(1, params.max_npt+1)]))
+                                                       for i in range(1, self.max_npt+1)
+                                                       for j in range(1, self.max_npt+1)]))
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
@@ -138,6 +142,9 @@ class CharEnv(object):
         self.eos_index = params.eos_index = 0
         self.pad_index = params.pad_index = 1
         logger.info(f"words: {self.word2id}")
+
+    def add_mathematica_session(self, session):
+        self.session = session
 
     def batch_sequences(self, sequences):
         """
@@ -355,7 +362,7 @@ class CharEnv(object):
                 out_in += word
         return out_in
 
-    @timeout(10)
+    @timeout(1000)
     def gen_hel_ampl(self, rng):
         """
         Generate pairs of (function, primitive).
@@ -363,20 +370,31 @@ class CharEnv(object):
         """
 
         try:
+            # start_time = time.time()
             # Generate a simple spinor helicity expression
-            simple_expr = generate_random_amplitude(self.max_npt, rng, max_terms_scale=self.max_scale,
-                                                    max_components=self.max_terms, l_scale=self.l_scale,
-                                                    canonical_form=self.canonical_form, generator_id=self.generator_id)
+            simple_expr, n_pt_gen = generate_random_amplitude(self.npt_list, rng, max_terms_scale=self.max_scale,
+                                                              max_components=self.max_terms, l_scale=self.l_scale,
+                                                              canonical_form=self.canonical_form,
+                                                              generator_id=self.generator_id)
+            # print("--- %s seconds for generating the amplitude---" % (time.time() - start_time))
 
+            # start_time = time.time()
             # Convert to env and scramble
-            simple_expr_env = SpinHelExpr(str(simple_expr))
+            simple_expr_env = SpinHelExpr(str(simple_expr), n_pt_gen)
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
-                                                     canonical=self.canonical_form)
+                                                     canonical=self.canonical_form, session=self.session,
+                                                     numerator_only=self.numerator_only)
+            # print("--- %s seconds for scrambling the amplitude---" % (time.time() - start_time))
+            # start_time = time.time()
             simple_expr_env.cancel()
+            # print("--- %s seconds for cancel the fractional form---" % (time.time() - start_time))
 
-            # If we the scrambled expression drops a momentum then we discard it from the training set
-            if any([i not in np.array([list(f.args) for f in simple_expr_env.sp_expr.atoms(sp.Function)]).flatten()
-                    for i in range(1, simple_expr_env.n_point + 1)]):
+            # If the scrambled expression drops a momentum then we discard it from the training set
+            # We do this if we could have an ambiguity as to the type of n point expression
+            if len(self.npt_list) > 1\
+                    and any([i not in np.array([list(f.args)
+                                                for f in simple_expr_env.sp_expr.atoms(sp.Function)]).flatten()
+                             for i in range(1, simple_expr_env.n_point + 1)]):
                 return None
 
             # Save the identity information
@@ -412,7 +430,8 @@ class CharEnv(object):
 
         except TimeoutError:
             raise
-        except (ValueError, AttributeError, UnknownSymPyOperator, ValueErrorExpression):
+        except (ValueError, AttributeError, UnknownSymPyOperator, ValueErrorExpression) as e:
+            logger.error("Got an exception in line {0} for expression \"{1}\". Arguments:{2!r}.".format(sys.exc_info()[-1].tb_lineno, simple_expr, e.args))
             return None
         except Exception as e:
             logger.error("An unknown exception of type {0} occurred in line {1} for expression \"{2}\". Arguments:{3!r}.".format(type(e).__name__, sys.exc_info()[-1].tb_lineno, simple_expr, e.args))
@@ -523,6 +542,12 @@ class EnvDataset(Dataset):
 
     def open_dataset(self):
         self.env = CharEnv(self.params)
+        # Data generation - Need session for the zero identity
+        if self.params.export_data and self.params.mma_path != 'NotRequired':
+            session = initialize_solver_session(kernel_path=self.params.mma_path)
+            self.env.add_mathematica_session(session)
+        else:
+            self.env.session = 'NotRequired'
         # generation, or reloading from file
         if self.path is not None:
             assert os.path.isfile(self.path)
