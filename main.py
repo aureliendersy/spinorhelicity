@@ -34,7 +34,7 @@ def main(params):
     # evaluation
     if params.eval_only:
         if params.numerical_check:
-            session = initialize_numerical_check(params.max_npt, lib_path=params.lib_path)
+            session = initialize_numerical_check(env.max_npt, lib_path=params.lib_path)
             evaluator.add_mathematica_session(session)
         scores = evaluator.run_all_evals()
         for k, v in scores.items():
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [5],
+        'npt_list': [4, 5, 6],
         'max_scale': 2,
         'max_terms': 1,
         'max_scrambles': 5,
@@ -110,10 +110,10 @@ if __name__ == '__main__':
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
-        'numerator_only': True,
+        'numerator_only': False,
 
         # model parameters
-        'emb_dim': 512,
+        'emb_dim': 128,
         'n_enc_layers': 3,
         'n_dec_layers': 3,
         'n_heads': 8,
@@ -158,7 +158,7 @@ if __name__ == '__main__':
         'cpu': True,
         'local_rank': -1,
         'master_port': -1,
-        'num_workers': 2,
+        'num_workers': 0,
         'debug_slurm': False,
         'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
         #'mma_path': 'NotRequired',
@@ -167,4 +167,3 @@ if __name__ == '__main__':
 
     check_model_params(parameters)
     main(parameters)
-

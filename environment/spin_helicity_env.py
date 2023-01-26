@@ -347,7 +347,7 @@ class SpinHelExpr:
                 act_num = 5
 
             # If we start with a 1 in the numerator we can only use the multiplication identity
-            elif sp.fraction(self.sp_expr)[0] == 1 or sp.fraction(self.sp_expr)[0] == -1:
+            elif (sp.fraction(self.sp_expr)[0] == 1 or sp.fraction(self.sp_expr)[0] == -1) and numerator_only:
                 act_num = 4
 
             # If we want to use an actual Schouten or momentum conservation identity

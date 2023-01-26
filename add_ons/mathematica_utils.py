@@ -180,39 +180,51 @@ def solve_diophantine_system_mma(coefficients, session, eqvar):
     return resultsystem
 
 
-def sp_to_mma(sp_expr, bracket_tokens=False, func_dict=None):
+def sp_to_mma(sp_expr, npts_list, bracket_tokens=False, func_dict=None):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     :param sp_expr:
+    :param npts_list:
     :param bracket_tokens:
     :param func_dict:
     :return:
     """
+    if len(npts_list) == 1:
+        npt_def = npts_list[0]
+    else:
+        npt_def = None
+
     if not bracket_tokens:
-        return sp_to_mma_single_token(sp_expr)
+        return sp_to_mma_single_token(sp_expr, npt_def)
     else:
         if func_dict is None:
-            raise AttributeError("Need the function dictionnary to evaluate with bracket tokens")
-        return sp_to_mma_bracket_token(sp_expr, func_dict)
+            raise AttributeError("Need the function dictionary to evaluate with bracket tokens")
+        return sp_to_mma_bracket_token(sp_expr, func_dict, npt_def)
 
 
-def sp_to_mma_bracket_token(sp_expr, func_dict):
+def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
     Assumes that each bracket is a single token
     :param sp_expr:
     :param func_dict:
+    :param npt_def:
     :return:
     """
-    brackets = list(sp_expr.free_symbols)
-    momentum_set = set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets])
-    n_dep = len(momentum_set)
-    npt = max(momentum_set)
 
-    # If we did not get enough momenta show it
-    if n_dep < 4:
-        logger.error("Got an expression which depends on less than 4 momenta")
+    brackets = list(sp_expr.free_symbols)
+
+    if npt_def is None:
+        momentum_set = set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets])
+        n_dep = len(momentum_set)
+        npt = max(momentum_set)
+
+        # If we did not get enough momenta show it
+        if n_dep < 4:
+            logger.info("Got an expression which depends on less than 4 momenta")
+    else:
+        npt = npt_def
 
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
@@ -230,24 +242,28 @@ def sp_to_mma_bracket_token(sp_expr, func_dict):
     return mma_str
 
 
-def sp_to_mma_single_token(sp_expr):
+def sp_to_mma_single_token(sp_expr, npt_def=None):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
     Assumes that each token corresponds to a single word
     :param sp_expr:
+    :param npt_def
     :return:
     """
 
-    func_list = list(sp_expr.atoms(sp.Function))
-    momentum_set = set(sum([func.args for func in func_list], ()))
-    n_dep = len(momentum_set)
-    npt = max([int(momentum.name[-1]) for momentum in list(momentum_set)])
+    if npt_def is None:
+        func_list = list(sp_expr.atoms(sp.Function))
+        momentum_set = set(sum([func.args for func in func_list], ()))
+        n_dep = len(momentum_set)
+        npt = max([int(momentum.name[-1]) for momentum in list(momentum_set)])
 
-    # If we did not get enough momenta show it
-    if n_dep < 4:
-        logger.error(str(sp_expr))
-        logger.error("Got an expression which depends on less than 4 momenta")
+        # If we did not get enough momenta show it
+        if n_dep < 4:
+            logger.error(str(sp_expr))
+            logger.error("Got an expression which depends on less than 4 momenta")
+    else:
+        npt = npt_def
 
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
