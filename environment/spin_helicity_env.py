@@ -177,8 +177,8 @@ class SpinHelExpr:
 
         # Choose the corresponding identity (we might be adding a new bracket)
         bk_expr_env = SpinHelExpr(str(new_bk), self.n_point)
-        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
-                                    numerator_only=numerator_only)
+        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
+                                               numerator_only=numerator_only, out_info=True)
         bk_expr_env.cancel()
 
         # Choose whether to add the new bracket as <>/ID or ID/<>
@@ -191,6 +191,7 @@ class SpinHelExpr:
             self.sp_expr = self.sp_expr.subs(mul_expr_in, replace_expr*mul_expr_in)
 
         self.str_expr = str(self.sp_expr)
+        return info_add
 
     def zero_add(self, rng, bk_base, sign, session, canonical=False, numerator_only=False):
         """ Add zero randomly to an expression"""
@@ -209,8 +210,8 @@ class SpinHelExpr:
 
         # Generate a zero identity for the given bracket
         bk_expr_env = SpinHelExpr(str(bk_base), self.n_point)
-        bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
-                                    numerator_only=numerator_only)
+        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
+                                               numerator_only=numerator_only, out_info=True)
         bk_expr_env.cancel()
 
         if add_expr_in == 0:
@@ -227,7 +228,7 @@ class SpinHelExpr:
 
             # If no correct scaling exists the identity is not applied
             if coeff_add_num is None or coeff_add_denom is None:
-                return False
+                return False, None
 
             scale_factor = build_scale_factor(coeff_add_num, ab, sb, self.n_point)\
                            / build_scale_factor(coeff_add_denom, ab, sb, self.n_point)
@@ -239,7 +240,7 @@ class SpinHelExpr:
         else:
             self.sp_expr = self.sp_expr.subs(add_expr_in, add_expr_in + add_expr)
         self.str_expr = str(self.sp_expr)
-        return True
+        return True, info_add
 
     def together(self):
         """Join the fractions"""
@@ -412,8 +413,9 @@ class SpinHelExpr:
                 new_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
                 order_bk = rng.randint(0, 2)
                 tok = 'ID-' if order_bk == 0 or numerator_only else 'ID+'
-                self.identity_mul(rng, new_bk, order_bk, canonical=True, numerator_only=numerator_only)
+                tok_add = self.identity_mul(rng, new_bk, order_bk, canonical=True, numerator_only=numerator_only)
                 info_s.append([tok, str(new_bk)])
+                info_s.append(tok_add[0])
                 # print("--- %s seconds for Multiplication ---" % (time.time() - start_time))
 
             elif act_num == 5:
@@ -422,10 +424,11 @@ class SpinHelExpr:
                 base_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=True)
                 sign_bk = rng.randint(0, 2)
                 tok = 'Z-' if sign_bk == 0 else 'Z+'
-                success = self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), session, canonical=True,
-                                        numerator_only=numerator_only)
+                success, tok_add = self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), session, canonical=True,
+                                                 numerator_only=numerator_only)
                 if success:
                     info_s.append([tok, str(base_bk)])
+                    info_s.append(tok_add[0])
                 else:
                     i = i - 1
                 # print("--- %s seconds for Addition ---" % (time.time() - start_time))

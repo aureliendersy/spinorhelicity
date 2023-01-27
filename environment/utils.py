@@ -412,7 +412,7 @@ def get_scaling_expr(spin_hel_expr, func_list):
 def get_scaling_expr_detail(spin_hel_expr, func_list, n_point):
     """
         Given a spinor helicity expression we figure out the little group scaling
-        for each momenum along with the mass dimension. Return it for the
+        for each momentum along with the mass dimension. Return it for the
         numerator and denominator as two vectors, starting with the mass dimension
         :param spin_hel_expr:
         :param func_list:
@@ -540,3 +540,21 @@ def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
         ret_expr = ret_expr * bk_list[i]**coeff
 
     return ret_expr
+
+
+def add_scaling_lg(lg_scale_vector, bk_add, num):
+    """
+    Add the correct little group scaling to the existing vector
+    :param lg_scale_vector:
+    :param bk_add:
+    :param num:
+    :return:
+    """
+
+    sign = 1 if bk_add.func.__name__ == 'sb' else -1
+    sign = sign if num else -sign
+
+    for arg in bk_add.args:
+        lg_scale_vector[arg - 1] += sign
+
+    return lg_scale_vector

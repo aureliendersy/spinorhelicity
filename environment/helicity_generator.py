@@ -6,7 +6,7 @@ import numpy as np
 import random
 from itertools import combinations
 from environment.bracket_env import ab, sb
-from environment.utils import reorder_expr, generate_random_bk
+from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr_detail
 from sympy import latex, Function, sympify
 
 
@@ -142,7 +142,7 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
 
 
 def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
-                              verbose=False, canonical_form=False, generator_id=1):
+                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable
@@ -155,6 +155,7 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     :param verbose:
     :param canonical_form:
     :param generator_id:
+    :param info_scaling:
     :return:
     """
 
@@ -169,26 +170,33 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     components = 1 if max_components == 1 else rng.randint(1, max_components + 1)
 
     return_expr = 0
+    scale_list = None
 
     # For each individual fraction we generate a new expression. We define the number of legs and little group scaling
     for i in range(components):
         if generator_id == 1:
-            return_expr += generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
-                                                    canonical_form=canonical_form)
+            new_expr = generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
+                                                canonical_form=canonical_form)
         else:
-            return_expr += generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale*n_points),
-                                                              rng, canonical_form=canonical_form)
+            new_expr = generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale*n_points),
+                                                          rng, canonical_form=canonical_form)
+
+        if info_scaling:
+            scale_list = get_scaling_expr_detail(new_expr, [ab, sb], n_points)
+            scale_list = np.array(scale_list[0]) - np.array(scale_list[1])
+
+        return_expr += new_expr
     # If we are missing any external momentum in the whole expression then we try again
     # Do this only if there is any ambiguity
     if len(npt_list) > 1 and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
-            for i in range(1, n_points+1)]):
+                                  for i in range(1, n_points+1)]):
         return generate_random_amplitude(npt_list, rng, max_terms_scale, max_components, l_scale, str_out,
-                                         verbose=verbose, canonical_form=canonical_form)
+                                         verbose, canonical_form, generator_id, info_scaling)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))
 
     if str_out:
-        return str(return_expr), n_points
+        return str(return_expr), n_points, scale_list
     else:
-        return return_expr, n_points
+        return return_expr, n_points, scale_list

@@ -99,12 +99,14 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [4, 5, 6],
+        'npt_list': [5],
         'max_scale': 2,
         'max_terms': 1,
-        'max_scrambles': 5,
+        'max_scrambles': 3,
         'save_info_scr': True,
+        'save_info_scaling': True,
         'int_base': 10,
+        'numeral_decomp': True,
         'max_len': 2048,
         'canonical_form': True,
         'bracket_tokens': True,
@@ -113,7 +115,7 @@ if __name__ == '__main__':
         'numerator_only': False,
 
         # model parameters
-        'emb_dim': 128,
+        'emb_dim': 512,
         'n_enc_layers': 3,
         'n_dec_layers': 3,
         'n_heads': 8,

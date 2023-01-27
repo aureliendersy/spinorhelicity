@@ -88,11 +88,13 @@ class CharEnv(object):
         self.max_npt = max(self.npt_list)
 
         self.int_base = params.int_base
+        self.numeral_decomp = params.numeral_decomp
         self.max_len = params.max_len
         self.max_scale = params.max_scale
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
         self.save_info_scr = params.save_info_scr
+        self.save_info_scaling = params.save_info_scaling
         self.canonical_form = params.canonical_form
         self.bracket_tokens = params.bracket_tokens
         self.generator_id = params.generator_id
@@ -122,6 +124,8 @@ class CharEnv(object):
                                                        for j in range(1, self.max_npt+1)]))
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
+        if self.numeral_decomp:
+            self.elements = self.elements + ['10']
         assert all(v in self.OPERATORS for v in self.SYMPY_OPERATORS.values())
 
         # SymPy elements
@@ -167,6 +171,7 @@ class CharEnv(object):
         """
         Convert a decimal integer to a representation in the given base.
         The base can be negative.
+        Use a numeral decomposition scheme when relevant
         """
         base = self.int_base
         res = []
@@ -186,7 +191,14 @@ class CharEnv(object):
                 break
         res.append('INT-' if neg else 'INT+')
 
-        return res[::-1]
+        # If we use the decomposition scheme we must split the integer into the base 10 decomposition
+        if self.numeral_decomp:
+            if len(res) == 2:
+                return res[::-1]
+            else:
+                return self.numeral_decomp_builder(res[0], res[-1], res[1:-1], 0)
+        else:
+            return res[::-1]
 
     def parse_int(self, lst):
         """
@@ -207,6 +219,30 @@ class CharEnv(object):
         if base > 0 and lst[0] == 'INT-':
             val = -val
         return val, i + 1
+
+    def numeral_decomp_builder(self, int_in, int_sign, rem_int, order):
+        """
+        Splits a given integer (along with its overall sign) into a base 10 decomposition
+        :param int_in: Input digit
+        :param int_sign: Overall sign of the expression
+        :param rem_int: Remaining digits to be considered
+        :param order: Order in base 10 of int_in
+        :return:
+        """
+        if int(int_in) == 0:
+            return self.numeral_decomp_builder(rem_int[0], int_sign, rem_int[1:], order + 1)
+        if len(rem_int) == 0:
+            return_val = []
+        else:
+            return_val = self.numeral_decomp_builder(rem_int[0], int_sign, rem_int[1:], order + 1)
+        if order == 0:
+            return ['add', int_sign, int_in] + return_val
+        add_term = ['add'] if len(rem_int) > 0 else []
+        coeff_term = ['mul', int_sign, int_in] if (int(int_in) != 1 or int_sign != 'INT+') else []
+        if order == 1:
+            return add_term + coeff_term + ['INT+', '10'] + return_val
+        else:
+            return add_term + coeff_term + ['pow', 'INT+', '10'] + self.write_int(order) + return_val
 
     def write_infix(self, token, args):
         """
@@ -260,7 +296,7 @@ class CharEnv(object):
         Prefix to infix conversion.
         """
         p, r = self._prefix_to_infix(expr)
-        if len(r) > 0 and not (self.save_info_scr and r[0] == '&'):
+        if len(r) > 0 and not ((self.save_info_scr and r[0] == '&') or (self.save_info_scaling and r[0] == '&')):
             raise InvalidPrefixExpression(f"Incorrect prefix expression \"{expr}\". \"{r}\" was not parsed.")
         return f'({p})'
 
@@ -362,6 +398,41 @@ class CharEnv(object):
                 out_in += word
         return out_in
 
+    def scale_info_to_prefix(self, info_scale):
+        """
+        Convert the information about the scaling of an expression into a parsed prefix expression
+        :param info_scale:
+        :return:
+        """
+
+        # List of coefficients are already given as sympy integers
+        prefix_ret = []
+        for info_vec in info_scale:
+            prefix_ret.extend(self.sympy_to_prefix(info_vec))
+        return prefix_ret
+
+    def scale_prefix_to_infix(self, infos_prefix):
+        """
+        Convert the prefix information vector to an infix form for the scaling
+        :param infos_prefix:
+        :return:
+        """
+
+        p_list = []
+        r = infos_prefix
+
+        while len(r) > 0:
+            p, r = self._prefix_to_infix(r)
+            p_list.append(p)
+
+            if len(p_list) > self.max_npt + 1:
+                raise ValueError('Cannot parse the dimension information')
+
+        out_in = 'MD: ' + p_list[0] + '/ LG: '
+        for i, p_val in enumerate(p_list[1:]):
+            out_in = out_in + 'p{}: {},'.format(i+1, p_val)
+        return out_in
+
     @timeout(1000)
     def gen_hel_ampl(self, rng):
         """
@@ -372,10 +443,13 @@ class CharEnv(object):
         try:
             # start_time = time.time()
             # Generate a simple spinor helicity expression
-            simple_expr, n_pt_gen = generate_random_amplitude(self.npt_list, rng, max_terms_scale=self.max_scale,
-                                                              max_components=self.max_terms, l_scale=self.l_scale,
-                                                              canonical_form=self.canonical_form,
-                                                              generator_id=self.generator_id)
+            simple_expr, n_pt_gen, scale_inf = generate_random_amplitude(self.npt_list, rng,
+                                                                         max_terms_scale=self.max_scale,
+                                                                         max_components=self.max_terms,
+                                                                         l_scale=self.l_scale,
+                                                                         canonical_form=self.canonical_form,
+                                                                         generator_id=self.generator_id,
+                                                                         info_scaling=self.save_info_scaling)
             # print("--- %s seconds for generating the amplitude---" % (time.time() - start_time))
 
             # start_time = time.time()
@@ -404,6 +478,12 @@ class CharEnv(object):
             else:
                 prefix_info = None
 
+            # Save the scaling information
+            if self.save_info_scaling:
+                prefix_info_scale = self.scale_info_to_prefix(scale_inf)
+            else:
+                prefix_info_scale = None
+
             shuffled_expr = simple_expr_env.sp_expr
 
             # convert back to prefix
@@ -418,10 +498,11 @@ class CharEnv(object):
 
             # skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:
-                # logger.info("Rejected Equation as was too long")
+                logger.info("Rejected Equation as was too long for {} identities".format(len(info_s)))
                 return None
 
             # Skip equations that do not simplify
+            # We consider (ab and ab^2) to be of equal complexity here)
             num_bk_simple = ''.join(simple_prefix).count('sb') + ''.join(simple_prefix).count('ab')
             num_bk_shuffle = ''.join(shuffled_prefix).count('sb') + ''.join(shuffled_prefix).count('ab')
 
@@ -437,11 +518,14 @@ class CharEnv(object):
             logger.error("An unknown exception of type {0} occurred in line {1} for expression \"{2}\". Arguments:{3!r}.".format(type(e).__name__, sys.exc_info()[-1].tb_lineno, simple_expr, e.args))
             return None
 
-        # define input / output
+        out_prefix = simple_prefix
         if self.save_info_scr:
-            return shuffled_prefix, simple_prefix + ['&'] + prefix_info
-        else:
-            return shuffled_prefix, simple_prefix
+            out_prefix = out_prefix + ['&'] + prefix_info
+        if self.save_info_scaling:
+            out_prefix = out_prefix + ['&'] + prefix_info_scale
+
+        # define input / output
+        return shuffled_prefix, out_prefix
 
     @staticmethod
     def register_args(parser):
