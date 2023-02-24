@@ -105,6 +105,33 @@ def initialize_solver_session(kernel_path=None):
     return session
 
 
+def solve_diophantine_systems(n_points, coefficients, num_sol, session):
+    """
+    If we want to get different solutions to the same diophantine equation
+    :param n_points:
+    :param coefficients:
+    :param num_sol:
+    :param session:
+    :return:
+    """
+
+    # Check if we have the correct number of coefficients fed
+    assert len(coefficients) == n_points + 1
+
+    eqvar = ["a{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)] \
+            + ["b{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)]
+
+    if coefficients[0] < 10:
+        solutions = [solve_diophantine_system_mma(coefficients, session, eqvar) for i in range(num_sol)]
+
+    if coefficients[0] >= 10:
+        solutions = []
+        for i in range(num_sol):
+            solutions.append(solve_diophantine_system_mma(coefficients, session, eqvar, solutions))
+
+    return solutions
+
+
 def solve_diophantine_system(n_points, coefficients, session):
     """
     Wrapper for choosing whether to solve the equation in Mathematica or python
@@ -133,6 +160,12 @@ def solve_diophantine_system(n_points, coefficients, session):
 
 
 def solve_diophantine_system_python(coefficients, eqvar):
+    """
+    Use the diophantine library to find the solution with the least square coefficients
+    :param coefficients:
+    :param eqvar:
+    :return:
+    """
 
     mass_dim = [1 for i in range(len(eqvar))]
     lg_eqs = [list(np.array([1 if 'a' in vara and str(i+1) in vara  else 0 for vara in eqvar]) + np.array([-1 if 'b' in varb and str(i+1) in varb else 0 for varb in eqvar])) for i in range(len(coefficients[1:]))]
@@ -143,13 +176,14 @@ def solve_diophantine_system_python(coefficients, eqvar):
     return [sol_random[i, 0] for i in range(len(eqvar))]
 
 
-def solve_diophantine_system_mma(coefficients, session, eqvar):
+def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
     """
     Call the Mathematica Kernel to solve the equation
     Coefficients are of the form (mass dimension, Little group scaling coefficients)
     :param coefficients:
     :param session:
     :param eqvar:
+    :param prev_sol:
     :return:
     """
 
@@ -165,6 +199,11 @@ def solve_diophantine_system_mma(coefficients, session, eqvar):
 
     else:
         # For a fast solution. Not always random anymore but necessary if we have to solve a system with too many sols
+        # If we have access to previous solutions we can input them there to ensure that we dont get back the same thing
+        if prev_sol is not None and len(prev_sol) > 0:
+            add_str = ','.join([' || '.join(eqvar[i] + '!={}'.format(sol) for i, sol in enumerate(prev))
+                                for prev in prev_sol])
+            systemstr = systemstr[:-1] + ',' + add_str + '}'
         commandstr = 'Check[FindInstance[{}, {}, NonNegativeIntegers, RandomSeeding -> Automatic][[1, ;; , -1]],"No"]//Quiet'.format(systemstr, eqvarstr)
 
     if session is None:
