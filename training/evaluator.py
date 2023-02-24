@@ -20,16 +20,25 @@ logger = getLogger()
 BUCKET_LENGTH_SIZE = 5
 
 
-def idx_to_sp(env, idx, return_infix=False, return_info=False):
+def idx_to_sp(env, idx, return_infix=False, return_info_scr=False, return_info_scale=False):
     """
     Convert an indexed prefix expression to SymPy.
     """
     prefix = [env.id2word[wid] for wid in idx]
     try:
         infix = env.prefix_to_infix(prefix)
-        if return_info:
-            prefix_info = prefix[prefix.index('&'):]
-            info_infix = env.scr_prefix_to_infix(prefix_info)
+        if return_info_scr or return_info_scale:
+            info_infix = ''
+            if return_info_scr:
+                prefix_info = prefix[prefix.index('&'):]
+                info_infix += env.scr_prefix_to_infix(prefix_info)
+
+                if return_info_scale:
+                    prefix_info2 = prefix_info[prefix_info[1:].index('&')+2:]
+                    info_infix += env.scale_prefix_to_infix(prefix_info2)
+            elif return_info_scale:
+                prefix_info = prefix[prefix.index('&')+1:]
+                info_infix += env.scale_prefix_to_infix(prefix_info)
 
     except InvalidPrefixExpression:
         return None
@@ -39,7 +48,7 @@ def idx_to_sp(env, idx, return_infix=False, return_info=False):
         eq = sp.S(infix, locals=env.local_dict)
     except :
         return None
-    if return_info:
+    if return_info_scr or return_info_scale:
         eq = [eq, info_infix]
     return (eq, infix) if return_infix else eq
 
@@ -50,7 +59,7 @@ def check_valid_solution(env, src, tgt, hyp, session):
     Check that a solution is valid.
     """
 
-    if env.save_info_scr:
+    if env.save_info_scr or env.save_info_scaling:
         tgt = tgt[0]
 
     if env.numerical_check:
@@ -79,10 +88,11 @@ def check_hypothesis(eq, session):
     """
     env = Evaluator.ENV
     src = idx_to_sp(env, eq['src'])
-    tgt = idx_to_sp(env, eq['tgt'], return_info=env.save_info_scr)
+    tgt = idx_to_sp(env, eq['tgt'], return_info_scr=env.save_info_scr, return_info_scale=env.save_info_scaling)
     hyp = eq['hyp']
+    hyp_temp = hyp
 
-    if env.save_info_scr:
+    if env.save_info_scr or env.save_info_scaling:
         if env.word2id['&'] not in eq['hyp']:
             eq['src'] = str(src)
             eq['tgt'] = tgt
@@ -90,7 +100,8 @@ def check_hypothesis(eq, session):
             eq['is_valid'] = False
             return eq
         else:
-            hyp_infos = hyp[hyp.index(env.word2id['&']):]
+            first_index = hyp.index(env.word2id['&'])
+            hyp_infos = hyp[first_index:]
             hyp_infos_pre = [env.id2word[wid] for wid in hyp_infos]
             hyp = hyp[:hyp.index(env.word2id['&'])]
 
@@ -103,6 +114,12 @@ def check_hypothesis(eq, session):
 
         if env.save_info_scr:
             hyp_infix += env.scr_prefix_to_infix(hyp_infos_pre)
+
+        if env.save_info_scaling:
+            if env.word2id['&'] in hyp_temp[first_index+1:]:
+                first_index = first_index + hyp_temp[first_index+1:].index(env.word2id['&']) + 1
+            hyp_infos_scale = [env.id2word[wid] for wid in hyp_temp[first_index+1:]]
+            hyp_infix += env.scale_prefix_to_infix(hyp_infos_scale)
 
     except (TimeoutError, Exception) as e:
         e_name = type(e).__name__
@@ -278,6 +295,8 @@ class Evaluator(object):
             for i, res in sorted(logs.items()):
                 if env.save_info_scr:
                     tgt_str = str(res['tgt'][0]) + ' IDS : ' + res['tgt'][1]
+                elif env.save_info_scaling:
+                    tgt_str = str(res['tgt'][0]) + res['tgt'][1]
                 else:
                     tgt_str = str(res['tgt'])
                 n_valid = sum([int(v) for _, _, v in res['hyps']])
@@ -329,7 +348,8 @@ class Evaluator(object):
                 src = idx_to_sp(env, x1[1:len1[i] - 1, i].tolist())
                 if src is None:
                     src = 'Invalid prefix expression'
-                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist(), return_info=env.save_info_scr)
+                tgt = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist(), return_info_scr=env.save_info_scr,
+                                return_info_scale=env.save_info_scaling)
 
                 if valid[i]:
                     beam_log[i] = {'src': src, 'tgt': tgt, 'hyps': [(tgt, None, True)]}
@@ -358,7 +378,10 @@ class Evaluator(object):
                     beam_size=params.beam_size,
                     length_penalty=params.beam_length_penalty,
                     early_stopping=params.beam_early_stopping,
-                    max_len=params.max_len
+                    max_len=params.max_len,
+                    stochastic=params.nucleus_sampling,
+                    nucl_p=params.nucleus_p,
+                    temperature=params.temperature
                 )
             except (TimeoutError, Exception) as e:
                 _, _, generations = decoder.generate_beam(
@@ -367,7 +390,10 @@ class Evaluator(object):
                     beam_size=1,
                     length_penalty=params.beam_length_penalty,
                     early_stopping=params.beam_early_stopping,
-                    max_len=params.max_len
+                    max_len=params.max_len,
+                    stochastic=params.nucleus_sampling,
+                    nucl_p=params.nucleus_p,
+                    temperature=params.temperature
                 )
                 generations[0].n_hyp = params.beam_size
                 generations[0].hyp.extend([generations[0].hyp for _ in range(params.beam_size - 1)])
@@ -425,6 +451,12 @@ class Evaluator(object):
 
                     # update beam log
                     beam_log[i]['hyps'].append((gen['hyp'], gen['score'], is_valid))
+
+                if not any([val[-1] for val in beam_log[i]['hyps']]) and valid[i]:
+                    print('Hypothesis was valid in greedy but not beam search')
+                    print(src)
+                    print(tgt)
+                    print(gen['hyp'])
 
             # valid solutions found with beam search
             logger.info(f"    Found {valid.sum().item()}/{bs} solutions in beam hypotheses.")

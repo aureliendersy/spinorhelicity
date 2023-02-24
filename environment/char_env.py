@@ -208,7 +208,6 @@ class CharEnv(object):
         base = self.int_base
         val = 0
         if not (base >= 2 and lst[0] in ['INT+', 'INT-']):
-            print(lst)
             raise InvalidPrefixExpression(f"Invalid integer in prefix expression")
         i = 0
         for x in lst[1:]:
@@ -428,7 +427,7 @@ class CharEnv(object):
             if len(p_list) > self.max_npt + 1:
                 raise ValueError('Cannot parse the dimension information')
 
-        out_in = 'MD: ' + p_list[0] + '/ LG: '
+        out_in = ': Scaling : MD: ' + p_list[0] + '/ LG: '
         for i, p_val in enumerate(p_list[1:]):
             out_in = out_in + 'p{}: {},'.format(i+1, p_val)
         return out_in
@@ -449,7 +448,8 @@ class CharEnv(object):
                                                                          l_scale=self.l_scale,
                                                                          canonical_form=self.canonical_form,
                                                                          generator_id=self.generator_id,
-                                                                         info_scaling=self.save_info_scaling)
+                                                                         info_scaling=self.save_info_scaling,
+                                                                         session=self.session)
             # print("--- %s seconds for generating the amplitude---" % (time.time() - start_time))
 
             # start_time = time.time()
@@ -498,7 +498,9 @@ class CharEnv(object):
 
             # skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:
-                logger.info("Rejected Equation as was too long for {} identities".format(len(info_s)))
+                logger.info("Rejected Equation as was too long for {} identities"
+                            .format(len([info for info in info_s if 'ID' not in ''.join(info)
+                                         and 'Z' not in ''.join(info)])))
                 return None
 
             # Skip equations that do not simplify

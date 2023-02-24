@@ -6,8 +6,9 @@ import numpy as np
 import random
 from itertools import combinations
 from environment.bracket_env import ab, sb
-from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr_detail
-from sympy import latex, Function, sympify
+from add_ons.mathematica_utils import solve_diophantine_systems
+from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr_detail, build_scale_factor
+from sympy import latex, Function, sympify, fraction, cancel
 
 
 def dual_partition(nint):
@@ -142,7 +143,7 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
 
 
 def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
-                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False):
+                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False, session=None):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable
@@ -156,6 +157,7 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     :param canonical_form:
     :param generator_id:
     :param info_scaling:
+    :param session:
     :return:
     """
 
@@ -172,20 +174,32 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     return_expr = 0
     scale_list = None
 
-    # For each individual fraction we generate a new expression. We define the number of legs and little group scaling
-    for i in range(components):
-        if generator_id == 1:
-            new_expr = generate_random_fraction(-n_pos_h+n_neg_h, n_points, int(max_terms_scale*n_points), rng,
+    # We start by generating a first overall skeleton
+    if generator_id == 1:
+        return_expr += generate_random_fraction(-n_pos_h + n_neg_h, n_points, int(max_terms_scale * n_points), rng,
                                                 canonical_form=canonical_form)
-        else:
-            new_expr = generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale*n_points),
-                                                          rng, canonical_form=canonical_form)
+    else:
+        return_expr += generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale * n_points),
+                                                          rng, canonical_form=canonical_form,
+                                                          zero_allowed=components == 1)
+    denominator = fraction(return_expr)[-1]
+    scaling_list = get_scaling_expr_detail(return_expr, [ab, sb], n_points)
+    if info_scaling:
+        scale_list = np.array(scaling_list[0]) - np.array(scaling_list[1])
 
-        if info_scaling:
-            scale_list = get_scaling_expr_detail(new_expr, [ab, sb], n_points)
-            scale_list = np.array(scale_list[0]) - np.array(scale_list[1])
+    # For each additional component we only modify the numerators
+    # We solve the diophantine equation to find an equivalent expression that we can add
 
-        return_expr += new_expr
+    if components > 1:
+        if session is None:
+            raise TypeError('Need a valid Mathematica Session to generate multiple terms and respect scaling')
+        coeff_add_num_list = solve_diophantine_systems(n_points, scaling_list[0], components-1, session)
+        for new_coeff_num in coeff_add_num_list:
+            new_num = build_scale_factor(new_coeff_num, ab, sb, n_points)
+            return_expr += (new_num / denominator)
+
+        return_expr = cancel(return_expr)
+
     # If we are missing any external momentum in the whole expression then we try again
     # Do this only if there is any ambiguity
     if len(npt_list) > 1 and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()

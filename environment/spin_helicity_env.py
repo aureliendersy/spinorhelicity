@@ -348,7 +348,7 @@ class SpinHelExpr:
                 act_num = 5
 
             # If we start with a 1 in the numerator we can only use the multiplication identity
-            elif (sp.fraction(self.sp_expr)[0] == 1 or sp.fraction(self.sp_expr)[0] == -1) and numerator_only:
+            elif isinstance(sp.fraction(self.sp_expr)[0], sp.Integer) and numerator_only:
                 act_num = 4
 
             # If we want to use an actual Schouten or momentum conservation identity
@@ -435,11 +435,11 @@ class SpinHelExpr:
 
             if numerator_only:
 
-                #start_time = time.time()
+                # start_time = time.time()
                 self.cancel()
                 if isinstance(sp.fraction(self.sp_expr)[1], sp.Add):
                     print("Denominator has add term")
-                #print("--- %s seconds for Cancel ---" % (time.time() - start_time))
+                # print("--- %s seconds for Cancel ---" % (time.time() - start_time))
         if out_info:
             return info_s
 
