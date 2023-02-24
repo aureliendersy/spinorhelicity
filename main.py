@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import json
 from environment.utils import initialize_exp, AttrDict, convert_to_bracket_file, check_numerical_equiv_file
 from environment import build_env
@@ -19,7 +20,6 @@ def main(params):
     init_distributed_mode(params)
     logger = initialize_exp(params)
     init_signal_handler()
-
     environment.utils.CUDA = not params.cpu
 
     env = build_env(params)
@@ -33,6 +33,8 @@ def main(params):
 
     # evaluation
     if params.eval_only:
+        # Set the seed for the nucleus sampling
+        torch.random.manual_seed(42)
         if params.numerical_check:
             session = initialize_numerical_check(env.max_npt, lib_path=params.lib_path)
             evaluator.add_mathematica_session(session)
@@ -91,7 +93,7 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_data_spin_hel',
+        'exp_name': 'Test_eval_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
         'exp_id': 'test',
         'save_periodic': 0,
@@ -102,9 +104,9 @@ if __name__ == '__main__':
         'npt_list': [5],
         'max_scale': 2,
         'max_terms': 1,
-        'max_scrambles': 3,
-        'save_info_scr': True,
-        'save_info_scaling': True,
+        'max_scrambles': 5,
+        'save_info_scr': False,
+        'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 2048,
@@ -112,7 +114,7 @@ if __name__ == '__main__':
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
-        'numerator_only': False,
+        'numerator_only': True,
 
         # model parameters
         'emb_dim': 512,
@@ -123,14 +125,14 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        # 'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/checkpoint.pth',
-        'reload_model': '',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
+        #'reload_model': '',
 
         # Trainer param
-        'export_data': True,
-        # 'export_data': False,
-        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6-infos/data.prefix.counts.valid',
-        'reload_data': '',
+        #'export_data': True,
+        'export_data': False,
+        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
+        #'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -146,15 +148,18 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        # 'eval_only': True,
-        'eval_only': False,
+        'eval_only': True,
+        #'eval_only': False,
         'numerical_check': True,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 1,
+        'beam_size': 10,
         'beam_length_penalty': 1,
-        'beam_early_stopping': True,
+        'beam_early_stopping': False,
+        'nucleus_sampling': False,
+        'nucleus_p': 0.95,
+        'temperature': 2,
 
         # SLURM/GPU param
         'cpu': True,

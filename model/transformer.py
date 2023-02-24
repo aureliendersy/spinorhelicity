@@ -413,8 +413,9 @@ class TransformerModel(nn.Module):
 
         return generated[:cur_len], gen_len
 
-    @timeout(1000)
-    def generate_beam(self, src_enc, src_len, beam_size, length_penalty, early_stopping, max_len=200):
+    @timeout(10000)
+    def generate_beam(self, src_enc, src_len, beam_size, length_penalty, early_stopping, max_len=200,
+                      stochastic=True, nucl_p=0.95, temperature=1):
         """
         Decode a sentence given initial start.
         `x`:
@@ -454,7 +455,9 @@ class TransformerModel(nn.Module):
 
         # scores for each sentence in the beam
         beam_scores = src_enc.new(bs, beam_size).fill_(0)
-        beam_scores[:, 1:] = -1e9
+
+        if not stochastic:
+            beam_scores[:, 1:] = -1e9
         beam_scores = beam_scores.view(-1)
 
         # current position
@@ -482,15 +485,29 @@ class TransformerModel(nn.Module):
             assert tensor.size() == (1, bs * beam_size, self.dim)
             tensor = tensor.data[-1, :, :]          # (bs * beam_size, dim)
             scores = self.proj(tensor)              # (bs * beam_size, n_words)
+            if stochastic:
+                scores = scores/temperature
             scores = F.log_softmax(scores, dim=-1)  # (bs * beam_size, n_words)
             assert scores.size() == (bs * beam_size, n_words)
 
-            # select next words with scores
-            _scores = scores + beam_scores[:, None].expand_as(scores)  # (bs * beam_size, n_words)
-            _scores = _scores.view(bs, beam_size * n_words)            # (bs, beam_size * n_words)
-
-            next_scores, next_words = torch.topk(_scores, 2 * beam_size, dim=1, largest=True, sorted=True)
-            assert next_scores.size() == next_words.size() == (bs, 2 * beam_size)
+            if stochastic:
+                _scores = torch.exp(scores)
+                sort_scores, sort_idx = torch.sort(_scores, dim=-1, descending=True)
+                cumul_scores = torch.cumsum(sort_scores, dim=-1)
+                nucleus = cumul_scores < nucl_p
+                nucleus = torch.cat([nucleus.new_ones(nucleus.shape[:-1] + (1,)), nucleus[..., :-1]], dim=-1)
+                sort_scores[~nucleus] = float(0.0)
+                next_words = sort_idx.gather(-1, sort_scores.multinomial(num_samples=1, replacement=True))
+                # next_words = _scores.multinomial(num_samples=1, replacement=True)  # (bs*beam_size, 1)
+                next_scores = (scores.gather(1, next_words) + beam_scores[:, None]).view(bs, beam_size)  # (bs*beam_size, 1)
+                next_words = next_words.view(bs, beam_size)
+                assert next_scores.size() == next_words.size() == (bs, beam_size)
+            else:
+                # select next words with scores
+                _scores = scores + beam_scores[:, None].expand_as(scores)  # (bs * beam_size, n_words)
+                _scores = _scores.view(bs, beam_size * n_words)            # (bs, beam_size * n_words)
+                next_scores, next_words = torch.topk(_scores, 2 * beam_size, dim=1, largest=True, sorted=True)
+                assert next_scores.size() == next_words.size() == (bs, 2 * beam_size)
 
             # next batch beam content
             # list of (bs * beam_size) tuple(next hypothesis score, next word, current position in the batch)
@@ -509,14 +526,18 @@ class TransformerModel(nn.Module):
                 next_sent_beam = []
 
                 # next words for this sentence
-                for idx, value in zip(next_words[sent_id], next_scores[sent_id]):
+                for i, (idx, value) in enumerate(zip(next_words[sent_id], next_scores[sent_id])):
 
                     # get beam and word IDs
-                    beam_id = idx // n_words
-                    word_id = idx % n_words
+                    if stochastic:
+                        beam_id = i
+                        word_id = idx
+                    else:
+                        beam_id = idx // n_words
+                        word_id = idx % n_words
 
                     # end of sentence, or next word
-                    if word_id == self.eos_index or cur_len + 1 == max_len:
+                    if word_id == self.eos_index and value.item() > -1e9 or cur_len + 1 == max_len:
                         generated_hyps[sent_id].add(generated[:cur_len, sent_id * beam_size + beam_id].clone().cpu(), value.item())
                     else:
                         next_sent_beam.append((value, word_id, sent_id * beam_size + beam_id))
@@ -526,11 +547,16 @@ class TransformerModel(nn.Module):
                         break
 
                 # update next beam content
-                assert len(next_sent_beam) == 0 if cur_len + 1 == max_len else beam_size
+                if not stochastic:
+                    assert len(next_sent_beam) == 0 if cur_len + 1 == max_len else len(next_sent_beam) == beam_size
                 if len(next_sent_beam) == 0:
                     next_sent_beam = [(0, self.pad_index, 0)] * beam_size  # pad the batch
+                if stochastic and len(next_sent_beam) < beam_size:
+                    next_sent_beam.extend([(-1e9, self.pad_index, 0)] * (beam_size-len(next_sent_beam)))
                 next_batch_beam.extend(next_sent_beam)
+
                 assert len(next_batch_beam) == beam_size * (sent_id + 1)
+
 
             # sanity check / prepare next batch
             assert len(next_batch_beam) == bs * beam_size

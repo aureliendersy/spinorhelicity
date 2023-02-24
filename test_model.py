@@ -53,7 +53,10 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
         _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_size,
                                            length_penalty=params.beam_length_penalty,
                                            early_stopping=params.beam_early_stopping,
-                                           max_len=params.max_len)
+                                           max_len=params.max_len,
+                                           stochastic=params.nucleus_sampling,
+                                           nucl_p=params.nucleus_p,
+                                           temperature=params.temperature)
         assert len(beam) == 1
     hypotheses = beam[0].hyp
     assert len(hypotheses) == beam_size
