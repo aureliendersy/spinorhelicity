@@ -28,6 +28,7 @@ CLEAR_SYMPY_CACHE_FREQ = 10000
 
 
 SPECIAL_WORDS = ['<s>', '</s>', '<pad>', '&']
+SPECIAL_WORDS2 = ['<s>', '</s>', '<pad>']
 
 logger = getLogger()
 
@@ -51,7 +52,7 @@ class InvalidPrefixExpression(Exception):
 
 class CharEnv(object):
 
-    TRAINING_TASKS = {'spin_hel'}
+    TRAINING_TASKS = {'spin_hel', 'contrastive'}
 
     SYMPY_OPERATORS = {
         # Elementary functions
@@ -100,6 +101,7 @@ class CharEnv(object):
         self.generator_id = params.generator_id
         self.l_scale = params.l_scale
         self.numerator_only = params.numerator_only
+        self.reduced_voc = params.reduced_voc
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -116,12 +118,20 @@ class CharEnv(object):
         if not self.bracket_tokens:
             self.special_tokens = []
         else:
-            self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
-                                                     for i in range(1, self.max_npt+1)
-                                                     for j in range(1, self.max_npt+1)]))\
-                                  + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
-                                                       for i in range(1, self.max_npt+1)
-                                                       for j in range(1, self.max_npt+1)]))
+            if self.reduced_voc and self.canonical_form:
+                self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
+                                                         for i in range(1, self.max_npt + 1)
+                                                         for j in range(i+1, self.max_npt + 1)])) \
+                                      + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
+                                                           for i in range(1, self.max_npt + 1)
+                                                           for j in range(i+1, self.max_npt + 1)]))
+            else:
+                self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
+                                                         for i in range(1, self.max_npt+1)
+                                                         for j in range(1, self.max_npt+1)]))\
+                                      + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
+                                                           for i in range(1, self.max_npt+1)
+                                                           for j in range(1, self.max_npt+1)]))
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
         if self.numeral_decomp:
@@ -135,8 +145,11 @@ class CharEnv(object):
             self.local_dict[k] = v
 
         # vocabulary
-        self.words = SPECIAL_WORDS + self.constants + list(self.variables.keys()) +\
-                     self.operators + self.symbols + self.elements + self.special_tokens
+        if self.reduced_voc:
+            self.words = SPECIAL_WORDS2 + self.operators + self.symbols + self.elements + self.special_tokens
+        else:
+            self.words = SPECIAL_WORDS + self.constants + list(self.variables.keys()) +\
+                         self.operators + self.symbols + self.elements + self.special_tokens
         self.id2word = {i: s for i, s in enumerate(self.words)}
         self.word2id = {s: i for i, s in self.id2word.items()}
         assert len(self.words) == len(set(self.words))
@@ -564,6 +577,33 @@ class CharEnv(object):
             timeout=(0 if params.num_workers == 0 else 1800),
             batch_size=params.batch_size,
             num_workers=(params.num_workers if data_path is None or params.num_workers == 0 else 1),
+            shuffle=False,
+            collate_fn=dataset.collate_fn
+        )
+
+    def create_train_iterator_contrastive(self, dataset, task, params, data_path):
+
+        logger.info(f"Creating train iterator for {task} and environment {self.__class__.__name__}...")
+
+        return DataLoader(
+            dataset,
+            timeout=(0 if params.num_workers == 0 else 1800),
+            batch_size=params.batch_size,
+            num_workers=(params.num_workers if data_path is None or params.num_workers == 0 else 1),
+            shuffle=False,
+            collate_fn=dataset.collate_fn
+        )
+
+    def create_test_iterator_contrastive(self, dataset, data_type, task, params):
+
+        assert data_type in ['valid', 'test']
+        logger.info(f"Creating {data_type} iterator for {task} and environment {self.__class__.__name__} ...")
+
+        return DataLoader(
+            dataset,
+            timeout=0,
+            batch_size=params.batch_size,
+            num_workers=1,
             shuffle=False,
             collate_fn=dataset.collate_fn
         )
