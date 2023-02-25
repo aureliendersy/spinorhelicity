@@ -15,9 +15,6 @@ import torch.nn.functional as F
 from environment.utils import timeout
 
 
-N_MAX_POSITIONS = 2560  # maximum input sequence length
-
-
 logger = getLogger()
 
 
@@ -183,12 +180,14 @@ class TransformerModel(nn.Module):
         self.n_layers = params.n_enc_layers if is_encoder else params.n_dec_layers
         self.dropout = params.dropout
         self.attention_dropout = params.attention_dropout
+        self.n_max_positions = params.n_max_positions
+
         assert self.dim % self.n_heads == 0, 'transformer dim must be a multiple of n_heads'
 
         # embeddings
-        self.position_embeddings = Embedding(N_MAX_POSITIONS, self.dim)
+        self.position_embeddings = Embedding(self.n_max_positions, self.dim)
         if params.sinusoidal_embeddings:
-            create_sinusoidal_embeddings(N_MAX_POSITIONS, self.dim, out=self.position_embeddings.weight)
+            create_sinusoidal_embeddings(self.n_max_positions, self.dim, out=self.position_embeddings.weight)
         self.embeddings = Embedding(self.n_words, self.dim, padding_idx=self.pad_index)
         self.layer_norm_emb = nn.LayerNorm(self.dim, eps=1e-12)
 

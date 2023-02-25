@@ -122,6 +122,7 @@ if __name__ == '__main__':
         'n_dec_layers': 3,
         'n_heads': 8,
         'dropout': 0,
+        'n_max_positions': 2560,
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
