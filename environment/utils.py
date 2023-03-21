@@ -431,6 +431,22 @@ def get_scaling_expr_detail(spin_hel_expr, func_list, n_point):
     return get_lg_ms(num, func_list, n_point), get_lg_ms(denom, func_list, n_point)
 
 
+def get_ms_expr(in_expr):
+    """
+    Recover the mass dimension of a given expression
+    :param in_expr:
+    :return:
+    """
+
+    ms = sp.Symbol('ms')
+    dict_mass_scale = {bk: ms for bk in in_expr.atoms(sp.Function)}
+    expr_subs_ms = in_expr.subs(dict_mass_scale)
+
+    expr_ms = sp.total_degree(expr_subs_ms, ms)
+
+    return expr_ms
+
+
 def get_lg_ms(in_expr, func_list, n_point):
     """
     Get the mass dimension along with the little group scaling of an expression
@@ -558,3 +574,43 @@ def add_scaling_lg(lg_scale_vector, bk_add, num):
         lg_scale_vector[arg - 1] += sign
 
     return lg_scale_vector
+
+
+def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
+    """
+    Fast method to get the scaling for only numerator terms
+    :param sp_numerator:
+    :param func_dict:
+    :param npt:
+    :return:
+    """
+
+    scalings = [0] * npt
+    mass_dim = 0
+
+    if isinstance(sp_numerator, sp.Add):
+        term = sp_numerator.args[0]
+    else:
+        term = sp_numerator
+
+    if term.args[0] == - 1:
+        term = term * -1
+
+    for arg in term.args:
+        if isinstance(arg, sp.Pow):
+            func, power = arg.args
+        else:
+            power = 1
+            func = arg
+        mass_dim += power
+        momentas = func.args
+
+        if isinstance(func, func_dict[0]):
+            sign = -1
+        else:
+            sign = 1
+        scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + sign * power
+        scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + sign * power
+
+    return [mass_dim] + scalings
+

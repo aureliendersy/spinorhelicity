@@ -32,10 +32,29 @@ def contrastive_loss(encoded, batch_ids, temp):
 
     # Compute the exponential similarity matrix and the masks for the numerator and denominator
     # In the num we normalize such that each group of positive examples has similar weighting (a pair has weight 1)
+    # Todo check what happens without masking in the denominator
     exp_mat = torch.exp(similarity_mat/temp)
     masks_nums = torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)/(ids-1) for ids in batch_ids])
     masks_denom = (1 - torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)
                                           for ids in batch_ids])).fill_diagonal_(0)
+
+    # Add an additional mask in the denominator in case we have repeated examples
+    # For instance if we have pairs (a1, b1) and (b2, a1) then a1 should not repulse with b2 or a1
+    _, inv, counts = torch.unique(encoded, dim=0, return_inverse=True, return_counts=True)
+    duplicates = [tuple(torch.where(inv == i)[0].tolist()) for i, c, in enumerate(counts) if counts[i] > 1]
+
+    # Mask_identical elements across groups
+    if len(duplicates) > 0:
+        masks_denom_copy = masks_denom.detach().clone()
+        for dupli in duplicates:
+            index_zero_ref = [(masks_denom[ind, :] == 0).nonzero() for ind in dupli]
+            for ind_1 in dupli:
+                for j in range(len(dupli)):
+                    masks_denom_copy[ind_1, index_zero_ref[j]] = 0
+                    masks_denom_copy[index_zero_ref[j], ind_1] = 0
+
+        masks_denom = masks_denom_copy
+
     numerator = (exp_mat * masks_nums).sum(dim=1)
     denominator = (exp_mat * masks_denom).sum(dim=1)
 
@@ -75,7 +94,7 @@ def evaluation_losses(encoded, batch_ids):
 
     # Uniform is exp of minus the norm squared (t=2)
     exp_mat = torch.exp(-4*(1-similarity_mat))
-    normalization = torch.tensor(sum([[batch_size - ids] * ids for ids in batch_ids], []))
+    normalization = torch.tensor(sum([[batch_size - ids] * ids for ids in batch_ids], []), device=device)
     denominator = ((exp_mat * masks_denom).sum(dim=1) / normalization).sum() / batch_size
     uniform_loss = torch.log(denominator)
 

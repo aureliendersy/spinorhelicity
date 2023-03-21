@@ -181,6 +181,7 @@ class TransformerModel(nn.Module):
         self.dropout = params.dropout
         self.attention_dropout = params.attention_dropout
         self.n_max_positions = params.n_max_positions
+        self.positional_encoding = params.positional_encoding
 
         assert self.dim % self.n_heads == 0, 'transformer dim must be a multiple of n_heads'
 
@@ -277,7 +278,8 @@ class TransformerModel(nn.Module):
         # embeddings
         if previous_state is None:
             tensor = self.embeddings(x)
-            tensor = tensor + self.position_embeddings(positions).expand_as(tensor)
+            if self.positional_encoding:
+                tensor = tensor + self.position_embeddings(positions).expand_as(tensor)
             tensor = self.layer_norm_emb(tensor)
             tensor = F.dropout(tensor, p=self.dropout, training=self.training)
             tensor *= mask.unsqueeze(-1).to(tensor.dtype)
@@ -399,7 +401,7 @@ class TransformerModel(nn.Module):
             unfinished_sents.mul_(next_words.ne(self.eos_index).long())
             cur_len = cur_len + 1
 
-            # stop when there is a </s> in each sentence, or if we exceed the maximul length
+            # stop when there is a </s> in each sentence, or if we exceed the maximum length
             if unfinished_sents.max() == 0:
                 break
 

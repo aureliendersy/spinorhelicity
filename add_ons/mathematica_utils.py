@@ -325,17 +325,19 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
     :return:
     """
 
-    res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt))) / \
-               session.evaluate(wlexpr('Abs[N[{}]]'.format(mma_tgt)))
+    res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
+    res_tgt = session.evaluate(wlexpr('Abs[N[{}]]'.format(mma_tgt)))
+    res_rel = res_diff / res_tgt
 
     try:
-        valid = res_diff < 10**(-ZERO_ERROR_POW)
+        valid = res_rel < 10**(-ZERO_ERROR_POW)
     except:
-        return False, res_diff
+        return False, res_rel
 
     if not valid:
         res_add = session.evaluate(wlexpr('Abs[N[(({})+({}))]]'.format(mma_hyp, mma_tgt)))
-        if res_add < 10**(-ZERO_ERROR_POW):
+        if res_add/res_tgt < 10**(-ZERO_ERROR_POW):
             logger.info("We got the wrong overall sign")
+            return True, -1
 
-    return valid, res_diff
+    return valid, res_rel

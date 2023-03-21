@@ -87,12 +87,13 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
             # convert to infix
             hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
+            hyp_disp = convert_sp_forms(hyp, env.func_dict)
 
             # When integrating the symbol
             if params.numerical_check:
-                hyp_mma = sp_to_mma(hyp, params.bracket_tokens, env.func_dict)
+                hyp_mma = sp_to_mma(hyp, env.npt_list, params.bracket_tokens, env.func_dict)
                 f_sp = env.infix_to_sympy(env.prefix_to_infix(env.sympy_to_prefix(f)))
-                tgt_mma = sp_to_mma(f_sp, params.bracket_tokens, env.func_dict)
+                tgt_mma = sp_to_mma(f_sp, env.npt_list, params.bracket_tokens, env.func_dict)
                 matches, _ = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
             else:
                 matches = None
@@ -113,9 +114,9 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
         if verbose:
             # print result
             if latex_form:
-                print("%.5f  %s %s %s %s" % (score, res, hyp, info_infix, latex(convert_sp_forms(hyp, envir.func_dict))))
+                print("%.5f  %s %s %s %s" % (score, res, hyp_disp, info_infix, latex(convert_sp_forms(hyp, envir.func_dict))))
             else:
-                print("%.5f  %s %s  %s %s" % (score, res, hyp, info_infix, remain))
+                print("%.5f  %s %s  %s %s" % (score, res, hyp_disp, info_infix, remain))
 
     if verbose:
         if first_valid_num is None:
@@ -135,17 +136,49 @@ if __name__ == '__main__':
     # Example 1 : A long 6 pt amplitude
     # input_eq = '(-ab(1,2)**2*ab(1,6)**2*sb(1,4)**2*sb(1,6)**2*sb(3,6)**2 - 2*ab(1,2)**2*ab(1,6)*ab(2,6)*sb(1,4)*sb(1,6)**2*sb(2,6)*sb(3,4)*sb(3,6) - 2*ab(1,2)**2*ab(1,6)*ab(3,6)*sb(1,4)**2*sb(1,6)*sb(3,6)**3 - 2*ab(1,2)**2*ab(1,6)*ab(4,6)*sb(1,4)**2*sb(1,6)*sb(3,6)**2*sb(4,6) - 2*ab(1,2)**2*ab(1,6)*ab(5,6)*sb(1,4)**2*sb(1,6)*sb(3,6)**2*sb(5,6) - ab(1,2)**2*ab(2,6)**2*sb(1,6)**2*sb(2,6)**2*sb(3,4)**2 - 2*ab(1,2)**2*ab(2,6)*ab(3,6)*sb(1,4)*sb(1,6)*sb(2,6)*sb(3,4)*sb(3,6)**2 - 2*ab(1,2)**2*ab(2,6)*ab(4,6)*sb(1,4)*sb(1,6)*sb(2,6)*sb(3,4)*sb(3,6)*sb(4,6) - 2*ab(1,2)**2*ab(2,6)*ab(5,6)*sb(1,4)*sb(1,6)*sb(2,6)*sb(3,4)*sb(3,6)*sb(5,6) - ab(1,2)**2*ab(3,6)**2*sb(1,4)**2*sb(3,6)**4 - 2*ab(1,2)**2*ab(3,6)*ab(4,6)*sb(1,4)**2*sb(3,6)**3*sb(4,6) - 2*ab(1,2)**2*ab(3,6)*ab(5,6)*sb(1,4)**2*sb(3,6)**3*sb(5,6) - ab(1,2)**2*ab(4,6)**2*sb(1,4)**2*sb(3,6)**2*sb(4,6)**2 - 2*ab(1,2)**2*ab(4,6)*ab(5,6)*sb(1,4)**2*sb(3,6)**2*sb(4,6)*sb(5,6) - ab(1,2)**2*ab(5,6)**2*sb(1,4)**2*sb(3,6)**2*sb(5,6)**2)/(ab(1,6)**2*ab(2,4)**2*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)**3 + 2*ab(1,6)**2*ab(2,4)*ab(2,5)*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)**2*sb(3,5) + 2*ab(1,6)**2*ab(2,4)*ab(2,6)*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)**2*sb(3,6) + ab(1,6)**2*ab(2,5)**2*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)*sb(3,5)**2 + 2*ab(1,6)**2*ab(2,5)*ab(2,6)*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)*sb(3,5)*sb(3,6) + ab(1,6)**2*ab(2,6)**2*ab(5,6)*sb(1,2)*sb(1,6)**2*sb(3,4)*sb(3,6)**2 + 2*ab(1,6)*ab(2,4)**2*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**3*sb(3,6) + 2*ab(1,6)*ab(2,4)**2*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**3*sb(4,6) + 2*ab(1,6)*ab(2,4)**2*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)**3*sb(5,6) + 4*ab(1,6)*ab(2,4)*ab(2,5)*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,5)*sb(3,6) + 4*ab(1,6)*ab(2,4)*ab(2,5)*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,5)*sb(4,6) + 4*ab(1,6)*ab(2,4)*ab(2,5)*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,5)*sb(5,6) + 4*ab(1,6)*ab(2,4)*ab(2,6)*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,6)**2 + 4*ab(1,6)*ab(2,4)*ab(2,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,6)*sb(4,6) + 4*ab(1,6)*ab(2,4)*ab(2,6)*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)**2*sb(3,6)*sb(5,6) + 2*ab(1,6)*ab(2,5)**2*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)**2*sb(3,6) + 2*ab(1,6)*ab(2,5)**2*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)**2*sb(4,6) + 2*ab(1,6)*ab(2,5)**2*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)**2*sb(5,6) + 4*ab(1,6)*ab(2,5)*ab(2,6)*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)*sb(3,6)**2 + 4*ab(1,6)*ab(2,5)*ab(2,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)*sb(3,6)*sb(4,6) + 4*ab(1,6)*ab(2,5)*ab(2,6)*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,5)*sb(3,6)*sb(5,6) + 2*ab(1,6)*ab(2,6)**2*ab(3,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,6)**3 + 2*ab(1,6)*ab(2,6)**2*ab(4,6)*ab(5,6)*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,6)**2*sb(4,6) + 2*ab(1,6)*ab(2,6)**2*ab(5,6)**2*sb(1,2)*sb(1,6)*sb(3,4)*sb(3,6)**2*sb(5,6) + ab(2,4)**2*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**3*sb(3,6)**2 + 2*ab(2,4)**2*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)**3*sb(3,6)*sb(4,6) + 2*ab(2,4)**2*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**3*sb(3,6)*sb(5,6) + ab(2,4)**2*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**3*sb(4,6)**2 + 2*ab(2,4)**2*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**3*sb(4,6)*sb(5,6) + ab(2,4)**2*ab(5,6)**3*sb(1,2)*sb(3,4)**3*sb(5,6)**2 + 2*ab(2,4)*ab(2,5)*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(3,6)**2 + 4*ab(2,4)*ab(2,5)*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(3,6)*sb(4,6) + 4*ab(2,4)*ab(2,5)*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(3,6)*sb(5,6) + 2*ab(2,4)*ab(2,5)*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(4,6)**2 + 4*ab(2,4)*ab(2,5)*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(4,6)*sb(5,6) + 2*ab(2,4)*ab(2,5)*ab(5,6)**3*sb(1,2)*sb(3,4)**2*sb(3,5)*sb(5,6)**2 + 2*ab(2,4)*ab(2,6)*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,6)**3 + 4*ab(2,4)*ab(2,6)*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,6)**2*sb(4,6) + 4*ab(2,4)*ab(2,6)*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**2*sb(3,6)**2*sb(5,6) + 2*ab(2,4)*ab(2,6)*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)**2*sb(3,6)*sb(4,6)**2 + 4*ab(2,4)*ab(2,6)*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)**2*sb(3,6)*sb(4,6)*sb(5,6) + 2*ab(2,4)*ab(2,6)*ab(5,6)**3*sb(1,2)*sb(3,4)**2*sb(3,6)*sb(5,6)**2 + ab(2,5)**2*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(3,6)**2 + 2*ab(2,5)**2*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(3,6)*sb(4,6) + 2*ab(2,5)**2*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(3,6)*sb(5,6) + ab(2,5)**2*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(4,6)**2 + 2*ab(2,5)**2*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(4,6)*sb(5,6) + ab(2,5)**2*ab(5,6)**3*sb(1,2)*sb(3,4)*sb(3,5)**2*sb(5,6)**2 + 2*ab(2,5)*ab(2,6)*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)**3 + 4*ab(2,5)*ab(2,6)*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)**2*sb(4,6) + 4*ab(2,5)*ab(2,6)*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)**2*sb(5,6) + 2*ab(2,5)*ab(2,6)*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)*sb(4,6)**2 + 4*ab(2,5)*ab(2,6)*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)*sb(4,6)*sb(5,6) + 2*ab(2,5)*ab(2,6)*ab(5,6)**3*sb(1,2)*sb(3,4)*sb(3,5)*sb(3,6)*sb(5,6)**2 + ab(2,6)**2*ab(3,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,6)**4 + 2*ab(2,6)**2*ab(3,6)*ab(4,6)*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,6)**3*sb(4,6) + 2*ab(2,6)**2*ab(3,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,6)**3*sb(5,6) + ab(2,6)**2*ab(4,6)**2*ab(5,6)*sb(1,2)*sb(3,4)*sb(3,6)**2*sb(4,6)**2 + 2*ab(2,6)**2*ab(4,6)*ab(5,6)**2*sb(1,2)*sb(3,4)*sb(3,6)**2*sb(4,6)*sb(5,6) + ab(2,6)**2*ab(5,6)**3*sb(1,2)*sb(3,4)*sb(3,6)**2*sb(5,6)**2)'
 
-    # Example 2: A 4pt ampltiude that should reduce to the Parke Taylor formula
+    # Example 2: A 4pt amplitude that should reduce to the Parke Taylor formula
     # input_eq = "((-(ab(1,4)*ab(2,1)*ab(2,3)*sb(1,2)*sb(2,3)) + ab(1,2)*ab(2,3)*ab(4,1)*sb(1,2)*sb(2,3) + ab(2,3)**2*ab(4,1)*sb(2,3)**2 - ab(1,3)*ab(2,1)*ab(2,4)*sb(1,2)*sb(3,2) - ab(1,3)*ab(2,3)*ab(4,1)*sb(1,3)*sb(3,2))*sb(3,4))/(ab(2,3)*ab(3,4)*ab(4,1)*sb(1,2)**2*sb(2,3))"
 
     # Example 3: Almost simplified versions of the Parke Taylor formula at 4 pt
     # input_eq = '(ab(1,2)*sb(3,4)**2)/(ab(1,4)*sb(1,2)*sb(1,4))'
     # input_eq = '(ab(1,2)**2*sb(3,4))/(ab(1,4)*sb(1,2)*ab(2,3))'
     # input_eq = '(ab(1,2)*sb(3,4)**2)/(ab(2,3)*sb(1,2)*sb(2,3))'
-    # input_eq = '(ab(1,2)**2*(-(ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4)) - ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) + ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,5)*sb(3,4)**2 - ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,3)*ab(2,3)*sb(1,2)**2*sb(2,3)**2*sb(3,5) + ab(1,2)*ab(1,3)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)**2*sb(3,5) + 2*ab(1,2)*ab(1,3)*ab(2,3)**2*sb(1,2)*sb(2,3)**3*sb(3,5) + ab(1,3)**2*ab(2,3)**2*sb(1,3)*sb(2,3)**3*sb(3,5) + ab(1,3)*ab(2,3)**3*sb(2,3)**4*sb(3,5) + ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(2,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) + ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)**2*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5)))/(ab(1,3)*ab(1,4)*ab(1,5)*ab(2,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*(ab(1,2)*sb(1,2) + ab(1,3)*sb(1,3) + ab(2,3)*sb(2,3))*(ab(2,3)*sb(2,3) + ab(2,4)*sb(2,4) + ab(3,4)*sb(3,4)))'
-    # input_eq = '((-(ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4)) - ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4) - 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,5)*sb(3,4) - ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) - ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(2,5)*sb(3,4) + ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,5)*sb(3,4)**2 + ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,5)*sb(3,4)**2 + ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,5)*sb(3,4)**2 - ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,5)*sb(3,4)**2 - ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,5)*sb(3,4)**2 + ab(1,2)**2*ab(1,3)*ab(2,3)*sb(1,2)**2*sb(2,3)**2*sb(3,5) + ab(1,2)*ab(1,3)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)**2*sb(3,5) + 2*ab(1,2)*ab(1,3)*ab(2,3)**2*sb(1,2)*sb(2,3)**3*sb(3,5) + ab(1,3)**2*ab(2,3)**2*sb(1,3)*sb(2,3)**3*sb(3,5) + ab(1,3)*ab(2,3)**3*sb(2,3)**4*sb(3,5) + ab(1,2)**2*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**3*ab(3,4)*sb(1,2)**2*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + ab(1,2)**2*ab(1,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,5) + 2*ab(1,2)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + 2*ab(1,2)**2*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)**2*sb(2,4)*sb(3,5) + ab(1,4)*ab(2,3)**3*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(2,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(2,4)*sb(3,5) + ab(1,2)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,2)**2*ab(2,4)*ab(3,4)*sb(1,2)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(2,4)*sb(1,3)*sb(2,3)*sb(2,4)**2*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(2,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) + ab(1,2)*ab(2,3)*ab(2,4)*ab(3,4)*sb(2,3)**2*sb(2,4)**2*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(2,3)*sb(1,2)**2*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)**2*ab(1,4)*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,3)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)*ab(2,3)**2*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,2)*ab(1,3)*ab(2,3)*ab(3,4)*sb(1,2)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)**2*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)**2*sb(3,4)*sb(3,5) + ab(1,3)*ab(2,3)**2*ab(3,4)*sb(2,3)**3*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,4)**2*ab(2,3)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)**2*ab(1,4)*ab(3,4)*sb(1,2)**2*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,3)*ab(1,4)**2*ab(2,3)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,2)*ab(1,3)*ab(1,4)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,4)*sb(3,4)*sb(3,5) - ab(1,4)**2*ab(2,3)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)**2*ab(3,4)**2*sb(1,2)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,3)*ab(1,4)*ab(2,3)*ab(3,4)*sb(1,3)*sb(2,3)*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,4)*ab(2,3)**2*ab(3,4)*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5) + ab(1,2)*ab(2,3)*ab(3,4)**2*sb(2,3)**2*sb(2,4)*sb(3,4)*sb(3,5)))/(ab(1,3)*ab(1,4)*ab(1,5)*ab(2,3)*ab(3,4)*sb(1,2)*sb(1,3)*sb(2,3)*(ab(1,2)*sb(1,2) + ab(1,3)*sb(1,3) + ab(2,3)*sb(2,3))*(ab(2,3)*sb(2,3) + ab(2,4)*sb(2,4) + ab(3,4)*sb(3,4)))'
-    input_eq = '(-ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,4)**2*sb(2,3)*sb(2,5)**2 + 2*ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,4)*sb(1,5)*sb(2,3)*sb(2,4)*sb(2,5) - ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,5)**2*sb(2,3)*sb(2,4)**2)/sb(4,5)**2'
+    #input_eq = '(-ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,4)**2*sb(2,3)*sb(2,5)**2 + 2*ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,4)*sb(1,5)*sb(2,3)*sb(2,4)*sb(2,5) - ab(1,2)*ab(2,3)*ab(2,4)*ab(3,5)*ab(4,5)*sb(1,5)**2*sb(2,3)*sb(2,4)**2)/sb(4,5)**2'
+    input_eq = '(ab(1,2)**3*sb(1,3)**2*sb(1,5)*sb(2,4) - ab(1,2)**3*sb(1,3)**2*sb(1,4)*sb(2,5) - ab(1,2)**2*ab(2,3)*sb(1,3)*sb(1,5)*sb(2,3)*sb(3,4) + ab(1,2)**2*ab(2,3)*sb(1,3)**2*sb(2,5)*sb(3,4) + ab(1,2)**2*ab(2,3)*sb(1,3)*sb(1,4)*sb(2,3)*sb(3,5)-ab(1,2)**2*ab(2,3)*sb(1,3)**2*sb(2,4)*sb(3,5))/(ab(2,3)*ab(2,4)*ab(2,5)*ab(4,5)*sb(1,2)**2*sb(2,3)*sb(4,5)) + (ab(1,2)**3 * sb(1,3)*sb(3,4)/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*sb(1,2)*sb(2,3))) - (ab(1,2)**3 * sb(1,5)/(ab(1,5)*ab(2,3)*ab(2,4)*ab(3,4)*sb(1,2)))'
+    #input_eq = '-ab(1,2)**3*sb(1,3)**2/(ab(2,3)*ab(2,4)*ab(2,5)*ab(4,5)*sb(1,2)*sb(2,3)) + (ab(1,2)**3 * sb(1,3)*sb(3,4)/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*sb(1,2)*sb(2,3))) - (ab(1,2)**3*sb(1,5)/(ab(1,5)*ab(2,3)*ab(2,4)*ab(3,4)*sb(1,2)))'
 
+    # Example 4: 5pt Parke Taylor
+    input_eq = '(ab(1,2)**2*(ab(1,2)*ab(1,5)*ab(3,4)*sb(1,3)**2*sb(1,5)**2*sb(2,4) - ab(1,2)*ab(1,5)*ab(3,4)*sb(1,3)**2*sb(1,4)*sb(1,5)*sb(2,5) - ab(1,5)*ab(2,3)*ab(3,4)*sb(1,3)*sb(1,5)**2*sb(2,3)*sb(3,4) + ab(1,5)*ab(2,3)*ab(3,4)*sb(1,3)**2*sb(1,5)*sb(2,5)*sb(3,4) + ab(1,5)*ab(2,3)*ab(3,4)*sb(1,3)*sb(1,4)*sb(1,5)*sb(2,3)*sb(3,5) - ab(1,5)*ab(2,3)*ab(3,4)*sb(1,3)**2*sb(1,5)*sb(2,4)*sb(3,5) - ab(2,3)**2*ab(4,5)*sb(1,3)*sb(1,5)*sb(2,3)**2*sb(4,5) - ab(2,3)*ab(2,4)*ab(4,5)*sb(1,4)*sb(1,5)*sb(2,3)**2*sb(4,5) - ab(2,3)*ab(2,4)*ab(4,5)*sb(1,3)*sb(1,5)*sb(2,3)*sb(2,4)*sb(4,5) - ab(2,4)**2*ab(4,5)*sb(1,4)*sb(1,5)*sb(2,3)*sb(2,4)*sb(4,5) + ab(2,3)**2*ab(4,5)*sb(1,3)**2*sb(2,3)*sb(2,5)*sb(4,5) + 2*ab(2,3)*ab(2,4)*ab(4,5)*sb(1,3)*sb(1,4)*sb(2,3)*sb(2,5)*sb(4,5) + ab(2,4)**2*ab(4,5)*sb(1,4)**2*sb(2,3)*sb(2,5)*sb(4,5) - ab(2,3)*ab(3,4)*ab(4,5)*sb(1,3)*sb(1,5)*sb(2,3)*sb(3,4)*sb(4,5) - ab(2,4)*ab(3,4)*ab(4,5)*sb(1,3)*sb(1,5)*sb(2,4)*sb(3,4)*sb(4,5) + ab(2,3)*ab(3,4)*ab(4,5)*sb(1,3)**2*sb(2,5)*sb(3,4)*sb(4,5) + ab(2,4)*ab(3,4)*ab(4,5)*sb(1,3)*sb(1,4)*sb(2,5)*sb(3,4)*sb(4,5)))/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*ab(3,4)*ab(4,5)*sb(1,2)**2*sb(1,5)*sb(2,3)*sb(4,5))'
+
+    # First block
+    #input_eq = '-ab(1, 2)**3*ab(1, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 4)*sb(1, 5)*sb(2, 5) - ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(3, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(3, 4)'
+
+    # Second block
+    #input_eq = '-ab(1, 2)**2*ab(2, 3)**2*ab(4, 5)*sb(1, 3)*sb(1, 5)*sb(2, 3)**2*sb(4, 5) - ab(1, 2)**2*ab(2, 3)*ab(2, 4)*ab(4, 5)*sb(1, 4)*sb(1, 5)*sb(2, 3)**2*sb(4, 5)'
+
+    # Third block
+    #input_eq = 'ab(1, 2)**2*ab(2, 3)**2*ab(4, 5)*sb(1, 3)**2*sb(2, 3)*sb(2, 5)*sb(4, 5) + 2*ab(1, 2)**2*ab(2, 3)*ab(2, 4)*ab(4, 5)*sb(1, 3)*sb(1, 4)*sb(2, 3)*sb(2, 5)*sb(4, 5) - ab(1, 2)**2*ab(2, 3)*ab(2, 4)*ab(4, 5)*sb(1, 3)*sb(1, 5)*sb(2, 3)*sb(2, 4)*sb(4, 5) + ab(1, 2)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 3)**2*sb(2, 5)*sb(3, 4)*sb(4, 5) + ab(1, 2)**2*ab(2, 4)**2*ab(4, 5)*sb(1, 4)**2*sb(2, 3)*sb(2, 5)*sb(4, 5)'
+
+    # Block 1b
+    input_eq = 'ab(1, 2)**3*ab(1, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)**2*sb(2, 4) - ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(3, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)*sb(1, 4)*sb(1, 5)*sb(2, 3)*sb(3, 5) - ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)*sb(1, 5)**2*sb(2, 3)*sb(3, 4)'
+
+    # Block 2b
+    input_eq = 'ab(1, 2)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 3)**2*sb(2, 5)*sb(3, 4)*sb(4, 5) - ab(1, 2)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 3)*sb(1, 5)*sb(2, 3)*sb(3, 4)*sb(4, 5) + ab(1, 2)**2*ab(2, 4)*ab(3, 4)*ab(4, 5)*sb(1, 3)*sb(1, 4)*sb(2, 5)*sb(3, 4)*sb(4, 5) - ab(1, 2)**2*ab(2, 4)*ab(3, 4)*ab(4, 5)*sb(1, 3)*sb(1, 5)*sb(2, 4)*sb(3, 4)*sb(4, 5)'
+
+    # Block 3b
+    input_eq = '-ab(1, 2)**2*ab(2, 3)*ab(2, 4)*ab(4, 5)*sb(1, 3)*sb(1, 5)*sb(2, 3)*sb(2, 4)*sb(4, 5) - ab(1, 2)**2*ab(2, 4)**2*ab(4, 5)*sb(1, 4)*sb(1, 5)*sb(2, 3)*sb(2, 4)*sb(4, 5)'
+
+    # Block 4a
+    input_eq = 'ab(1, 2)**2*ab(2, 3)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)**2*sb(4, 5) + ab(1, 2)**2*ab(2, 4)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 4)*sb(4, 5) + ab(1, 2)**2*ab(2, 5)**2*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 5)*sb(4, 5)'
+
+    # Block 4b
+    input_eq = 'ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 3)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 4)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(4, 5)'
+
+    input_eq = '-ab(1, 2)**3*ab(2, 5)*ab(4, 5)*sb(1, 2)*sb(1, 5)**2*sb(2, 3)*sb(4, 5)+-ab(1, 2)**3*ab(1, 5)*ab(3, 4)*sb(1, 2)*sb(1, 3)**2*sb(1, 5)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5)'
+    input_eq = '(-ab(1, 2)**3*ab(2, 5)*ab(4, 5)*sb(1, 2)*sb(1, 5)**2*sb(2, 3)*sb(4, 5)+-ab(1, 2)**3*ab(1, 5)*ab(3, 4)*sb(1, 2)*sb(1, 3)**2*sb(1, 5)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5))/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*ab(3,4)*ab(4,5)*sb(1,2)**2*sb(1,5)*sb(2,3)*sb(4,5))'
+
+    input_eq  = '(ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 3)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 4)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5)+ab(1, 2)**2*ab(2, 4)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 4)*sb(4, 5)+ab(1, 2)**2*ab(1, 5)*ab(2, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(4, 5) + ab(1, 2)**2*ab(2, 3)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)**2*sb(4, 5) + ab(1, 2)**2*ab(2, 5)**2*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 5)*sb(4, 5))/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*ab(3,4)*ab(4,5)*sb(1,2)**2*sb(1,5)*sb(2,3)*sb(4,5))'
+    input_eq = '(ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 3)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 4)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5)+ab(1, 2)**2*ab(2, 4)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 4)*sb(4, 5)+ab(1, 2)**2*ab(1, 5)*ab(2, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(4, 5) + ab(1, 2)**2*ab(2, 3)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)**2*sb(4, 5) + ab(1, 2)**2*ab(2, 5)**2*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 5)*sb(4, 5))'
     parameters = AttrDict({
         # Experiment Name
         'exp_name': 'Test_eval_spin_hel',
@@ -156,17 +189,21 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'max_npt': 6,
+        'npt_list': [5],
         'max_scale': 2,
-        'max_terms': 1,
-        'max_scrambles': 5,
+        'max_terms': 3,
+        'max_scrambles': 3,
         'save_info_scr': False,
+        'save_info_scaling': False,
+        'numeral_decomp': True,
         'int_base': 10,
         'max_len': 2048,
         'canonical_form': True,
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
+        'numerator_only': True,
+        'reduced_voc': False,
 
         # model parameters
         'emb_dim': 512,
@@ -174,16 +211,18 @@ if __name__ == '__main__':
         'n_dec_layers': 3,
         'n_heads': 8,
         'dropout': 0,
+        'n_max_positions': 2560,
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt6/checkpoint.pth',
+        'positional_encoding': True,
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth',
         # 'reload_model': '',
 
         # Trainer param
         'export_data': False,
-        # 'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8/data.prefix.counts.test',
-        'reload_data': '',
+        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
+        #'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -204,9 +243,12 @@ if __name__ == '__main__':
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 10,
+        'beam_size': 30,
         'beam_length_penalty': 1,
-        'beam_early_stopping': False,
+        'beam_early_stopping': True,
+        'nucleus_sampling': False,
+        'nucleus_p': 0.95,
+        'temperature': 1,
 
         # SLURM/GPU param
         'cpu': True,
@@ -215,7 +257,7 @@ if __name__ == '__main__':
         'num_workers': 1,
         'debug_slurm': False,
         'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
-
+        'mma_path': None,
     })
 
     check_model_params(parameters)
@@ -234,7 +276,7 @@ if __name__ == '__main__':
 
     # start the wolfram session
     if parameters.numerical_check:
-        session = initialize_numerical_check(parameters.max_npt, lib_path=parameters.lib_path)
+        session = initialize_numerical_check(parameters.npt_list[0], lib_path=parameters.lib_path)
         env.session = session
 
     first_num = test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)

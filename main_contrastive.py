@@ -1,7 +1,7 @@
 import numpy as np
 import json
 from environment.utils import AttrDict
-from environment.contrastive_data import convert_spinor_data
+from environment.contrastive_data import convert_spinor_data, create_batched_split
 from add_ons.slurm import init_signal_handler, init_distributed_mode
 import environment
 from environment.utils import initialize_exp
@@ -20,7 +20,10 @@ def main(params):
     env = build_env(params)
 
     if params.export_data:
-        convert_spinor_data(params.prefix_path, ['M', 'S'], env)
+        if params.batch_scalings:
+            create_batched_split(env, params, params.prefix_path, 5000)
+        else:
+            convert_spinor_data(params.prefix_path, ['M', 'S'], env)
         exit()
     else:
         modules = build_modules_contrastive(env, params)
@@ -66,6 +69,7 @@ def main(params):
 
 
 if __name__ == '__main__':
+
     parameters = AttrDict({
 
         # Name
@@ -105,17 +109,20 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
+        'positional_encoding': True,
         'reload_model': '',
 
         # Data param
-        'export_data': False,
-        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data.prefix.counts.train',
+        'export_data': True,
+        #'export_data': False,
+        #'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data.prefix.counts.train',
+        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts',
         'mma_path': None,
 
         # Trainer param
         'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.test',
         'reload_size': '',
-        'epoch_size': 50000,
+        'epoch_size': 5000,
         'max_epoch': 500,
         'amp': -1,
         'fp16': False,
@@ -125,9 +132,11 @@ if __name__ == '__main__':
         'stopping_criterion': '',
         'validation_metrics': '',
         'reload_checkpoint': '',
-        'env_base_seed': -1,
+        'env_base_seed': 1,
+        #'env_base_seed': -1,
         'batch_size': 32,
         'temp_contrastive': 0.25,
+        'batch_scalings': True,
 
         # Evaluation
         'eval_only': False,
