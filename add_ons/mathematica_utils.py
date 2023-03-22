@@ -338,6 +338,6 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
         res_add = session.evaluate(wlexpr('Abs[N[(({})+({}))]]'.format(mma_hyp, mma_tgt)))
         if res_add/res_tgt < 10**(-ZERO_ERROR_POW):
             logger.info("We got the wrong overall sign")
-            return True, -1
+            return False, -1
 
     return valid, res_rel

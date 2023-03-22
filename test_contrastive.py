@@ -12,6 +12,8 @@ import environment
 from environment.utils import initialize_exp, get_numerator_lg_scaling
 from environment import build_env
 from model.contrastive_learner import build_modules_contrastive
+from add_ons.mathematica_utils import initialize_numerical_check
+from model.contrastive_simplifier import total_simplification
 
 
 def test_expression_factors(envir, module_transfo, input_equation, params, factor_mask=False):
@@ -191,12 +193,22 @@ if __name__ == '__main__':
     parameters_s.max_terms = 3
     parameters_s.max_scrambles = 3
     parameters_s.reduced_voc = False
+    parameters_s.save_info_scr = False
+    parameters_s.save_info_scaling = False
 
     parameters_s.n_enc_layers = 3
     parameters_s.n_dec_layers = 3
     parameters_s.n_max_positions = 2560
 
     parameters_s.reload_model = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth'
+    parameters_s.lib_path = '/Users/aurelien/Documents/Package_lib/Spinors-1.0'
+
+    parameters_s.beam_size = 30
+    parameters_s.beam_length_penalty = 1
+    parameters_s.beam_early_stopping = True
+    parameters_s.max_len = 2048
+    parameters_s.nucleus_p = 0.95
+    parameters_s.temperature = 1
 
     # Start the logger
     init_distributed_mode(parameters_c)
@@ -208,17 +220,31 @@ if __name__ == '__main__':
     # Load the model and environment
     env_c = build_env(parameters_c)
     env_s = build_env(parameters_s)
+    envs = env_c, env_s
+    params = parameters_c, parameters_s
 
-    from model.contrastive_simplifier import load_modules, load_equation, encode_term, masked_similarity_term, similarity_terms
+    # start the wolfram session
 
-    encoder_c, encoder_s, decoder_s = load_modules(env_c, env_s, parameters_c, parameters_s)
-    terms_num, denom = load_equation(env_c, input_eq, parameters_c)
-    encoded1 = encode_term(env_c, terms_num[0], encoder_c)
-    sim_term1 = masked_similarity_term(env_c, terms_num[0], terms_num, encoder_c)
-    sim_term_all = similarity_terms(env_c, terms_num, encoder_c)
+    session = initialize_numerical_check(parameters_s.npt_list[0], lib_path=parameters_s.lib_path)
+    env_s.session = session
 
-    modules = build_modules_contrastive(env_c, parameters_c)
+    simplified_eq = total_simplification(envs, params, input_eq)
 
-    cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
+    #modules = load_modules(env_c, env_s, parameters_c, parameters_s)
+    #input_equation = load_equation(env_c, input_eq, parameters_c)
 
-    print('done')
+    #solution1 = single_simplification_pass(input_equation, modules, envs, parameters_s, denom_incl=True)
+    # encoded1 = encode_term(env_c, terms_num[0], encoder_c)
+    #sim_term1 = masked_similarity_term(env_c, terms_num[0], terms_num, encoder_c)
+    # sim_term_all = similarity_terms(env_c, terms_num, encoder_c)
+    #simplifier_t, rest_t = find_single_simplification_terms(sim_term1, terms_num, cutoff=0.95, denominator=denom)
+    #solution = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, parameters_s)
+
+    #modules = build_modules_contrastive(env_c, parameters_c)
+
+    #cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
+
+    print('Done')
+
+    env_s.session.stop()
+    exit()
