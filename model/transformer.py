@@ -416,7 +416,7 @@ class TransformerModel(nn.Module):
 
     @timeout(10000)
     def generate_beam(self, src_enc, src_len, beam_size, length_penalty, early_stopping, max_len=200,
-                      stochastic=True, nucl_p=0.95, temperature=1):
+                      stochastic=True, nucl_p=0.95, temperature=1, rng_gen=None):
         """
         Decode a sentence given initial start.
         `x`:
@@ -498,7 +498,8 @@ class TransformerModel(nn.Module):
                 nucleus = cumul_scores < nucl_p
                 nucleus = torch.cat([nucleus.new_ones(nucleus.shape[:-1] + (1,)), nucleus[..., :-1]], dim=-1)
                 sort_scores[~nucleus] = float(0.0)
-                next_words = sort_idx.gather(-1, sort_scores.multinomial(num_samples=1, replacement=True))
+                next_words = sort_idx.gather(-1, sort_scores.multinomial(num_samples=1, replacement=True,
+                                                                         generator=rng_gen))
                 # next_words = _scores.multinomial(num_samples=1, replacement=True)  # (bs*beam_size, 1)
                 next_scores = (scores.gather(1, next_words) + beam_scores[:, None]).view(bs, beam_size)  # (bs*beam_size, 1)
                 next_words = next_words.view(bs, beam_size)
