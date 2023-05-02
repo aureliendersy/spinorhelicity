@@ -327,7 +327,17 @@ def check_numerical_equiv(session, mma_hyp, mma_tgt):
 
     res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
     res_tgt = session.evaluate(wlexpr('Abs[N[{}]]'.format(mma_tgt)))
-    res_rel = res_diff / res_tgt
+    if res_tgt < 10**(-ZERO_ERROR_POW):
+        res_rel = res_diff
+    else:
+        try:
+            res_rel = res_diff / res_tgt
+
+        # In case of DirectedInfinity[1]
+        except:
+            print(res_diff)
+            print(res_tgt)
+            return False, res_tgt
 
     try:
         valid = res_rel < 10**(-ZERO_ERROR_POW)

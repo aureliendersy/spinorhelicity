@@ -111,6 +111,7 @@ def convert_spinor_data(filepath, ids_tokens, env):
     with open(filepath, 'r') as f_in:
         # Open the output file for writing
         with open(outpath, 'w') as f_out:
+
             # Loop through each line of the input file and get the number of identities
             while line := f_in.readline():
                 pbar.update(sys.getsizeof(line) - sys.getsizeof('\n'))
@@ -118,14 +119,18 @@ def convert_spinor_data(filepath, ids_tokens, env):
                 numids = np.array([idsinfo.count(token) for token in ids_tokens]).sum()
                 numids_forbidden = np.array([idsinfo.count(token) for token in ['Z', 'ID']]).sum()
 
+                prefix_start = line.split('\t')[1].split('&')[0][:-1].split(' ')
+
                 # If the number of identities is 1 then we extract the relevant equation
-                if numids == 1 and numids_forbidden == 0:
+                # Also verify that the simple form had only 1 term (just to be wary of surprises)
+                if numids == 1 and numids_forbidden == 0 and 'add' not in prefix_start:
                     eqprefix = line.split('\t')[0].split('|')[-1].split(' ')
                     eqsp = env.infix_to_sympy(env.prefix_to_infix(eqprefix))
                     numerator, _ = sp.fraction(eqsp)
+
+                    # Add the lg scaling information
                     scale_list = get_numerator_lg_scaling(convert_sp_forms(numerator, env.func_dict),
                                                           list(env.func_dict.values()), npt=env.npt_list[0])
-
                     scale_id = get_scaling_id(scale_list)
 
                     assert isinstance(numerator, sp.Add)
@@ -177,10 +182,8 @@ def create_batched_split(env, params, pathin, size_set):
     for i, line in enumerate(lines):
         if i in unique_valid_indices:
             valid_lines.append(line)
-            #f_valid.write(line)
         elif i in unique_test_indices:
             test_lines.append(line)
-            #f_test.write(line)
         else:
             f_train.write(line)
         if i % 100000 == 0:

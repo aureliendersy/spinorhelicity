@@ -296,10 +296,11 @@ def convert_to_bracket_file(prefix_file_path):
     new_file.close()
 
 
-def check_numerical_equiv_file(prefix_file_path, env, lib_path):
+def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=True):
     """
     Safeguard check for verifying that all the examples are properly well defined
     :param prefix_file_path:
+    :param infos_in_file:
     :param env
     :param lib_path
     :return:
@@ -310,13 +311,17 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
     print("Reading from {}".format(prefix_file_path))
 
     counter = 0
+    all_correct = True
 
     with open(prefix_file_path) as infile:
         for line in infile:
-            sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
-            mma2 = sp_to_mma(sp2, env.bracket_tokens, env.func_dict)
+            if infos_in_file:
+                sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1].split('&')[0][:-1].split(' ')))
+            else:
+                sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
+            mma2 = sp_to_mma(sp2, env.npt_list, env.bracket_tokens, env.func_dict)
             sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
-            mma1 = sp_to_mma(sp1, env.bracket_tokens, env.func_dict)
+            mma1 = sp_to_mma(sp1, env.npt_list, env.bracket_tokens, env.func_dict)
 
             matches, res_left = check_numerical_equiv(session, mma1, mma2)
 
@@ -325,11 +330,17 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path):
                 print('Example {} did not match'.format(counter))
                 print('Simple expr {}'.format(mma2))
                 print('Shuffled expr {}'.format(mma1))
+                all_correct = False
 
             counter += 1
 
-            if counter % 1 == 0:
+            if counter % 100 == 0:
                 print("Did {} lines".format(counter))
+
+    if all_correct:
+        print('All matches')
+    else:
+        print('Had some errors in data generation')
 
 
 def convert_sp_forms(sp_expr, func_dict):
@@ -599,6 +610,8 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
     for arg in term.args:
         if isinstance(arg, sp.Pow):
             func, power = arg.args
+        elif isinstance(arg, sp.Integer):
+            continue
         else:
             power = 1
             func = arg
