@@ -24,7 +24,7 @@ def main(params):
 
     env = build_env(params)
 
-    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix.counts', env, params.lib_path)
+    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
     #exit()
 
     modules = build_modules(env, params)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_eval_spin_hel',
+        'exp_name': 'Test_data_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
         'exp_id': 'test',
         'save_periodic': 0,
@@ -103,10 +103,10 @@ if __name__ == '__main__':
         'env_name': 'char_env',
         'npt_list': [5],
         'max_scale': 2,
-        'max_terms': 1,
-        'max_scrambles': 5,
-        'save_info_scr': False,
-        'save_info_scaling': False,
+        'max_terms': 3,
+        'max_scrambles': 3,
+        'save_info_scr': True,
+        'save_info_scaling': True,
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 2048,
@@ -115,6 +115,7 @@ if __name__ == '__main__':
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
+        'reduced_voc': False,
 
         # model parameters
         'emb_dim': 512,
@@ -126,14 +127,15 @@ if __name__ == '__main__':
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
-        #'reload_model': '',
+        'positional_encoding': True,
+        #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
+        'reload_model': '',
 
         # Trainer param
-        #'export_data': True,
-        'export_data': False,
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
-        #'reload_data': '',
+        'export_data': True,
+        #'export_data': False,
+        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
+        'reload_data': '',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -149,8 +151,8 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        'eval_only': True,
-        #'eval_only': False,
+        #'eval_only': True,
+        'eval_only': False,
         'numerical_check': True,
         'eval_verbose': 2,
         'eval_verbose_print': True,

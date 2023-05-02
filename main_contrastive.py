@@ -74,8 +74,8 @@ if __name__ == '__main__':
 
         # Name
         'exp_name': 'Test_train_contrastive',
-        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
-        'exp_id': 'temp_0.25_',
+        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/dumped/',
+        'exp_id': 'temp_0.1',
         'save_periodic': 0,
         'tasks': 'contrastive',
 
@@ -83,10 +83,10 @@ if __name__ == '__main__':
         'env_name': 'char_env',
         'npt_list': [5],
         'max_scale': 2,
-        'max_terms': 1,
-        'max_scrambles': 5,
-        'save_info_scr': True,
-        'save_info_scaling': True,
+        'max_terms': 3,
+        'max_scrambles': 3,
+        'save_info_scr': False,
+        'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 2048,
@@ -115,12 +115,12 @@ if __name__ == '__main__':
         # Data param
         'export_data': True,
         #'export_data': False,
-        #'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data.prefix.counts.train',
-        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts',
+        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data_contrastive.prefix.counts',
+        #'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data.prefix.counts.full',
         'mma_path': None,
 
         # Trainer param
-        'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5-infos_a/data_contrastive.prefix.counts.test',
+        'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.test',
         'reload_size': '',
         'epoch_size': 5000,
         'max_epoch': 500,
@@ -137,6 +137,7 @@ if __name__ == '__main__':
         'batch_size': 32,
         'temp_contrastive': 0.25,
         'batch_scalings': True,
+        'minimal_denom_mask': True,
 
         # Evaluation
         'eval_only': False,
