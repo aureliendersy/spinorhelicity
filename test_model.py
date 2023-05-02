@@ -43,7 +43,6 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
     len1 = torch.LongTensor([len(x1)])
     x1, len1 = to_cuda(x1, len1)
 
-
     # forward
     encoded = encoder('fwd', x=x1, lengths=len1, causal=False)
 
@@ -75,13 +74,13 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
         # parse decoded hypothesis
         ids = sent[1:].tolist()  # decoded token IDs
         tok = [envir.id2word[wid] for wid in ids]  # convert to prefix
-
+        hyp_disp = ''
         # Parse the identities if required
         try:
             hyp = envir.prefix_to_infix(tok)
             if '&' in tok:
                 prefix_info = tok[tok.index('&'):]
-                info_infix = env.scr_prefix_to_infix(prefix_info)
+                info_infix = envir.scr_prefix_to_infix(prefix_info)
             else:
                 info_infix = ''
 
@@ -91,18 +90,19 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
             # When integrating the symbol
             if params.numerical_check:
-                hyp_mma = sp_to_mma(hyp, env.npt_list, params.bracket_tokens, env.func_dict)
-                f_sp = env.infix_to_sympy(env.prefix_to_infix(env.sympy_to_prefix(f)))
-                tgt_mma = sp_to_mma(f_sp, env.npt_list, params.bracket_tokens, env.func_dict)
-                matches, _ = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
+                hyp_mma = sp_to_mma(hyp, envir.npt_list, params.bracket_tokens, envir.func_dict)
+                f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
+                tgt_mma = sp_to_mma(f_sp, envir.npt_list, params.bracket_tokens, envir.func_dict)
+                matches, error = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
             else:
                 matches = None
+                error = None
 
-            res = "Unknown" if matches is None else ("OK" if matches else "NO")
+            res = "Unknown" if matches is None else ("OK" if (matches or error == -1) else "NO")
             # remain = "" if matches else " | {} remaining".format(remaining_diff)
             remain = ""
 
-            if matches and first_valid_num is None:
+            if matches or error == -1 and first_valid_num is None:
                 first_valid_num = num + 1
 
         except:
@@ -114,9 +114,9 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
         if verbose:
             # print result
             if latex_form:
-                print("%.5f  %s %s %s %s" % (score, res, hyp_disp, info_infix, latex(convert_sp_forms(hyp, envir.func_dict))))
+                print("%.5f  %s %s %s %s" % (score, res, hyp, info_infix, latex(hyp_disp)))
             else:
-                print("%.5f  %s %s  %s %s" % (score, res, hyp_disp, info_infix, remain))
+                print("%.5f  %s %s  %s %s" % (score, res, hyp, info_infix, remain))
 
     if verbose:
         if first_valid_num is None:
@@ -179,6 +179,14 @@ if __name__ == '__main__':
 
     input_eq  = '(ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 3)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 4)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5)+ab(1, 2)**2*ab(2, 4)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 4)*sb(4, 5)+ab(1, 2)**2*ab(1, 5)*ab(2, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(4, 5) + ab(1, 2)**2*ab(2, 3)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)**2*sb(4, 5) + ab(1, 2)**2*ab(2, 5)**2*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 5)*sb(4, 5))/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*ab(3,4)*ab(4,5)*sb(1,2)**2*sb(1,5)*sb(2,3)*sb(4,5))'
     input_eq = '(ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 3)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 4)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 4)*sb(4, 5)+ab(1, 2)**3*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(1, 3)*sb(1, 5)*sb(3, 4)*sb(4, 5)+ab(1, 2)**2*ab(2, 4)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 4)*sb(4, 5)+ab(1, 2)**2*ab(1, 5)*ab(2, 5)*ab(3, 4)*sb(1, 3)**2*sb(1, 5)*sb(2, 5)*sb(4, 5) + ab(1, 2)**2*ab(2, 3)*ab(2, 5)*ab(4, 5)*sb(1, 5)**2*sb(2, 3)**2*sb(4, 5) + ab(1, 2)**2*ab(2, 5)**2*ab(4, 5)*sb(1, 5)**2*sb(2, 3)*sb(2, 5)*sb(4, 5))'
+
+    input_eq = '(ab(1, 2)*ab(1, 3)*ab(1, 4)*ab(2, 5)**2*sb(1, 2)*sb(1, 5)*sb(4, 5) + ab(1, 2)*ab(1, 3)*ab(1, 5)*ab(2, 4)**2*sb(1, 2)*sb(1, 4)*sb(4, 5) + ab(1, 2)*ab(1, 4)*ab(2, 3)**2*ab(2, 5)*sb(1, 5)*sb(2, 3)*sb(2, 4) + ab(1, 2)*ab(1, 4)*ab(2, 3)*ab(2, 5)*ab(3, 4)*sb(1, 5)*sb(2, 4)*sb(3, 4) - ab(1, 2)*ab(1, 5)*ab(2, 3)*ab(2, 4)*ab(3, 4)*sb(1, 4)*sb(2, 4)*sb(3, 5) - ab(1, 2)*ab(1, 5)*ab(2, 3)*ab(2, 4)*ab(3, 5)*sb(1, 3)*sb(2, 5)*sb(4, 5) + ab(1, 3)*ab(1, 4)*ab(1, 5)*ab(2, 3)*ab(2, 5)*sb(1, 5)**2*sb(3, 4) - ab(1, 3)*ab(1, 4)*ab(2, 3)**2*ab(2, 5)*sb(1, 2)*sb(3, 4)*sb(3, 5) - ab(1, 3)*ab(1, 4)*ab(2, 3)*ab(2, 4)*ab(2, 5)*sb(1, 4)*sb(2, 5)*sb(3, 4) + ab(1, 3)*ab(1, 5)*ab(2, 3)*ab(2, 4)*ab(3, 5)*sb(1, 5)*sb(3, 4)*sb(3, 5) + ab(1, 4)*ab(1, 5)**2*ab(2, 3)**2*sb(1, 3)*sb(1, 5)*sb(4, 5))/(ab(1, 3)*ab(1, 5)*ab(2, 3)*ab(3, 4)*ab(4, 5)**2*sb(1, 2)*sb(1, 4)*sb(1, 5))'
+    input_eq = '(ab(1, 2)*ab(1, 4)*ab(2, 3)*ab(2, 5)*ab(3, 4)*sb(1, 5)*sb(2, 4)*sb(3, 4)- ab(1, 3)*ab(1, 4)*ab(2, 3)**2*ab(2, 5)*sb(1, 2)*sb(3, 4)*sb(3, 5) - ab(1, 3)*ab(1, 4)*ab(2, 3)*ab(2, 4)*ab(2, 5)*sb(1, 4)*sb(2, 5)*sb(3, 4))/(ab(1, 3)*ab(1, 5)*ab(2, 3)*ab(3, 4)*ab(4, 5)**2*sb(1, 2)*sb(1, 4)*sb(1, 5))'
+    #input_eq = '(-ab(1, 2)**3*ab(2, 4)*ab(2, 5)*sb(1, 2)**2*sb(1, 5)*sb(2, 3)*sb(4, 5))/(ab(1,5)*ab(2,3)*ab(2,4)*ab(2,5)*ab(3,4)*ab(4,5)*sb(1,2)**2*sb(1,5)*sb(2,3)*sb(4,5))'
+    #input_eq = '-sb(1, 2)**3/(sb(1, 5)*sb(2, 3)*sb(3, 4)*sb(4, 5))'
+
+    input_eq = '(-ab(1, 2)*ab(1, 3)*ab(2, 4)*ab(2, 5)*sb(2, 4)*sb(3, 5) - ab(1, 2)*ab(1, 3)*ab(2, 4)*ab(3, 5)*sb(3, 4)*sb(3, 5) + ab(1, 3)**2*ab(2, 4)*ab(2, 5)*sb(3, 4)*sb(3, 5) - ab(1, 3)*ab(1, 4)*ab(2, 3)*ab(2, 5)*sb(3, 4)*sb(3, 5))/(ab(1, 5)*ab(2, 3)*ab(3, 4)*ab(4, 5)**2*sb(1, 2)*sb(4, 5))'
+    input_eq = '(-ab(1, 2)**3*ab(3, 4)*ab(3, 5)*sb(1, 5)*sb(2, 3)**2 + ab(1, 2)**2*ab(1, 3)*ab(3, 4)*ab(4, 5)*sb(1, 4)*sb(2, 3)*sb(3, 5) - ab(1, 2)**2*ab(1, 4)*ab(1, 5)*ab(4, 5)*sb(1, 2)*sb(1, 5)*sb(4, 5) + ab(1, 2)**2*ab(1, 4)*ab(3, 4)*ab(4, 5)*sb(1, 3)*sb(2, 4)*sb(4, 5) + ab(1, 2)**2*ab(1, 5)*ab(2, 3)*ab(4, 5)*sb(1, 2)*sb(2, 5)*sb(3, 5))/(ab(1, 4)*ab(1, 5)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 2)**2*sb(1, 5))'
     parameters = AttrDict({
         # Experiment Name
         'exp_name': 'Test_eval_spin_hel',

@@ -14,13 +14,57 @@ from logging import getLogger
 logger = getLogger()
 
 
-def contrastive_loss(encoded, batch_ids, temp):
+def create_denominator_mask(encoded, similarity_mat, batch_ids, minimal_denom_mask=False):
+    """
+    Routine for contructing the appropriate mask for the denominator term in the contrastive loss
+    :param encoded:
+    :param similarity_mat:
+    :param batch_ids:
+    :param minimal_denom_mask:
+    :return:
+    """
+    # Get the device on which the tensor is located
+    device = encoded.device
+
+    # Create the skeleton for the denominator mask
+    if minimal_denom_mask:
+        masks_denom = torch.ones(similarity_mat.size(), device=device).fill_diagonal_(0)
+    else:
+        masks_denom = (1 - torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)
+                                              for ids in batch_ids])).fill_diagonal_(0)
+
+    # Add an additional mask in the denominator in case we have repeated examples
+    # For instance if we have pairs (a1, b1) and (b2, a1) then a1 should not repulse with b2 or a1
+    # With the minimal mask we will just hide the identical pairs
+    _, inv, counts = torch.unique(encoded, dim=0, return_inverse=True, return_counts=True)
+    duplicates = [tuple(torch.where(inv == i)[0].tolist()) for i, c, in enumerate(counts) if counts[i] > 1]
+
+    # Mask_identical elements across groups
+    if len(duplicates) > 0:
+        masks_denom_copy = masks_denom.detach().clone()
+        for dupli in duplicates:
+            index_zero_ref = [(masks_denom[ind, :] == 0).nonzero() for ind in dupli]
+            for ind_1 in dupli:
+                for j in range(len(dupli)):
+                    if minimal_denom_mask:
+                        masks_denom_copy[ind_1, dupli[j]] = 0
+                    else:
+                        masks_denom_copy[ind_1, index_zero_ref[j]] = 0
+                        masks_denom_copy[index_zero_ref[j], ind_1] = 0
+
+        masks_denom = masks_denom_copy
+
+    return masks_denom
+
+
+def contrastive_loss(encoded, batch_ids, temp, minimal_denom_mask=False):
     """
     Compute the contrastive loss for a set of positive and negative examples. In each group we
     have a number of examples given by batch ids.
     :param encoded: a tensor containing the encoded representations of the examples
     :param batch_ids: a list containing the number of examples in each group (batch)
     :param temp: the temperature parameter used for scaling the similarity scores
+    :param minimal_denom_mask: Flag to determine if we only mask in the denominator the pairs that are identical
     :return:
     """
     # Get the device on which the tensor is located
@@ -32,28 +76,9 @@ def contrastive_loss(encoded, batch_ids, temp):
 
     # Compute the exponential similarity matrix and the masks for the numerator and denominator
     # In the num we normalize such that each group of positive examples has similar weighting (a pair has weight 1)
-    # Todo check what happens without masking in the denominator
     exp_mat = torch.exp(similarity_mat/temp)
     masks_nums = torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)/(ids-1) for ids in batch_ids])
-    masks_denom = (1 - torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)
-                                          for ids in batch_ids])).fill_diagonal_(0)
-
-    # Add an additional mask in the denominator in case we have repeated examples
-    # For instance if we have pairs (a1, b1) and (b2, a1) then a1 should not repulse with b2 or a1
-    _, inv, counts = torch.unique(encoded, dim=0, return_inverse=True, return_counts=True)
-    duplicates = [tuple(torch.where(inv == i)[0].tolist()) for i, c, in enumerate(counts) if counts[i] > 1]
-
-    # Mask_identical elements across groups
-    if len(duplicates) > 0:
-        masks_denom_copy = masks_denom.detach().clone()
-        for dupli in duplicates:
-            index_zero_ref = [(masks_denom[ind, :] == 0).nonzero() for ind in dupli]
-            for ind_1 in dupli:
-                for j in range(len(dupli)):
-                    masks_denom_copy[ind_1, index_zero_ref[j]] = 0
-                    masks_denom_copy[index_zero_ref[j], ind_1] = 0
-
-        masks_denom = masks_denom_copy
+    masks_denom = create_denominator_mask(encoded, similarity_mat, batch_ids, minimal_denom_mask=minimal_denom_mask)
 
     numerator = (exp_mat * masks_nums).sum(dim=1)
     denominator = (exp_mat * masks_denom).sum(dim=1)
@@ -65,11 +90,12 @@ def contrastive_loss(encoded, batch_ids, temp):
     return loss
 
 
-def evaluation_losses(encoded, batch_ids):
+def evaluation_losses(encoded, batch_ids, minimal_denom_mask=False):
     """
     Get the alignement and uniformity losses
     :param encoded:
     :param batch_ids:
+    :param minimal_denom_mask:
     :return:
     """
     # Get the device on which the tensor is located
@@ -86,15 +112,15 @@ def evaluation_losses(encoded, batch_ids):
     # In the num we normalize such that we look at the average alignment within each group
     masks_nums = torch.block_diag(
         *[torch.ones(ids, ids, device=device).fill_diagonal_(0) / (ids-1) for ids in batch_ids])
-    masks_denom = (1 - torch.block_diag(*[torch.ones(ids, ids, device=device).fill_diagonal_(0)
-                                          for ids in batch_ids])).fill_diagonal_(0)
+
+    masks_denom = create_denominator_mask(encoded, similarity_mat, batch_ids, minimal_denom_mask=minimal_denom_mask)
 
     # Alignment is ||x-y||^2 with x and y normalized (alpha=2)
     alignment_loss = (2 * (1 - similarity_mat) * masks_nums).sum(dim=1).sum() / batch_size
 
     # Uniform is exp of minus the norm squared (t=2)
     exp_mat = torch.exp(-4*(1-similarity_mat))
-    normalization = torch.tensor(sum([[batch_size - ids] * ids for ids in batch_ids], []), device=device)
+    normalization = masks_denom.sum(dim=1)
     denominator = ((exp_mat * masks_denom).sum(dim=1) / normalization).sum() / batch_size
     uniform_loss = torch.log(denominator)
 
@@ -155,10 +181,10 @@ class ContrastiveEvaluator(object):
             # cuda
             x_batch, len_batch, ids_batch = to_cuda(x_batch, len_batch, ids_batch)
 
-            # forward / loss
+            # evaluation losses on valid and test sets
             encoded = encoder_c('fwd', x=x_batch, lengths=len_batch, causal=False)
-            c_loss = contrastive_loss(encoded, ids_batch, params.temp_contrastive)
-            align_loss, uniform_loss = evaluation_losses(encoded, ids_batch)
+            c_loss = contrastive_loss(encoded, ids_batch, params.temp_contrastive, params.minimal_denom_mask)
+            align_loss, uniform_loss = evaluation_losses(encoded, ids_batch, params.minimal_denom_mask)
 
             c_losses += c_loss.item()
             align_losses += align_loss.item()
@@ -210,7 +236,7 @@ class ContrastiveTrainer(Trainer):
 
         # forward / loss
         encoded = encoder_c('fwd', x=x_batch, lengths=len_batch, causal=False)
-        loss = contrastive_loss(encoded, ids_batch, params.temp_contrastive)
+        loss = contrastive_loss(encoded, ids_batch, params.temp_contrastive, params.minimal_denom_mask)
 
         self.stats[task].append(loss.item())
 

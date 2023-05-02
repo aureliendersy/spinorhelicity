@@ -101,10 +101,13 @@ def count_numerator_terms(expression):
 
     if isinstance(numerator, sp.Add):
         num_terms = len(numerator.args)
+    elif numerator == 0:
+        num_terms = 0
     elif len(numerator.atoms(sp.Add)) == 0:
         num_terms = 1
     else:
-        raise ValueError('Could not determine the number of terms in the numerator')
+        logger.info('Could not determine the number of terms in the numerator')
+        return None
     return num_terms
 
 
@@ -154,7 +157,57 @@ def encode_s_term(envir_s, term, encoder_s):
     return encoded_s, len1
 
 
-def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c):
+def blind_constants(input_expression):
+    """
+    Given an input equation we isolate the numerator terms and return the expression
+    with all constants set to 1 or -1 depending on the sign. Also return the list of constants
+    :param input_expression: 
+    :return: 
+    """
+    num, denom = extract_num_denom(input_expression)
+    new_num = []
+    const_list = []
+    for term in num:
+        if isinstance(term, sp.Add) or isinstance(term, sp.Mul):
+            const = [term_mult for term_mult in term.args if isinstance(term_mult, sp.Integer)]
+        else:
+            const = []
+        if len(const) == 0:
+            new_num.append(term)
+            const_list.append(1)
+        elif len(const) == 1:
+            new_num.append(term/abs(const[0]))
+            const_list.append(const[0])
+        else:
+            print(num)
+            print(const)
+            raise ValueError('Found two constants in a numerator term')
+    return (np.array(new_num).sum()) / denom, np.array(const_list)
+
+
+def normalize_term(term_in):
+    """
+    Given a term in the numerator return the same term normalize (constant 1 or -1)
+    :param term_in:
+    :return:
+    """
+
+    if isinstance(term_in, sp.Integer):
+        return term_in/abs(term_in)
+
+    if not isinstance(term_in, sp.Mul):
+        raise ValueError('Expected a multiplicative term to normalize')
+
+    const_vect = [term_mult for term_mult in term_in.args if isinstance(term_mult, sp.Integer)]
+
+    if len(const_vect) > 1:
+        raise ValueError('Found two constants in a numerator term when normalizing')
+    const = 1 if len(const_vect) == 0 else abs(const_vect[0])
+
+    return term_in / const
+
+
+def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c, const_blind=False):
     """
     Given a reference term we compute its cosine similarity with a list of target terms.
     We calculate the cosine similarity only on the parts of the terms that do not
@@ -163,6 +216,7 @@ def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c):
     :param term_ref:
     :param terms_comp:
     :param encoder_c:
+    :param const_blind:
     :return:
     """
     metric_sim = nn.CosineSimilarity(dim=-1)
@@ -170,6 +224,10 @@ def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c):
     for i, term in enumerate(terms_comp):
 
         newterm_ref, newterm_comp = sp.fraction(sp.cancel(term_ref / term))
+
+        if const_blind:
+            newterm_ref = normalize_term(newterm_ref)
+            newterm_comp = normalize_term(newterm_comp)
 
         encoded_ref = encode_term(envir_c, newterm_ref, encoder_c)
         encoded_comp = encode_term(envir_c, newterm_comp, encoder_c)
@@ -196,13 +254,14 @@ def similarity_terms(envir_c, terms, encoder_c):
     return similarity_mat
 
 
-def find_single_simplification_terms(similarity_vect, terms_comp, cutoff=0.95, denominator=None):
+def find_single_simplification_terms(similarity_vect, terms_comp, cutoff=0.9, denominator=None, short_search=False):
     """
     Given a similarity vector we retain the expression that holds the greatest promise in simplifying
     :param similarity_vect:
     :param terms_comp:
     :param cutoff:
     :param denominator:
+    :param short_search:
     :return:
     """
     mask = similarity_vect > cutoff
@@ -212,8 +271,16 @@ def find_single_simplification_terms(similarity_vect, terms_comp, cutoff=0.95, d
     if not torch.sum(mask).item() > 1:
         return None, None
 
+    # If we do a short search we limit up to 4 terms at most
+    if short_search:
+        _, indices_k = torch.topk(similarity_vect, k=min(4, len(similarity_vect)))
+        mask2 = torch.zeros_like(mask, dtype=torch.bool)
+        mask2[indices_k] = True
+        mask = mask & mask2
+
     # Retain only the terms that have a high chance of simplifying and combine them
     relevant_terms = terms_comp[mask]
+
     rest_terms = terms_comp[~mask]
     terms_to_simplify = relevant_terms.sum()
 
@@ -262,7 +329,7 @@ def greedy_decoding(encoded, decoder_s, len_in, params_s, envir_s):
     return sp_greedy_sol
 
 
-def check_valid_solution(terms_to_simplify, num_terms_init, hyp_sp, envir_s, params_s):
+def check_valid_solution(terms_to_simplify, num_terms_init, hyp_sp, envir_s, params_s, rng_active_num, ref_term=None):
     """
     Check if our proposed solution is correct (also look if it is valid up to an overall sign)
     :param terms_to_simplify:
@@ -270,6 +337,8 @@ def check_valid_solution(terms_to_simplify, num_terms_init, hyp_sp, envir_s, par
     :param hyp_sp:
     :param envir_s:
     :param params_s:
+    :param rng_active_num:
+    :param ref_term:
     :return:
     """
 
@@ -280,7 +349,32 @@ def check_valid_solution(terms_to_simplify, num_terms_init, hyp_sp, envir_s, par
     # Check if we are indeed decreasing the length of the expression
     # If we have an overall constant then we allow expressions with the same length
     num_terms_hyp = count_numerator_terms(hyp_sp)
-    if check_for_overall_const(terms_to_simplify):
+
+    if num_terms_hyp is None:
+        return False, None, None
+
+    # If we account for constants we now have to compare to the solution once added with the reference term
+    if ref_term is not None:
+
+        # Scale the hypothesis by the minimal constant found in original expression
+        min_const = min(abs(ref_term[1]))
+        hyp_sp_scale = convert_sp_forms(hyp_sp, envir_s.func_dict) * min_const
+
+        # Get the new total hypothesis and corresponding constants
+        hyp_adjusted = sp.cancel(ref_term[0] - terms_to_simplify*min_const + hyp_sp_scale)
+        _, const_list_new = blind_constants(hyp_adjusted)
+        num_terms_hyp = len(const_list_new)
+
+        # Convert to correct format
+        hyp_sp = envir_s.infix_to_sympy(envir_s.prefix_to_infix(envir_s.sympy_to_prefix(hyp_adjusted)))
+        terms_to_simplify = ref_term[0]
+
+        # If we generate more terms or they are associated with bigger constants we get rid of the expression
+        if num_terms_hyp > num_terms_init or (num_terms_hyp == num_terms_init
+                                              and abs(const_list_new).sum() >= abs(ref_term[1]).sum()):
+            return False, None, None
+
+    elif check_for_overall_const(terms_to_simplify) or rng_active_num:
         if num_terms_hyp > num_terms_init:
             return False, None, None
     else:
@@ -328,15 +422,17 @@ def generate_beam_hyp(encoded, len_in, decoder_s, params_s):
     return hypotheses
 
 
-def generate_nucleus_hyp(encoded, len_in, decoder_s, params_s):
+def generate_nucleus_hyp(encoded, len_in, decoder_s, params_s, rng):
     """
     Use nucleus sampling to generate the list of hypothesis to be tested
     :param encoded:
     :param len_in:
     :param decoder_s:
     :param params_s:
+    :param rng:
     :return:
     """
+    rng_active, rng_gens = rng
     # Nucleus decoding - Use a stochastic setup
     with torch.no_grad():
         _, _, beam = decoder_s.generate_beam(encoded.transpose(0, 1), len_in, beam_size=params_s.beam_size,
@@ -345,13 +441,14 @@ def generate_nucleus_hyp(encoded, len_in, decoder_s, params_s):
                                              max_len=params_s.max_len,
                                              stochastic=True,
                                              nucl_p=params_s.nucleus_p,
-                                             temperature=params_s.temperature)
+                                             temperature=params_s.temperature,
+                                             rng_gen=rng_gens[1])
     hypotheses = beam[0].hyp
 
     return hypotheses
 
 
-def check_hypothesis(terms_to_simplify, num_terms_init, hypotheses, envir_s, params_s):
+def check_hypothesis(terms_to_simplify, num_terms_init, hypotheses, envir_s, params_s, rng_active_num, ref_term=None):
     """
     For a set of hypothesis we check if any single one is correct
     If multiple are correct then we return the one that simplifies the equation the most
@@ -360,6 +457,8 @@ def check_hypothesis(terms_to_simplify, num_terms_init, hypotheses, envir_s, par
     :param hypotheses:
     :param envir_s:
     :param params_s:
+    :param rng_active_num:
+    :param ref_term:
     :return:
     """
     nterms_min = num_terms_init
@@ -368,7 +467,8 @@ def check_hypothesis(terms_to_simplify, num_terms_init, hypotheses, envir_s, par
 
     for num, (score, sent) in enumerate(sorted(hypotheses, key=lambda y: y[0], reverse=True)):
         hyp = convert_generated_sol(envir_s, sent)
-        val, sol, nterms = check_valid_solution(terms_to_simplify, num_terms_init, hyp, envir_s, params_s)
+        val, sol, nterms = check_valid_solution(terms_to_simplify, num_terms_init, hyp, envir_s, params_s,
+                                                rng_active_num, ref_term=ref_term)
 
         if val and nterms <= nterms_min:
             solution = sol
@@ -378,7 +478,7 @@ def check_hypothesis(terms_to_simplify, num_terms_init, hypotheses, envir_s, par
     return valid, solution
 
 
-def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, params_s):
+def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, params_s, rng, const_blind=False):
     """
     Given a term to simplify we try and use our simplifier module to simplify it.
     We try in order
@@ -393,6 +493,8 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     :param decoder_s:
     :param envir_s:
     :param params_s:
+    :param rng:
+    :param const_blind:
     :return:
     """
 
@@ -400,31 +502,49 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     terms_to_simplify = terms_to_simplify.cancel()
     num_terms_init = count_numerator_terms(terms_to_simplify)
 
+    # If we want to be blind to constants
+    if const_blind:
+        ref_term_init = terms_to_simplify
+        logger.info('Reference expression is {}'.format(ref_term_init))
+        terms_to_simplify, const_list = blind_constants(terms_to_simplify)
+        ref_term = (ref_term_init, const_list)
+    else:
+        ref_term = None
+
     logger.info('Attempting to simplify {} terms'.format(num_terms_init))
     logger.info('Expression considered is {}'.format(terms_to_simplify))
 
     # Encode the term to simplify
     encoded_term, len1 = encode_s_term(envir_s, terms_to_simplify, encoder_s)
 
+    # If rng active we have a chance to retain solution of same length
+    rng_active, rng_gens = rng
+    rng_active_num = False if not rng_active else rng_gens[0].integers(2) == 0
+
     # Greedy decoding - if we solve with it directly we return the solution
-    greedy_sol = greedy_decoding(encoded_term, decoder_s, len1, params_s, envir_s)
-    valid, solution, _ = check_valid_solution(terms_to_simplify, num_terms_init, greedy_sol, envir_s, params_s)
-    if valid:
-        logger.info('Found simplified form with greedy decoding')
-        logger.info('Expression found is {}'.format(solution))
-        return convert_sp_forms(solution, envir_s.func_dict)
+    # Do this only when we don't use rng
+    if not rng_active_num:
+        greedy_sol = greedy_decoding(encoded_term, decoder_s, len1, params_s, envir_s)
+        valid, solution, _ = check_valid_solution(terms_to_simplify, num_terms_init, greedy_sol, envir_s, params_s,
+                                                  rng_active_num, ref_term=ref_term)
+        if valid:
+            logger.info('Found simplified form with greedy decoding')
+            logger.info('Expression found is {}'.format(solution))
+            return convert_sp_forms(solution, envir_s.func_dict)
 
     # Beam decoding
     beam_hypothesis = generate_beam_hyp(encoded_term, len1, decoder_s, params_s)
-    valid, solution = check_hypothesis(terms_to_simplify, num_terms_init, beam_hypothesis, envir_s, params_s)
+    valid, solution = check_hypothesis(terms_to_simplify, num_terms_init, beam_hypothesis, envir_s, params_s,
+                                       rng_active_num, ref_term=ref_term)
     if valid:
         logger.info('Found simplified form with beam search')
         logger.info('Expression found is {}'.format(solution))
         return convert_sp_forms(solution, envir_s.func_dict)
 
     # Nucleus sampling
-    beam_hypothesis = generate_nucleus_hyp(encoded_term, len1, decoder_s, params_s)
-    valid, solution = check_hypothesis(terms_to_simplify, num_terms_init, beam_hypothesis, envir_s, params_s)
+    beam_hypothesis = generate_nucleus_hyp(encoded_term, len1, decoder_s, params_s, rng)
+    valid, solution = check_hypothesis(terms_to_simplify, num_terms_init, beam_hypothesis, envir_s, params_s,
+                                       rng_active_num)
     if valid:
         logger.info('Found simplified form with nucleus sampling')
         logger.info('Expression found is {}'.format(solution))
@@ -435,7 +555,8 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     return None
 
 
-def single_simplification_pass(input_equation, modules, envs, params_s, denom_incl=True):
+def single_simplification_pass(input_equation, modules, envs, params_s, rng, denom_incl=True, cutoff=0.9,
+                               const_blind=False):
     """
     Go over all the terms in the input equation and try to find relevant terms with which they can simplify
     Once all the terms have been considered we stop the simplification search
@@ -444,6 +565,9 @@ def single_simplification_pass(input_equation, modules, envs, params_s, denom_in
     :param envs:
     :param params_s:
     :param denom_incl:
+    :param cutoff:
+    :param rng:
+    :param const_blind:
     :return:
     """
     # Unpack the modules
@@ -455,6 +579,11 @@ def single_simplification_pass(input_equation, modules, envs, params_s, denom_in
     # Extract the numerator and denominators
     terms_num, denom = extract_num_denom(input_equation)
 
+    # Shuffle the input terms in we use rng
+    rng_active, rng_gens = rng
+    if rng_active:
+        rng_gens[0].shuffle(terms_num)
+
     # Retain variables for parsing
     terms_left = terms_num
     index_term = 0
@@ -463,38 +592,57 @@ def single_simplification_pass(input_equation, modules, envs, params_s, denom_in
     solution_generated = 0
     terms_simplified_num = 0
     num_simplification = 0
+    short_search = False
 
     logger.info('Start our pass over the terms in the expression')
     logger.info('We start with {} terms in the numerator'.format(len(terms_left)))
+    logger.info('We start with expression {} '.format(sp.cancel(terms_left.sum()/denom)))
+    logger.info('We use a similarity cut-off of {}'.format(cutoff))
 
     # Loop till we have considered all the terms
     while len(terms_left) > 0 and index_term < len(terms_left):
 
         # Find the terms most likely to cancel with the reference term
-        sim_term = masked_similarity_term(env_c, terms_left[index_term], terms_left, encoder_c)
+        sim_term = masked_similarity_term(env_c, terms_left[index_term], terms_left, encoder_c,
+                                          const_blind=const_blind)
         denom_in = denom if denom_incl else None
-        simplifier_t, rest_t = find_single_simplification_terms(sim_term, terms_left, cutoff=0.9, denominator=denom_in)
+        simplifier_t, rest_t = find_single_simplification_terms(sim_term, terms_left, cutoff=cutoff,
+                                                                denominator=denom_in, short_search=short_search)
 
         # If we expect a simplification we try it out else we consider the next term
         if simplifier_t is not None:
 
+            num_t_attempt = len(sim_term) - len(rest_t)
+
             # Attempt the simplification with greedy + beam + nucleus
-            solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s)
+            solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
+                                                      const_blind=const_blind)
 
             # If we simplified then we update the terms to consider
             if solution_attempt is not None:
                 num_simplification += 1
                 terms_left = rest_t
                 num_terms_simple = count_numerator_terms(solution_attempt)
-                logger.info('We simplified down to {} term'.format(num_terms_simple) + '\n')
+                str_search = 'short' if short_search else 'long'
+                logger.info('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
                 terms_simplified_num += num_terms_simple
                 solution_generated = solution_generated + solution_attempt
+                short_search = False
 
-            # If no simplification we consider the next term
+            # If we only searched for a long expression we allow to search the smaller one
+            elif not short_search and num_t_attempt > 4:
+                short_search = True
+                # short_search = False
+                # index_term += 1
+
+            # If no simplification and already short search we consider the next term
             else:
                 index_term += 1
+                short_search = False
+
         else:
             index_term += 1
+            short_search = False
 
     terms_left_end = len(terms_left)+terms_simplified_num
 
@@ -513,37 +661,70 @@ def single_simplification_pass(input_equation, modules, envs, params_s, denom_in
     return solution_generated + terms_left, terms_left_end, num_simplification
 
 
-def total_simplification(envirs, params, input_eq_str):
+def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99, power_decay=5, const_blind=False):
     """
     Given an input equation we parse through its terms as many times as possible while the
     model finds a simplified form
     :param envirs:
     :param params:
     :param input_eq_str:
+    :param rng_gen:
+    :param init_cutoff:
+    :param const_blind:
+    :param power_decay:
     :return:
     """
+    # Load the environment and the parameters
     envir_c, envir_s = envirs
     params_c, params_s = params
 
+    # Load the transformer modules and the input equation
     modules = load_modules(envir_c, envir_s, params_c, params_s)
-    input_equation = load_equation(envir_c, input_eq_str, params_c)
-    reduced = True
+    input_equation = load_equation(envir_s, input_eq_str, params_s)
+
+    # Initialize loop parameters
+    reducing = True
+    rng_active = False
     len_init = count_numerator_terms(sp.cancel(input_equation))
     len_in = len_init
     num_simplification = 0
+    rng_passes = 0
+    cutoff = init_cutoff
 
     logger.info('\n' + 'Starting the simplification of {}'.format(input_equation))
 
-    while reduced:
+    # Try to simplify as long as we hope for a simplification
+    while reducing:
+
+        # Do a simplification pass over all the terms in the expressions
         simple_form, len_new, num_simple = single_simplification_pass(input_equation, modules, envirs, params_s,
-                                                                      denom_incl=True)
-        if len_in > len_new:
+                                                                      (rng_active, rng_gen), denom_incl=True,
+                                                                      cutoff=cutoff, const_blind=const_blind)
+
+        # If the expression decreased in size we iterate
+        if len_in > len_new or num_simple > 0:
             num_simplification += num_simple
             input_equation = simple_form
             len_in = len_new
+            rng_active = False
+            rng_passes = 0
+
+        # If the expression is of size 1 it is maximally simplified
+        elif len_new == 1:
+            logger.info('Maximally simplified')
+            reducing = False
+
+        # If it has not decreased we still allow for a number of extra loops in case we need to reshuffle the expression
+        # We start to randomly swap terms and simplify to expressions of same length to increase diversity
         else:
-            logger.info('Cannot simplify anymore')
-            reduced = False
+            rng_passes += 1
+            logger.info('No obvious simplification anymore - Using random shuffling to increase diversity')
+            logger.info('Start from expression {}'.format(sp.cancel(simple_form)))
+            logger.info('Start rng pass number {}'.format(rng_passes))
+            rng_active = True
+            reducing = rng_passes < 100
+
+        cutoff = cutoff*(init_cutoff**power_decay)
 
     simple_form = sp.cancel(simple_form)
 
