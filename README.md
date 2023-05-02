@@ -25,7 +25,7 @@ New 5pt no identities (3 terms max in numerator) | [Link](https://drive.google.c
 5pt contrastive learning | [Link](https://drive.google.com/uc?export=download&id=1TMLYbcrRBBk662M7qkeLUmnO1SQtdon4)
 New 5pt contrastive learning | [Link](https://drive.google.com/uc?export=download&id=1w2w5ECf3yKY08i2ehedPeD5E8NNteMV8)
 
-New datasets and models have momentum squared identities like $(p_1+p_2)^2=(p_3+p_4+p_5)$.
+New datasets and models have momentum squared identities like $(p_1+p_2)^2=(p_3+p_4+p_5)^2$.
 
 
 Model | Link 
