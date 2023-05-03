@@ -13,6 +13,9 @@ from model import build_modules, check_model_params
 from add_ons.mathematica_utils import *
 import sympy as sp
 from sympy import latex
+import urllib.request, gdown
+import os
+import user_args as args
 
 
 def test_model_expression(envir, module_transfo, input_equation, params, verbose=True, latex_form=False):
@@ -102,7 +105,7 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
             # remain = "" if matches else " | {} remaining".format(remaining_diff)
             remain = ""
 
-            if matches or error == -1 and first_valid_num is None:
+            if (matches or error == -1) and first_valid_num is None:
                 first_valid_num = num + 1
 
         except:
@@ -131,17 +134,29 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
 if __name__ == '__main__':
 
+    # Whether to load parameters from file
+    user_run = True
+
+    path_model1 = os.path.join('model/trained_models/', 'simplifier_model.pth')
+
+    # Download the models if necessary
+    if user_run is True:
+        if args.model_path_simplifier is None and not os.path.isfile(path_model1):
+            print('Starting download of the simplifier model')
+            gdown.download(args.download_path_simplifier, path_model1, quiet=False)
+            print('Model downloaded at {}'.format(path_model1))
+            path_mod1 = path_model1
+        else:
+            path_mod1 = args.model_path_simplifier if args.model_path_simplifier is not None else path_model1
+            print('Using simplifier model from {}'.format(path_mod1))
+
+    else:
+        path_mod1 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth'
+
     # Input equation to simplify
-    input_eq = '(-ab(1, 2)*ab(1, 3)*ab(2, 4)*ab(2, 5)*sb(2, 4)*sb(3, 5) - ab(1, 2)*ab(1, 3)*ab(2, 4)*ab(3, 5)*sb(3, 4)*sb(3, 5) + ab(1, 3)**2*ab(2, 4)*ab(2, 5)*sb(3, 4)*sb(3, 5) - ab(1, 3)*ab(1, 4)*ab(2, 3)*ab(2, 5)*sb(3, 4)*sb(3, 5))/(ab(1, 5)*ab(2, 3)*ab(3, 4)*ab(4, 5)**2*sb(1, 2)*sb(4, 5))'
+    input_eq = args.input_eq
 
     parameters = AttrDict({
-        # Experiment Name
-        'exp_name': 'Test_eval_spin_hel',
-
-        # Specify the dump path
-        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/scratch/',
-        'exp_id': 'test',
-        'save_periodic': 0,
         'tasks': 'spin_hel',
 
         # environment parameters
@@ -175,60 +190,28 @@ if __name__ == '__main__':
         'positional_encoding': True,
 
         # Specify the path to the simplifier model
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth',
-        # 'reload_model': '',
-
-        # Trainer param
-        'export_data': False,
-
-        # Data path (not needed)
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
-        #'reload_data': '',
-        'reload_size': '',
-        'epoch_size': 1000,
-        'max_epoch': 500,
-        'amp': -1,
-        'fp16': False,
-        'accumulate_gradients': 1,
-        'optimizer': "adam,lr=0.0001",
-        'clip_grad_norm': 5,
-        'stopping_criterion': '',
-        'validation_metrics': 'valid_func_simple_acc',
-        'reload_checkpoint': '',
-        'env_base_seed': -1,
-        'batch_size': 1,
+        'reload_model': path_mod1,
 
         # Evaluation
-        'eval_only': True,
-        'numerical_check': True,
-        'eval_verbose': 2,
-        'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 30,
+        'beam_size': args.beam_size,
         'beam_length_penalty': 1,
         'beam_early_stopping': True,
-        'nucleus_sampling': False,
-        'nucleus_p': 0.95,
-        'temperature': 1,
+        'nucleus_sampling': args.nucleus_sampling,
+        'nucleus_p': args.nucleus_p,
+        'temperature': args.temperature,
 
         # SLURM/GPU param
         'cpu': True,
-        'local_rank': -1,
-        'master_port': -1,
-        'num_workers': 1,
-        'debug_slurm': False,
 
         # Specify the path to Spinors Mathematica Library
-        'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
-        'mma_path': None,
+        'lib_path': args.spinors_lib_path,
+        'mma_path': args.mathematica_path,
+        'numerical_check': True,
     })
 
-    check_model_params(parameters)
-
     # Start the logger
-    init_distributed_mode(parameters)
-    logger = initialize_exp(parameters)
-    init_signal_handler()
+    check_model_params(parameters)
 
     environment.utils.CUDA = not parameters.cpu
 
@@ -243,8 +226,7 @@ if __name__ == '__main__':
         env.session = session
 
     first_num = test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
-    print(first_num)
+    print("First solution at position {}".format(first_num))
 
     if parameters.numerical_check:
         env.session.stop()
-
