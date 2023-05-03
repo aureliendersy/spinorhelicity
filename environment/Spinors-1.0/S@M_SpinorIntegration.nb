@@ -1,0 +1,2199 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 6.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     67099,       2189]
+NotebookOptionsPosition[     59650,       1923]
+NotebookOutlinePosition[     62999,       2034]
+CellTagsIndexPosition[     62930,       2029]
+WindowFrame->Normal
+ContainsDynamic->False*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Cut integral with spinor integration", "Section",
+ CellChangeTimes->{{3.401524746041481*^9, 3.401524746952953*^9}, {
+  3.401601250909271*^9, 3.401601261751653*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"<<", "Spinor`"}]], "Input",
+ CellChangeTimes->{{3.401601282069039*^9, 3.40160128487651*^9}},
+ FormatType->"InputForm"],
+
+Cell[BoxData["\<\"\\n-------  SPINORS @ MATHEMATICA (S@M)  \
+-------\\n\\n\\n\\t\\tVersion:  S@M 1.0 (7-OCT-2007)\\n\\n \
+Authors:\\n\\tDaniel Maitre (SLAC),\\n\\tPierpaolo Mastrolia (University of \
+Zurich)\\n\\nA list of all functions provided by the package\\nis stored in \
+the variable\\n\\t$SpinorFunctions\\n\"\>"], "Print",
+ CellChangeTimes->{3.401601362530029*^9}]
+}, Open  ]],
+
+Cell["\<\
+We begin with the definition of the tree - level amplitude, and of the
+cut - integral\
+\>", "Text",
+ CellChangeTimes->{3.401601320103962*^9}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"GenMomenta", "[", 
+   RowBox[{"{", 
+    RowBox[{"1", ",", "2", ",", "3", ",", "4", ",", "5", ",", "6"}], "}"}], 
+   "]"}], " "}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momenta for the spinors \"\>", "\[InvisibleSpace]", "1", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "2", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "3", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "4", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "5", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "6", 
+   "\[InvisibleSpace]", "\<\" generated.\"\>"}],
+  SequenceForm["Momenta for the spinors ", 
+   Spinor`Sp[1], ", ", 
+   Spinor`Sp[2], ", ", 
+   Spinor`Sp[3], ", ", 
+   Spinor`Sp[4], ", ", 
+   Spinor`Sp[5], ", ", 
+   Spinor`Sp[6], " generated."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.401524788399034*^9, 3.401537937190684*^9, 
+  3.401537998996815*^9, 3.40153803725703*^9, 3.401601366280937*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"Clear", "[", 
+  RowBox[{"l1", ",", "l2"}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinor", "[", 
+  RowBox[{"l1", ",", "l2", ",", "\[Lambda]"}], "]"}]}], "Input",
+ CellChangeTimes->{{3.401601350665261*^9, 3.401601354808692*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"l1", ",", "l2", ",", "\[Lambda]"}], "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`l1, $CellContext`l2, $CellContext`\[Lambda]}, 
+   " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.4015247894844*^9, 3.401537938093027*^9, 
+  3.401537999978075*^9, 3.401538038220378*^9, 3.401601367345324*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"\[Lambda]", ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"Sqrt", "[", "3", "]"}], ",", "1", ",", "1", ",", "1"}], "}"}]}],
+   "]"}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "\[Lambda]", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     SqrtBox["3"], ",", "1", ",", "1", ",", "1"}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm[
+  "Momentum for spinor ", $CellContext`\[Lambda], " set to ", {
+   3^Rational[1, 2], 1, 1, 1}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.401524790681157*^9, 3.401537938991544*^9, 
+  3.401538000883714*^9, 3.401538039083093*^9, 3.401601370455587*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"DeclareLVectorMomentum", "[", 
+  RowBox[{"P34", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "3", "]"}], "+", 
+    RowBox[{"Num4V", "[", "4", "]"}]}]}], "]"}]], "Input",
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "P34", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of Lorentz vectors\"\>"}],
+  SequenceForm[{$CellContext`P34}, " added to the list of Lorentz vectors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40152479185373*^9, 3.401537939983713*^9, 
+  3.401538001766539*^9, 3.401538039899782*^9, 3.401601371187447*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Four Momentum \"\>", "\[InvisibleSpace]", "P34", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+    "1.82079817890948946202466307084`17.357596205069154", ",", 
+     "0.00562370328642306310152178974`15.296298113476404", ",", 
+     RowBox[{"-", "0.29762206402509614946675549697`16.99781099978815"}], ",", 
+     
+     RowBox[{"-", "2.03945100978015499185360405833`17.395938038570943"}]}], 
+    "}"}], "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm[
+  "Four Momentum ", $CellContext`P34, " set to ", {
+   1.820798178909489462`17.357596205069154, 
+    0.005623703286423063`15.296298113476404, \
+-0.297622064025096149`16.99781099978815, \
+-2.039451009780154992`17.395938038570943}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40152479185373*^9, 3.401537939983713*^9, 
+  3.401538001766539*^9, 3.401538039899782*^9, 3.401601371303433*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"mpmp", "[", 
+    RowBox[{"x1_", ",", "x2_", ",", "x3_", ",", "x4_"}], "]"}], ":=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Spaa", "[", 
+      RowBox[{"x1", ",", "x3"}], "]"}], "^", "4"}], "/", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{"Spaa", "[", 
+       RowBox[{"x1", ",", "x2"}], "]"}], "*", 
+      RowBox[{"Spaa", "[", 
+       RowBox[{"x2", ",", "x3"}], "]"}], "*", 
+      RowBox[{"Spaa", "[", 
+       RowBox[{"x3", ",", "x4"}], "]"}], "*", 
+      RowBox[{"Spaa", "[", 
+       RowBox[{"x4", ",", "x1"}], "]"}]}], ")"}]}]}], ";"}]], "Input",
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", " ", 
+  RowBox[{"d\[CapitalPhi]", " ", "*", " ", 
+   RowBox[{"mpmp", "[", 
+    RowBox[{"1", ",", "2", ",", "l1", ",", "l2"}], "]"}], "*", 
+   RowBox[{"mpmp", "[", 
+    RowBox[{"l2", ",", "l1", ",", "3", ",", "4"}], "]"}]}]}]], "Input",
+ CellChangeTimes->{3.401537196736438*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"d\[CapitalPhi]", " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l1", "|", "1", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "4"], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l2", "|", "3", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "4"]}], 
+   RowBox[{
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "l1", "|", "l2", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{
+  3.401524847793736*^9, {3.401537200890721*^9, 3.401537213578331*^9}, 
+   3.401537948569713*^9, 3.401538006464096*^9, 3.401538044182527*^9, {
+   3.40160185323537*^9, 3.401601880235493*^9}},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+By using the momentum conservation  l1 - l2 = k3 + k 4=P34, one can eliminate \
+the dependence on l2, and write the integrand just in terms of l1\
+\>", "Text",
+ CellChangeTimes->{{3.401601726910398*^9, 3.40160176922416*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Cut", "[", "1", "]"}], "/.", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Spaa", "[", 
+       RowBox[{"x_", ",", "l2"}], "]"}], "\[Rule]", " ", 
+      RowBox[{
+       RowBox[{"Spab", "[", 
+        RowBox[{"x", ",", "P34", ",", "l1"}], "]"}], "/", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"l2", ",", "l1"}], "]"}]}]}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Spaa", "[", 
+       RowBox[{"l2", ",", "x_"}], "]"}], "\[Rule]", " ", 
+      RowBox[{
+       RowBox[{"Spba", "[", 
+        RowBox[{"l1", ",", "P34", ",", "x"}], "]"}], "/", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"l1", ",", "l2"}], "]"}]}]}]}], "\[IndentingNewLine]", 
+    "}"}]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{"d\[CapitalPhi]", " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "l1", "|", "1", "\[RightAngleBracket]"}],
+       TraditionalForm], "4"], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "l1", "]"}],
+       TraditionalForm], "4"]}], ")"}], "/", 
+   RowBox[{"(", 
+    RowBox[{
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l1", "|", "2", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l1", "|", "3", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{"\[LeftAngleBracket]", "l1", "|", "P34", "|", "l1", "]"}],
+       TraditionalForm], "2"], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "P34", "|", "l1", "]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "l1", "]"}],
+      TraditionalForm]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{3.401524851625941*^9, 3.4015372163964*^9, 
+  3.401537962060105*^9, 3.401538009461661*^9, 3.401538046413536*^9, 
+  3.401601869545602*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+Then we redefine the loop spinor variables according to the 
+CSW prescription : |l1> = Sqrt[t] * |\[Lambda]>\
+\>", "Text",
+ CellChangeTimes->{{3.40160183045635*^9, 3.401601839645586*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{"ASpinorReplace", "[", 
+   RowBox[{
+    RowBox[{"Cut", "[", "1", "]"}], ",", "l1", ",", 
+    RowBox[{
+     RowBox[{"Sqrt", "[", "t", "]"}], "*", "\[Lambda]"}]}], "]"}]}]], "Input",\
+
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"d\[CapitalPhi]", " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l2", "|", "3", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "4"], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "4"]}], 
+   RowBox[{
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "l2", "|", "\[Lambda]", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524854245469*^9, 3.401537218358474*^9, 
+  3.401538012570418*^9, 3.4015380493181*^9, 3.401601895029682*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["|l1] = Sqrt[t] * |\[Lambda]]", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{"BSpinorReplace", "[", 
+   RowBox[{
+    RowBox[{"Cut", "[", "1", "]"}], ",", "l1", ",", 
+    RowBox[{
+     RowBox[{"Sqrt", "[", "t", "]"}], "*", "\[Lambda]"}]}], "]"}]}]], "Input",\
+
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"d\[CapitalPhi]", " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "l2", "|", "3", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "4"], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "4"]}], 
+   RowBox[{
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "l2", "|", "\[Lambda]", "\[RightAngleBracket]"}],
+      
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "l2", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524856888661*^9, 3.401537219814521*^9, 
+  3.401538014771089*^9, 3.401538050838448*^9, 3.401601897445093*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+We can perform the t- integration by substituting the value of t as imposed
+by the \[Delta]function\
+\>", "Text",
+ CellChangeTimes->{{3.401601919256439*^9, 3.401601957513987*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Cut", "[", "1", "]"}], "//.", 
+   RowBox[{"d\[CapitalPhi]", "\[Rule]", 
+    RowBox[{"d\[Lambda]", "*", 
+     RowBox[{"t", "/", 
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], 
+       "]"}]}]}]}]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{"d\[Lambda]", " ", "t", " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+       
+       TraditionalForm], "4"], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+       TraditionalForm], "4"]}], ")"}], "/", 
+   RowBox[{"(", 
+    RowBox[{
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", 
+        "]"}],
+       TraditionalForm], "3"], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{3.401524860288753*^9, 3.401537221154651*^9, 
+  3.401538016240643*^9, 3.401538052223396*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Cut", "[", "1", "]"}], "//.", 
+   RowBox[{"{", 
+    RowBox[{"t", "\[Rule]", 
+     RowBox[{
+      RowBox[{"s", "[", 
+       RowBox[{"3", ",", "4"}], "]"}], "/", 
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}]}]}], 
+    "}"}]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  RowBox[{
+   RowBox[{"(", 
+    RowBox[{"d\[Lambda]", " ", 
+     SubscriptBox["s", 
+      RowBox[{"3", "4"}]], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+       
+       TraditionalForm], "4"], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+       TraditionalForm], "4"]}], ")"}], "/", 
+   RowBox[{"(", 
+    RowBox[{
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", 
+        "]"}],
+       TraditionalForm], "4"], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm]}], ")"}]}]}]], "Output",
+ CellChangeTimes->{3.401524869124142*^9, 3.401537222485023*^9, 
+  3.401538019531833*^9, 3.401538053668864*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+Now we choose to integrate by parts in  |\[Lambda]]  and to extract
+   residue in  |\[Lambda]\[RightAngleBracket].To that aim we have to cast the \
+integrand in a suitable form.We perform the reduction on the | \[Lambda]]  - \
+variable by means of the
+Shouten identities,\
+\>", "Text",
+ CellChangeTimes->{{3.401602050927034*^9, 3.401602104960124*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   RowBox[{"Cut", "[", "1", "]"}], "=", 
+   RowBox[{
+    RowBox[{"BSchouten", "[", 
+     RowBox[{
+      RowBox[{"Cut", "[", "1", "]"}], ",", "\[Lambda]"}], "]"}], "//", 
+    "Expand"}]}], ";"}]], "Input",
+ CellTags->"print"],
+
+Cell["we use the simplification: P_{34}*P_{34} = s34", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Cut", "[", "1", "]"}], "//.", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"sp", ":", 
+       RowBox[{"(", 
+        RowBox[{"Spaa", "|", "Spab", "|", "Spbb"}], ")"}]}], ")"}], "[", 
+     RowBox[{"x__", ",", "P34", ",", "P34", ",", "y__"}], "]"}], "\[Rule]", 
+    RowBox[{
+     RowBox[{"s", "[", 
+      RowBox[{"3", ",", "4"}], "]"}], "*", " ", 
+     RowBox[{"sp", "[", 
+      RowBox[{"x", ",", "y"}], "]"}]}]}]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "3"]}]], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "3"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "4"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "4"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.40152488991245*^9, 3.401537236616845*^9, 
+  3.401538068549406*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", 
+   RowBox[{"1", ",", "4"}], "]"}], "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Coefficient", "[", 
+     RowBox[{
+      RowBox[{"Cut", "[", "1", "]"}], ",", 
+      RowBox[{"1", "/", 
+       SuperscriptBox[
+        RowBox[{"Spab", "[", 
+         RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "4"]}]}],
+      "]"}], "*", 
+    RowBox[{"1", "/", " ", 
+     SuperscriptBox[
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "4"]}]}], "//",
+    "Expand"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "4"]}]]}]], "Output",
+ CellChangeTimes->{3.401524895384997*^9, 3.40153723692603*^9, 
+  3.401538068842457*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", 
+   RowBox[{"1", ",", "3"}], "]"}], "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Coefficient", "[", 
+     RowBox[{
+      RowBox[{"Cut", "[", "1", "]"}], ",", 
+      RowBox[{"1", "/", 
+       SuperscriptBox[
+        RowBox[{"Spab", "[", 
+         RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "3"]}]}],
+      "]"}], "*", 
+    RowBox[{"1", "/", " ", 
+     SuperscriptBox[
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "3"]}]}], "//",
+    "Expand"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"-", 
+   FractionBox[
+    RowBox[{"d\[Lambda]", " ", 
+     SubscriptBox["s", 
+      RowBox[{"3", "4"}]], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+       
+       TraditionalForm], "3"], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm]}], 
+    RowBox[{
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+       
+       TraditionalForm], "2"], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{
+       "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", 
+        "]"}],
+       TraditionalForm], "3"]}]]}], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "3"]}]]}]], "Output",
+ CellChangeTimes->{3.40152489658232*^9, 3.401537237186287*^9, 
+  3.401538070343272*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", 
+   RowBox[{"1", ",", "2"}], "]"}], "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Coefficient", "[", 
+     RowBox[{
+      RowBox[{"Cut", "[", "1", "]"}], ",", 
+      RowBox[{"1", "/", 
+       SuperscriptBox[
+        RowBox[{"Spab", "[", 
+         RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "2"]}]}],
+      "]"}], "*", 
+    RowBox[{"1", "/", " ", 
+     SuperscriptBox[
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "2"]}]}], "//",
+    "Expand"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}]]}]], "Output",
+ CellChangeTimes->{3.401524899913204*^9, 3.401537237447283*^9, 
+  3.401538071299995*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Cut", "[", 
+   RowBox[{"1", ",", "1"}], "]"}], "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"Coefficient", "[", 
+     RowBox[{
+      RowBox[{"Cut", "[", "1", "]"}], ",", 
+      RowBox[{"1", "/", 
+       RowBox[{"Spab", "[", 
+        RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}]}]}], "]"}],
+     "*", 
+    RowBox[{"1", "/", " ", 
+     RowBox[{"Spab", "[", 
+      RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}]}]}], "//", 
+   "Expand"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"-", 
+   FractionBox[
+    RowBox[{"d\[Lambda]", " ", 
+     SubscriptBox["s", 
+      RowBox[{"3", "4"}]], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     SuperscriptBox[
+      FormBox[
+       RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+       
+       TraditionalForm], "2"]}], 
+    RowBox[{
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], " ", 
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm]}]]}], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "+", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]], "-", 
+  FractionBox[
+   RowBox[{"d\[Lambda]", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "4", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524901021646*^9, 3.401537240190013*^9, 
+  3.401538072169142*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+We can already tell at this pont that Cut[1,4], Cut[1,3], and Cut[1,2] will \
+contribute to the rational part of the cut (therefore to the coefficient of \
+Log[s34]); while Cut[1,1] will contribute to the logarithmic part of the cut \
+(therefore to the coefficient of the 4-point
+functions, in this case)\
+\>", "Text"],
+
+Cell[CellGroupData[{
+
+Cell["Evaluation of the term Cut[1,4]", "Subsection"],
+
+Cell["\<\
+For brevity, we discuss only the integration of the term defined as  Cut[1, \
+4].To keep track of the integration we use the explicit definition of \
+$d\\lambda$ given
+  above, d\[Lambda] = dea deb =  dea *  deb .\
+\>", "Text",
+ CellChangeTimes->{{3.401602172796983*^9, 3.401602206953708*^9}, 
+   3.401602245851257*^9, {3.401602369849636*^9, 3.401602371738133*^9}}],
+
+Cell["\<\
+We define: 
+dea = <\[Lambda],d\[Lambda]> ,
+deb = [\[Lambda],d\[Lambda]]\
+\>", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Trm4", "[", "1", "]"}], "=", 
+  RowBox[{"Expand", "[", 
+   RowBox[{
+    RowBox[{"Cut", "[", 
+     RowBox[{"1", ",", "4"}], "]"}], "//.", 
+    RowBox[{"d\[Lambda]", "\[Rule]", 
+     RowBox[{"dea", "*", "deb"}]}]}], "]"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"dea", " ", "deb", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "3", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "4"]}]]}]], "Output",
+ CellChangeTimes->{3.401524921792716*^9, 3.401537243362438*^9, 
+  3.40153807993728*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+We simplify the integrand with trivial spinor identities, we integrate by \
+parts in  | \[Lambda]] , using the identities:\
+\>", "Text",
+ CellChangeTimes->{{3.401602251588859*^9, 3.401602267566851*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"IdySet", "=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Spab", "[", 
+       RowBox[{"4", ",", "P34", ",", "x_"}], "]"}], "\[Rule]", 
+      RowBox[{
+       RowBox[{"Spaa", "[", 
+        RowBox[{"4", ",", "3"}], "]"}], "*", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"3", ",", "x"}], "]"}]}]}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Spab", "[", 
+       RowBox[{"3", ",", "P34", ",", "x_"}], "]"}], "\[Rule]", 
+      RowBox[{
+       RowBox[{"Spaa", "[", 
+        RowBox[{"3", ",", "4"}], "]"}], "*", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"4", ",", "x"}], "]"}]}]}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Spab", "[", 
+       RowBox[{"x_", ",", "P34", ",", "4"}], "]"}], "\[Rule]", 
+      RowBox[{
+       RowBox[{"Spaa", "[", 
+        RowBox[{"x", ",", "3"}], "]"}], "*", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"3", ",", "4"}], "]"}]}]}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"Spab", "[", 
+       RowBox[{"x_", ",", "P34", ",", "3"}], "]"}], "\[Rule]", 
+      RowBox[{
+       RowBox[{"Spaa", "[", 
+        RowBox[{"x", ",", "4"}], "]"}], "*", 
+       RowBox[{"Spbb", "[", 
+        RowBox[{"4", ",", "3"}], "]"}]}]}]}], "\[IndentingNewLine]", "}"}]}], 
+  ";"}]], "Input",
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Trm4", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Trm4", "[", "1", "]"}], "//.", "IdySet"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"dea", " ", "deb", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"[", "4", "|", "\[Lambda]", "]"}],
+      TraditionalForm], "2"]}], 
+   RowBox[{
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "4"]}]]}]], "Output",
+ CellChangeTimes->{3.401524927348894*^9, 3.401537246519913*^9, 
+  3.401538082463824*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"IBPidy", "=", 
+  RowBox[{
+   FractionBox[
+    RowBox[{"deb", " ", 
+     SuperscriptBox[
+      RowBox[{"Spbb", "[", 
+       RowBox[{"4", ",", "\[Lambda]"}], "]"}], "2"]}], 
+    SuperscriptBox[
+     RowBox[{"Spab", "[", 
+      RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], "4"]], 
+   "\[Rule]", 
+   FractionBox[
+    SuperscriptBox[
+     RowBox[{"Spbb", "[", 
+      RowBox[{"4", ",", "\[Lambda]"}], "]"}], "3"], 
+    RowBox[{"3", " ", 
+     RowBox[{"Spab", "[", 
+      RowBox[{"\[Lambda]", ",", "P34", ",", "4"}], "]"}], " ", 
+     SuperscriptBox[
+      RowBox[{"Spab", "[", 
+       RowBox[{"\[Lambda]", ",", "P34", ",", "\[Lambda]"}], "]"}], 
+      "3"]}]]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  FractionBox[
+   RowBox[{"deb", " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"[", "4", "|", "\[Lambda]", "]"}],
+      TraditionalForm], "2"]}], 
+   SuperscriptBox[
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], "4"]], "\[Rule]", 
+  FractionBox[
+   SuperscriptBox[
+    FormBox[
+     RowBox[{"[", "4", "|", "\[Lambda]", "]"}],
+     TraditionalForm], "3"], 
+   RowBox[{"3", " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "4", "]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524931656234*^9, 3.401537248758296*^9, 
+  3.40153808439763*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Trm4", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Trm4", "[", "1", "]"}], "//.", "IBPidy"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{"dea", " ", 
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "3", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"[", "4", "|", "\[Lambda]", "]"}],
+      TraditionalForm], "3"]}], 
+   RowBox[{"3", " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{
+      "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+      
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "4", "]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524933246925*^9, 3.401537250008587*^9, 
+  3.401538087466371*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Trm4", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Trm4", "[", "1", "]"}], "//.", "IdySet"}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"dea", " ", 
+   SubscriptBox["s", 
+    RowBox[{"3", "4"}]], " ", 
+   SuperscriptBox[
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "1", "\[RightAngleBracket]"}],
+     TraditionalForm], "3"], " ", 
+   FormBox[
+    RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+    TraditionalForm], " ", 
+   SuperscriptBox[
+    FormBox[
+     RowBox[{"[", "4", "|", "\[Lambda]", "]"}],
+     TraditionalForm], "3"]}], 
+  RowBox[{"3", " ", 
+   FormBox[
+    RowBox[{
+    "\[LeftAngleBracket]", "\[Lambda]", "|", "2", "\[RightAngleBracket]"}],
+    TraditionalForm], " ", 
+   FormBox[
+    RowBox[{
+    "\[LeftAngleBracket]", "\[Lambda]", "|", "4", "\[RightAngleBracket]"}],
+    TraditionalForm], " ", 
+   FormBox[
+    RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+    TraditionalForm], " ", 
+   SuperscriptBox[
+    FormBox[
+     RowBox[{
+     "\[LeftAngleBracket]", "\[Lambda]", "|", "P34", "|", "\[Lambda]", "]"}],
+     TraditionalForm], "3"], " ", 
+   FormBox[
+    RowBox[{"[", "4", "|", "3", "]"}],
+    TraditionalForm]}]]], "Output",
+ CellChangeTimes->{3.401524934359657*^9, 3.401537251216852*^9, 
+  3.401538089354448*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[TextData[{
+ "The above expression has two simple poles at |\[Lambda]> = |2>, |4>.\nWe \
+notice that the residue at |\[Lambda]> = |4>, vansishes, due to ",
+ Cell[BoxData[
+  SuperscriptBox[
+   FormBox[
+    RowBox[{"[", 
+     RowBox[{"4", "|", "\[Lambda]"}], "]"}],
+    TraditionalForm], "3"]]],
+ " in the numerator.\nTherefore the result is given just by the residue at |\
+\[Lambda]> = |2>"
+}], "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Trm4", "[", "1", "]"}], "=", 
+  RowBox[{
+   RowBox[{"Expand", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"Spaa", "[", 
+       RowBox[{"\[Lambda]", ",", "2"}], "]"}], "*", 
+      RowBox[{"Trm4", "[", "1", "]"}]}], "//.", 
+     RowBox[{"dea", "\[Rule]", "1"}]}], "]"}], "//.", 
+   RowBox[{"\[Lambda]", "\[Rule]", 
+    RowBox[{"Sp", "[", "2", "]"}]}]}]}]], "Input",
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"-", 
+  FractionBox[
+   RowBox[{
+    SubscriptBox["s", 
+     RowBox[{"3", "4"}]], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "1", "|", "2", "\[RightAngleBracket]"}],
+      TraditionalForm], "2"], " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "3", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"[", "4", "|", "2", "]"}],
+      TraditionalForm], "3"]}], 
+   RowBox[{"3", " ", 
+    FormBox[
+     RowBox[{"\[LeftAngleBracket]", "2", "|", "4", "\[RightAngleBracket]"}],
+     TraditionalForm], " ", 
+    SuperscriptBox[
+     FormBox[
+      RowBox[{"\[LeftAngleBracket]", "2", "|", "P34", "|", "2", "]"}],
+      TraditionalForm], "3"], " ", 
+    FormBox[
+     RowBox[{"[", "4", "|", "3", "]"}],
+     TraditionalForm]}]]}]], "Output",
+ CellChangeTimes->{3.401524937339128*^9, 3.401537255515582*^9, 
+  3.401538092219505*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{640, 593},
+WindowMargins->{{Automatic, 146}, {13, Automatic}},
+FrontEndVersion->"6.0 for Linux x86 (32-bit) (June 19, 2007)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{
+ "print"->{
+  Cell[1494, 50, 194, 6, 32, "Input",
+   CellTags->"print"],
+  Cell[1691, 58, 859, 19, 24, "Print",
+   CellTags->"print"],
+  Cell[2587, 82, 281, 6, 55, "Input",
+   CellTags->"print"],
+  Cell[2871, 90, 479, 11, 24, "Print",
+   CellTags->"print"],
+  Cell[3387, 106, 231, 7, 32, "Input",
+   CellTags->"print"],
+  Cell[3621, 115, 604, 14, 30, "Print",
+   CellTags->"print"],
+  Cell[4262, 134, 212, 6, 32, "Input",
+   CellTags->"print"],
+  Cell[4499, 144, 409, 9, 24, "Print",
+   CellTags->"print"],
+  Cell[4911, 155, 966, 21, 65, "Print",
+   CellTags->"print"],
+  Cell[5904, 180, 616, 19, 77, "Input",
+   CellTags->"print"],
+  Cell[6545, 203, 360, 9, 32, "Input",
+   CellTags->"print"],
+  Cell[6908, 214, 1514, 42, 52, "Output",
+   CellTags->"print"],
+  Cell[8696, 267, 825, 24, 99, "Input",
+   CellTags->"print"],
+  Cell[9524, 293, 1515, 43, 58, "Output",
+   CellTags->"print"],
+  Cell[11276, 347, 276, 9, 32, "Input",
+   CellTags->"print"],
+  Cell[11555, 358, 1482, 43, 52, "Output",
+   CellTags->"print"],
+  Cell[13121, 408, 276, 9, 32, "Input",
+   CellTags->"print"],
+  Cell[13400, 419, 1484, 43, 52, "Output",
+   CellTags->"print"],
+  Cell[15113, 473, 357, 11, 32, "Input",
+   CellTags->"print"],
+  Cell[15473, 486, 1579, 48, 58, "Output",
+   CellTags->"print"],
+  Cell[17089, 539, 392, 13, 32, "Input",
+   CellTags->"print"],
+  Cell[17484, 554, 1626, 50, 58, "Output",
+   CellTags->"print"],
+  Cell[19489, 616, 259, 9, 32, "Input",
+   CellTags->"print"],
+  Cell[19838, 631, 546, 17, 77, "Input",
+   CellTags->"print"],
+  Cell[20387, 650, 12446, 379, 485, "Output",
+   CellTags->"print"],
+  Cell[32870, 1034, 585, 19, 77, "Input",
+   CellTags->"print"],
+  Cell[33458, 1055, 1383, 43, 52, "Output",
+   CellTags->"print"],
+  Cell[34878, 1103, 585, 19, 77, "Input",
+   CellTags->"print"],
+  Cell[35466, 1124, 2653, 83, 96, "Output",
+   CellTags->"print"],
+  Cell[38156, 1212, 585, 19, 77, "Input",
+   CellTags->"print"],
+  Cell[38744, 1233, 3569, 111, 140, "Output",
+   CellTags->"print"],
+  Cell[42350, 1349, 524, 17, 77, "Input",
+   CellTags->"print"],
+  Cell[42877, 1368, 4405, 133, 180, "Output",
+   CellTags->"print"],
+  Cell[48204, 1533, 287, 9, 32, "Input",
+   CellTags->"print"],
+  Cell[48494, 1544, 1388, 43, 52, "Output",
+   CellTags->"print"],
+  Cell[50112, 1596, 1339, 38, 143, "Input",
+   CellTags->"print"],
+  Cell[51476, 1638, 162, 5, 32, "Input",
+   CellTags->"print"],
+  Cell[51641, 1645, 1352, 42, 52, "Output",
+   CellTags->"print"],
+  Cell[53030, 1692, 727, 23, 51, "Input",
+   CellTags->"print"],
+  Cell[53760, 1717, 900, 30, 52, "Output",
+   CellTags->"print"],
+  Cell[54697, 1752, 162, 5, 32, "Input",
+   CellTags->"print"],
+  Cell[54862, 1759, 1470, 45, 52, "Output",
+   CellTags->"print"],
+  Cell[56369, 1809, 162, 5, 32, "Input",
+   CellTags->"print"],
+  Cell[56534, 1816, 1239, 39, 52, "Output",
+   CellTags->"print"],
+  Cell[58218, 1873, 421, 13, 32, "Input",
+   CellTags->"print"],
+  Cell[58642, 1888, 968, 30, 52, "Output",
+   CellTags->"print"]}
+ }
+*)
+(*CellTagsIndex
+CellTagsIndex->{
+ {"print", 59931, 1933}
+ }
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[590, 23, 170, 2, 73, "Section"],
+Cell[CellGroupData[{
+Cell[785, 29, 142, 3, 32, "Input"],
+Cell[930, 34, 373, 5, 285, "Print"]
+}, Open  ]],
+Cell[1318, 42, 151, 4, 51, "Text"],
+Cell[CellGroupData[{
+Cell[1494, 50, 194, 6, 32, "Input",
+ CellTags->"print"],
+Cell[1691, 58, 859, 19, 24, "Print",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2587, 82, 281, 6, 55, "Input",
+ CellTags->"print"],
+Cell[2871, 90, 479, 11, 24, "Print",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3387, 106, 231, 7, 32, "Input",
+ CellTags->"print"],
+Cell[3621, 115, 604, 14, 30, "Print",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4262, 134, 212, 6, 32, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[4499, 144, 409, 9, 24, "Print",
+ CellTags->"print"],
+Cell[4911, 155, 966, 21, 65, "Print",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+Cell[5904, 180, 616, 19, 77, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[6545, 203, 360, 9, 32, "Input",
+ CellTags->"print"],
+Cell[6908, 214, 1514, 42, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[8437, 259, 234, 4, 51, "Text"],
+Cell[CellGroupData[{
+Cell[8696, 267, 825, 24, 99, "Input",
+ CellTags->"print"],
+Cell[9524, 293, 1515, 43, 58, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[11054, 339, 197, 4, 51, "Text"],
+Cell[CellGroupData[{
+Cell[11276, 347, 276, 9, 32, "Input",
+ CellTags->"print"],
+Cell[11555, 358, 1482, 43, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[13052, 404, 44, 0, 31, "Text"],
+Cell[CellGroupData[{
+Cell[13121, 408, 276, 9, 32, "Input",
+ CellTags->"print"],
+Cell[13400, 419, 1484, 43, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[14899, 465, 189, 4, 51, "Text"],
+Cell[CellGroupData[{
+Cell[15113, 473, 357, 11, 32, "Input",
+ CellTags->"print"],
+Cell[15473, 486, 1579, 48, 58, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[17089, 539, 392, 13, 32, "Input",
+ CellTags->"print"],
+Cell[17484, 554, 1626, 50, 58, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[19125, 607, 361, 7, 91, "Text"],
+Cell[19489, 616, 259, 9, 32, "Input",
+ CellTags->"print"],
+Cell[19751, 627, 62, 0, 31, "Text"],
+Cell[CellGroupData[{
+Cell[19838, 631, 546, 17, 77, "Input",
+ CellTags->"print"],
+Cell[20387, 650, 12446, 379, 485, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[32870, 1034, 585, 19, 77, "Input",
+ CellTags->"print"],
+Cell[33458, 1055, 1383, 43, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[34878, 1103, 585, 19, 77, "Input",
+ CellTags->"print"],
+Cell[35466, 1124, 2653, 83, 96, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[38156, 1212, 585, 19, 77, "Input",
+ CellTags->"print"],
+Cell[38744, 1233, 3569, 111, 140, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[42350, 1349, 524, 17, 77, "Input",
+ CellTags->"print"],
+Cell[42877, 1368, 4405, 133, 180, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[47297, 1504, 328, 6, 131, "Text"],
+Cell[CellGroupData[{
+Cell[47650, 1514, 53, 0, 39, "Subsection"],
+Cell[47706, 1516, 375, 7, 71, "Text"],
+Cell[48084, 1525, 95, 4, 71, "Text"],
+Cell[CellGroupData[{
+Cell[48204, 1533, 287, 9, 32, "Input",
+ CellTags->"print"],
+Cell[48494, 1544, 1388, 43, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[49897, 1590, 212, 4, 51, "Text"],
+Cell[50112, 1596, 1339, 38, 143, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[51476, 1638, 162, 5, 32, "Input",
+ CellTags->"print"],
+Cell[51641, 1645, 1352, 42, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[53030, 1692, 727, 23, 51, "Input",
+ CellTags->"print"],
+Cell[53760, 1717, 900, 30, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[54697, 1752, 162, 5, 32, "Input",
+ CellTags->"print"],
+Cell[54862, 1759, 1470, 45, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[56369, 1809, 162, 5, 32, "Input",
+ CellTags->"print"],
+Cell[56534, 1816, 1239, 39, 52, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[57788, 1858, 405, 11, 71, "Text"],
+Cell[CellGroupData[{
+Cell[58218, 1873, 421, 13, 32, "Input",
+ CellTags->"print"],
+Cell[58642, 1888, 968, 30, 52, "Output",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+

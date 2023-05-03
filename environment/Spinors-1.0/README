@@ -1,0 +1,163 @@
+************** S@M ****************
+
+-------------------------------------------------------------
+ Installation under Linux 
+-------------------------------------------------------------
+
+There is an installation program with the Package. It copies the files where they belong, updates the init.m file in the .Mathematica/Autoload/ directory in the home directory, so that you can load the package without having to give the whole path.  
+
+To install the package, copy the tar file Spinors-X.n.tar.gz  to your disk, unpack it with
+
+> gunzip Spinors-X.n.tar.gz
+> tar -xf  Spinors-X.n.tar
+
+Change directory to the Spinors-X.n directory
+
+> cd  Spinors-X.n
+
+Execute :
+
+> ./InstallSpinors
+
+and follow the instructions...
+
+Note that you might have to change the permission of the installation script:
+
+> chmod +x InstallSpinors
+
+If you encounter installation problems, please read the INSTALLATION PROBLEMS section below
+
+-----------------------------------------------------------------
+S@M installation for Windows
+-----------------------------------------------------------------
+
+There is no script which automatically installs S@M under Windows. If you want to use S@M under Windows you should follow the following steps:
+
+- Download the file Spinors-X.n.tar.gz
+
+- Unpack it in the directory where you want S@M to be installed
+
+- In this directory you find a file called init.windows, modifiy the first line such that your installation path replaces
+
+              the:\path\of\the\installation
+
+- To load the package you have to type in Mathematica
+
+Get[ToFileName[{"the:\path\of\the\installation"},"init.windows" ]]
+
+<<Spinors`
+
+If you don't want to type the first line each time, you can add the content of the init.windows file of S@M to the init.m file in the AutoLoad directory of your Mathematica installation. You will then only need to type 
+
+<<Spinors`
+
+to load the package.
+
+------------------------------------------------------------------
+INSTALLATION PROBLEMS WITH THE INSTALLATION SCRIPT
+------------------------------------------------------------------
+
+If the installation script ended with the error message 
+
+"The Mathematica shell command math could not be found."
+
+the installation could not be checked from the script. This happens when there is no shell version of mathematica insalled or if the command math is not accessible from the place where the script is run. The installation might have worked, so please try to load the package with
+
+ <<Spinors`  
+
+If you get the error message
+
+Get::noopen: Cannot open Spinors`
+
+this means that Mathematica is not finding the init.m file in the Autoload directory. Please check that this file is present in
+
+Linux: $HOME/.Mathematica/Autoload
+Mac: $HOME/Library/Mathematica/Autoload
+
+if the init.m file is present but the package does not get loaded, this means that mathematica fails to look in this directory at startup. In this case please add the line
+
+Get[ToFileName["/the/autoload/path","init.m"]]  
+
+(where /the/autoload/path is to be replaced by the above path)
+
+to the init.m file in the Kernel directory
+
+Linux: $HOME/.Mathematica/Kernel
+Mac: $HOME/Library/Mathematica/Kernel
+
+This will force mathematica to look into the Autoload Directory. This change will only take effect when you restart the Mathematica Kernel. Try to load the package after restarting the kernel. If it doesn't work, please report the problem at maitreda@slac.stanford.edu
+
+------------------------------------------------------------------
+Uninstall S@M
+------------------------------------------------------------------
+
+Run the program
+
+> ./UninstallSpinors
+
+in the installation directory of S@M.
+
+------------------------------------------------------------------
+Bug reports, bug fixes, new versions
+------------------------------------------------------------------
+
+Great care has been taken in testing  the S@M package.  However, if there are problems left we would appreciate to get bug reports to maitreda@slac.stanford.edu. If you want to get informed upon bug fixes and new versions, please send us your Email address.
+
+-------------------------------------------------------------------
+More Infos
+-------------------------------------------------------------------
+
+Updates and new version will be posted at
+
+http://www.slac.stanford.edu/grp/th/software/                                    
+-------------------------------------------------------------------
+Legal Notice
+-------------------------------------------------------------------
+
+
+
+
+                                                     Date: OCT 07
+
+SLAC AND STANFORD UNIVERSITY SOFTWARE NOTICES:
+
+
+Authorship
+
+This software was created by Daniel Maître and Pierpaolo Mastrolia from the Stanford Linear Accelerator Center, Stanford University and the University of Zurich.
+
+
+Acknowledgement of sponsorship
+
+This software was produced by the Stanford Linear Accelerator Center, Stanford University, and the university of Zurich with support from the Swiss National Science Foundation under contracts 200020-109162 and PBZH2-117028; from  the Marie-Curie-EIF under the contract MEIF-CT-2006-0214178 and from the Department of Energy under contract DE-AC03-76SFO0515.
+
+
+Government disclaimer of liability
+
+Neither the United States nor the United States Department of Energy, nor
+any of their employees, makes any warranty, express or implied, or assumes
+any legal liability or responsibility for the accuracy, completeness, or
+usefulness of any data, apparatus, product, or process disclosed, or
+represents that its use would not infringe privately owned rights.
+
+
+Stanford disclaimer of liability
+
+Stanford University makes no representations or warranties, express or
+implied, nor assumes any liability for the use of this software.
+
+
+Maintenance of notice
+
+In the  interest  of  clarity  regarding  the  origin  and  status  of  this
+software, Stanford University requests that any  recipient  of  it  maintain
+these notices affixed to any distribution by the  recipient  that  contains a
+copy or derivative of this software.
+
+                                                            Software Notices
+
+                                                                    SLAC OTT
+
+                                                                 2000 AUG 30
+
+
