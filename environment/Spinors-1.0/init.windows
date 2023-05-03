@@ -1,2 +1,0 @@
-$SpinorsPath = "the:\path\of\the\installation"
-If[Not[MemberQ[$Path,$SpinorsPath]],$Path = Flatten[{$Path, $SpinorsPath }]];
