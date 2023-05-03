@@ -1,0 +1,56 @@
+#!/bin/bash
+
+SpinorsExecutables=" $PWD/UnInstallSpinors $PWD/InstallSpinors "
+
+
+filestodelete="Spinors.m spinors_impl.m SpinorsVersion SamPalette.nb" 
+
+function find_platform() {
+platforms="mac linux"
+
+case $HOSTTYPE in 
+*linux* ) platform=linux; initmdir=$HOME/.Mathematica/Autoload
+ ;;
+powerpc|intel_pc|*mac*) platform=mac; initmdir=$HOME/Library/Mathematica/Autoload ;;
+*) echo "Could not determine the type of platform, please choose the most appropriate:";
+select platform in ${platforms};
+do
+    if  [ -z $platform ] ; then
+    	echo "Please choose a number between 1 and 2"
+    fi
+    break
+done ;
+case $platform in 
+linux) initmdir=$HOME/.Mathematica/Autoload ;;
+mac) initmdir=$HOME/Library/Mathematica/Autoload ;;
+esac
+;;
+esac
+echo "Platform: "$platform
+}
+
+find_platform
+initm=$initmdir/init.m
+
+echo -n "Are you sure you want to uninstall the package S@M? "
+read response
+echo
+
+case $response in
+    y | yes | ja | si | oui | sure)     [ -e $initm ] && sed "/begin of the lines added by S@M/,/end of the lines added by S@M/{d}" $initm >Spinors.init.m.temp
+    cp Spinors.init.m.temp $initm
+    rm Spinors.init.m.temp ;;
+    *) exit 0
+esac
+echo 
+
+echo "Should the files of the directory"
+echo $PWD 
+echo -n "be deleted ? " 
+read reply
+case $reply in
+    y | yes | ja | si | oui | sure) 
+    rm $filestodelete
+    rm -r ./* ;;   ;;
+    *) echo "uninstall finished whitout removing files"; exit 0
+esac

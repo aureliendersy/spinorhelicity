@@ -1,0 +1,1414 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 6.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     50313,       1405]
+NotebookOptionsPosition[     42721,       1139]
+NotebookOutlinePosition[     46305,       1258]
+CellTagsIndexPosition[     46236,       1253]
+WindowFrame->Normal
+ContainsDynamic->False*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Box coefficient", "Section",
+ CellChangeTimes->{{3.392985047981079*^9, 3.392985053802968*^9}, {
+  3.401600794543234*^9, 3.401600795056317*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+  "We", " ", "will", " ", "compute", " ", "the", " ", "coefficient", " ", 
+   "of", " ", "the", " ", "one", " ", "mass", " ", "box"}], 
+  " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  SubscriptBox["I", "4"], 
+  RowBox[{"(", 
+   RowBox[{"0", ",", "0", ",", "0", ",", 
+    SubscriptBox["s", "45"]}], ")"}]}], "\[IndentingNewLine]", 
+ RowBox[{" ", 
+  RowBox[{
+   RowBox[{"of", " ", "the", " ", "one"}], "-", 
+   RowBox[{"loop", " ", "five"}], "-", 
+   RowBox[{"gluon", " ", "amplitude"}]}], " "}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   SuperscriptBox[
+    SubscriptBox["A", "5"], 
+    RowBox[{"1", "-", "loop"}]], 
+   RowBox[{"(", 
+    RowBox[{
+     SuperscriptBox["1", "-"], ",", 
+     SuperscriptBox["2", "-"], ",", 
+     SuperscriptBox["3", "+"], ",", 
+     SuperscriptBox["4", "+"], ",", 
+     SuperscriptBox["5", "+"]}], ")"}]}], " "}], "\[IndentingNewLine]", 
+ RowBox[{"with", " ", "a", " ", "gluon", " ", "propagating", " ", "in", " ", 
+  "the", " ", 
+  RowBox[{"loop", "."}]}]}], "Text",
+ CellChangeTimes->{{3.401600844032382*^9, 3.401600948303637*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"<<", "Spinors`"}]], "Input",
+ CellChangeTimes->{{3.401600799170262*^9, 3.401600801614624*^9}, 
+   3.402163386065981*^9}],
+
+Cell[BoxData["\<\"\\n-------  SPINORS @ MATHEMATICA (S@M)  \
+-------\\n\\n\\n\\t\\tVersion:  S@M 1.0 (7-OCT-2007)\\n\\n \
+Authors:\\n\\tDaniel Maitre (SLAC),\\n\\tPierpaolo Mastrolia (University of \
+Zurich)\\n\\nA list of all functions provided by the package\\nis stored in \
+the variable\\n\\t$SpinorFunctions\\n\"\>"], "Print",
+ CellChangeTimes->{3.40160097908543*^9}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["defs", "Subsubsection"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MHV", "[", 
+   RowBox[{"a_", ",", "b_", ",", "c__"}], "]"}], ":=", 
+  RowBox[{"\[ImaginaryI]", " ", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"Spaa", "[", 
+      RowBox[{"a", ",", "b"}], "]"}], "^", "4"}], "/", 
+    RowBox[{"Times", "@@", 
+     RowBox[{"Spaa", "@@@", 
+      RowBox[{"Partition", "[", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"a", ",", "b", ",", "c", ",", "a"}], "}"}], ",", "2", ",", 
+        "1"}], "]"}]}]}]}]}]}]], "Input"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"MHVbar", "[", 
+   RowBox[{"a_", ",", "b_", ",", "c__"}], "]"}], ":=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"(", 
+     RowBox[{"-", "1"}], ")"}], "^", 
+    RowBox[{"Length", "[", 
+     RowBox[{"{", 
+      RowBox[{"a", ",", "b", ",", "c"}], "}"}], "]"}]}], "\[ImaginaryI]", " ",
+    
+   RowBox[{
+    RowBox[{
+     RowBox[{"Spbb", "[", 
+      RowBox[{"a", ",", "b"}], "]"}], "^", "4"}], "/", 
+    RowBox[{"Times", "@@", 
+     RowBox[{"Spbb", "@@@", 
+      RowBox[{"Partition", "[", 
+       RowBox[{
+        RowBox[{"{", 
+         RowBox[{"a", ",", "b", ",", "c", ",", "a"}], "}"}], ",", "2", ",", 
+        "1"}], "]"}]}]}]}]}]}]], "Input"],
+
+Cell["\<\
+First we generate a momentum configuration with five momenta and define the \
+loop momentum L.\
+\>", "Text",
+ CellChangeTimes->{{3.40160099420562*^9, 3.401600994870701*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"SeedRandom", "[", "1111", "]"}], "\[IndentingNewLine]", 
+ RowBox[{"GenMomenta", "[", 
+  RowBox[{"{", 
+   RowBox[{"1", ",", "2", ",", "3", ",", "4", ",", "5"}], "}"}], 
+  "]"}]}], "Input",
+ CellChangeTimes->{{3.392985598035237*^9, 3.392985612451528*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momenta for the spinors \"\>", "\[InvisibleSpace]", "1", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "2", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "3", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "4", 
+   "\[InvisibleSpace]", "\<\", \"\>", "\[InvisibleSpace]", "5", 
+   "\[InvisibleSpace]", "\<\" generated.\"\>"}],
+  SequenceForm["Momenta for the spinors ", 
+   Spinor`Sp[1], ", ", 
+   Spinor`Sp[2], ", ", 
+   Spinor`Sp[3], ", ", 
+   Spinor`Sp[4], ", ", 
+   Spinor`Sp[5], " generated."],
+  Editable->False]], "Print",
+ CellChangeTimes->{
+  3.391106513300126*^9, 3.391106583783221*^9, 3.391106995401034*^9, 
+   3.392985080823742*^9, {3.392985613089695*^9, 3.392985639802646*^9}, 
+   3.400902908079354*^9, 3.401537913668955*^9, 3.401600820720278*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"DeclareLVectorMomentum", "[", 
+  RowBox[{"L", ",", 
+   RowBox[{"{", 
+    RowBox[{"L0", ",", "L1", ",", "L2", ",", "L3"}], "}"}]}], "]"}]], "Input",\
+
+ CellChangeTimes->{{3.392985086031406*^9, 3.392985092054689*^9}, {
+  3.400902914741203*^9, 3.400902926454066*^9}},
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "L", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of Lorentz vectors\"\>"}],
+  SequenceForm[{$CellContext`L}, " added to the list of Lorentz vectors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{
+  3.391106068192602*^9, 3.391106584950799*^9, 3.391106996273448*^9, 
+   3.392985093839786*^9, {3.392985614452664*^9, 3.392985640939168*^9}, {
+   3.400902909176529*^9, 3.400902927200692*^9}, 3.401537915026741*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Four Momentum \"\>", "\[InvisibleSpace]", "L", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{"L0", ",", "L1", ",", "L2", ",", "L3"}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm[
+  "Four Momentum ", $CellContext`L, 
+   " set to ", {$CellContext`L0, $CellContext`L1, $CellContext`L2, \
+$CellContext`L3}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{
+  3.391106068192602*^9, 3.391106584950799*^9, 3.391106996273448*^9, 
+   3.392985093839786*^9, {3.392985614452664*^9, 3.392985640939168*^9}, {
+   3.400902909176529*^9, 3.400902927200692*^9}, 3.401537915083856*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+
+Cell["\<\
+Note that using the command  SeedRandom before  GenMomenta allows us to \
+reproduce the same numerical momentum configuration in another session, so \
+that comparison of numerical results are easier.Now we define the four \
+propagator momenta   l1, l2, l3, l4\
+\>", "Text",
+ CellChangeTimes->{{3.40160102024617*^9, 3.401601052457814*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"l1", "=", "L"}], "\[IndentingNewLine]", 
+ RowBox[{"l2", "=", 
+  RowBox[{"L", "-", 
+   RowBox[{"Sp", "[", "1", "]"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{"l3", "=", 
+  RowBox[{"l2", "-", 
+   RowBox[{"Sp", "[", "2", "]"}]}]}], "\[IndentingNewLine]", 
+ RowBox[{"l4", "=", 
+  RowBox[{"l3", "-", 
+   RowBox[{"Sp", "[", "3", "]"}]}]}]}], "Input",
+ CellTags->"print"],
+
+Cell[BoxData["L"], "Output",
+ CellChangeTimes->{3.400903219919628*^9, 3.401537917417548*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"L", "-", "1"}]], "Output",
+ CellChangeTimes->{3.400903219919628*^9, 3.401537917485415*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"L", "-", "1", "-", "2"}]], "Output",
+ CellChangeTimes->{3.400903219919628*^9, 3.401537917558899*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"L", "-", "1", "-", "2", "-", "3"}]], "Output",
+ CellChangeTimes->{3.400903219919628*^9, 3.401537917606085*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+and solve for the components of the loop momenta L using the on - shell \
+constraints for the four propagators.\
+\>", "Text",
+ CellChangeTimes->{{3.401601066641369*^9, 3.401601068252533*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"sols", "=", 
+  RowBox[{"Solve", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"{", "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"MP2", "[", "l1", "]"}], "\[Equal]", "0"}], ",", 
+       "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"MP2", "[", "l2", "]"}], "\[Equal]", "0"}], ",", 
+       "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"MP2", "[", "l3", "]"}], "\[Equal]", "0"}], ",", 
+       "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"MP2", "[", "l4", "]"}], "\[Equal]", "0"}]}], 
+      "\[IndentingNewLine]", "}"}], "//", "N"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"L0", ",", "L1", ",", "L2", ",", "L3"}], "}"}]}], 
+   "]"}]}]], "Input",
+ CellChangeTimes->{{3.40090323508814*^9, 3.40090324671501*^9}, {
+  3.401522449430924*^9, 3.401522453860195*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{"{", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"L0", "\[Rule]", 
+      RowBox[{"1.1201347268880444`", "\[InvisibleSpace]", "-", 
+       RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L1", "\[Rule]", 
+      RowBox[{"0.4922063307531796`", "\[InvisibleSpace]", "-", 
+       RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L2", "\[Rule]", 
+      RowBox[{
+       RowBox[{"-", "1.8497502376968582`"}], "+", 
+       RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L3", "\[Rule]", 
+      RowBox[{
+       RowBox[{"-", "2.398873488563955`"}], "-", 
+       RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}]}], "}"}], ",",
+    
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"L0", "\[Rule]", 
+      RowBox[{"1.1201347268880444`", "\[InvisibleSpace]", "+", 
+       RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L1", "\[Rule]", 
+      RowBox[{"0.4922063307531796`", "\[InvisibleSpace]", "+", 
+       RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L2", "\[Rule]", 
+      RowBox[{
+       RowBox[{"-", "1.8497502376968582`"}], "-", 
+       RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}]}], ",", 
+     RowBox[{"L3", "\[Rule]", 
+      RowBox[{
+       RowBox[{"-", "2.398873488563955`"}], "+", 
+       RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}]}], "}"}]}], 
+  "}"}]], "Output",
+ CellChangeTimes->{3.391106292111182*^9, 3.39110646895238*^9, 
+  3.391106613333027*^9, 3.391107018184211*^9, 3.391108101077569*^9, 
+  3.392985155375453*^9, 3.392985646940406*^9, 3.400903266569098*^9, 
+  3.401537918636694*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+Using the first solution, we define the spinors corresponding to the \
+propagator momenta (both incoming and outgoing).\
+\>", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl1", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l1", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml1", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l1", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl2", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l2", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml2", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l2", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl3", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l3", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml3", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l3", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl4", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l4", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml4", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l4", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "1", "]"}], "]"}]}]}], 
+  "]"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.400903301343197*^9, 3.400903312442211*^9}},
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "pl1", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`pl1}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921018824*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl1", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.1201347268880444`", "\[InvisibleSpace]", "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.4922063307531796`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.8497502376968582`"}], "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.398873488563955`"}], "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl1, " set to ", {
+    Complex[1.1201347268880444`, -0.2610238774713093], 
+    Complex[0.4922063307531796, -1.6121049025706673`], 
+    Complex[-1.8497502376968582`, 1.7739308566671674`], 
+    Complex[-2.398873488563955, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921119064*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "ml1", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`ml1}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.40153792117441*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml1", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.1201347268880444`"}], "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.4922063307531796`"}], "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.8497502376968582`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.398873488563955`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml1, " set to ", {
+    Complex[-1.1201347268880444`, 0.2610238774713093], 
+    Complex[-0.4922063307531796, 1.6121049025706673`], 
+    Complex[1.8497502376968582`, -1.7739308566671674`], 
+    Complex[2.398873488563955, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921224775*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "pl2", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`pl2}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921273779*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl2", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "0.28478012297673594`"}], "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.7139060818422298`"}], "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.1619816543454378`"}], "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.7495737688570385`"}], "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl2, " set to ", {
+    Complex[-0.28478012297673594`, -0.2610238774713093], 
+    Complex[-0.7139060818422298, -1.6121049025706673`], 
+    Complex[-2.1619816543454378`, 1.7739308566671674`], 
+    Complex[-1.7495737688570385`, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921362672*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "ml2", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`ml2}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921416629*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml2", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"0.28478012297673594`", "\[InvisibleSpace]", "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.7139060818422298`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.1619816543454378`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.7495737688570385`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml2, " set to ", {
+    Complex[0.28478012297673594`, 0.2610238774713093], 
+    Complex[0.7139060818422298, 1.6121049025706673`], 
+    Complex[2.1619816543454378`, -1.7739308566671674`], 
+    Complex[1.7495737688570385`, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921474335*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "pl3", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`pl3}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921527515*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl3", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.639506208974263`"}], "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.24570478706038856`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.9106579879516947`"}], "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.672214632398507`"}], "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl3, " set to ", {
+    Complex[-1.639506208974263, -0.2610238774713093], 
+    Complex[0.24570478706038856`, -1.6121049025706673`], 
+    Complex[-1.9106579879516947`, 1.7739308566671674`], 
+    Complex[-2.672214632398507, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921591278*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "ml3", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`ml3}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921699855*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml3", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.639506208974263`", "\[InvisibleSpace]", "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.24570478706038856`"}], "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.9106579879516947`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.672214632398507`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml3, " set to ", {
+    Complex[1.639506208974263, 0.2610238774713093], 
+    Complex[-0.24570478706038856`, 1.6121049025706673`], 
+    Complex[1.9106579879516947`, -1.7739308566671674`], 
+    Complex[2.672214632398507, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921762464*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "pl4", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`pl4}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921817838*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl4", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.2042825012582414`"}], "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.555424396950561`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.6171248861458338`"}], "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.5865889519527983`"}], "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl4, " set to ", {
+    Complex[-1.2042825012582414`, -0.2610238774713093], 
+    Complex[0.555424396950561, -1.6121049025706673`], 
+    Complex[-1.6171248861458338`, 1.7739308566671674`], 
+    Complex[-2.5865889519527983`, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921873376*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{
+   RowBox[{"{", "ml4", "}"}], 
+   "\[InvisibleSpace]", "\<\" added to the list of spinors\"\>"}],
+  SequenceForm[{$CellContext`ml4}, " added to the list of spinors"],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.401537921927904*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml4", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.2042825012582414`", "\[InvisibleSpace]", "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.555424396950561`"}], "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.6171248861458338`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.5865889519527983`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml4, " set to ", {
+    Complex[1.2042825012582414`, 0.2610238774713093], 
+    Complex[-0.555424396950561, 1.6121049025706673`], 
+    Complex[1.6171248861458338`, -1.7739308566671674`], 
+    Complex[2.5865889519527983`, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.400903313803*^9, 3.40153792198698*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+
+Cell["\<\
+We can now compute the coefficient by inserting these spinors into the \
+amplitudes at each corner of the box.\
+\>", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"sol1h1", "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     RowBox[{"MHV", "[", 
+      RowBox[{"ml1", ",", "pl4", ",", "4", ",", "5"}], "]"}], " ", 
+     RowBox[{"MHV", "[", 
+      RowBox[{"1", ",", "ml2", ",", "pl1"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"ml3", ",", "pl2", ",", "2"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"3", ",", "ml4", ",", "pl3"}], "]"}]}], "//", "N"}], "//", 
+   "Chop"}]}]], "Input",
+ CellChangeTimes->{{3.391106900004461*^9, 3.391106908641089*^9}, {
+  3.392987555003918*^9, 3.39298755601146*^9}},
+ CellTags->"print"],
+
+Cell[BoxData["0"], "Output",
+ CellChangeTimes->{
+  3.391106334570747*^9, 3.391106472661632*^9, 3.391106532491408*^9, 
+   3.391106618300737*^9, 3.39110691990158*^9, 3.391107021377924*^9, 
+   3.391108298753016*^9, 3.392985656101333*^9, {3.392987556501699*^9, 
+   3.392987569832167*^9}, 3.400903317934167*^9, 3.401537924002412*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"sol1h2", "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     RowBox[{"MHV", "[", 
+      RowBox[{"ml1", ",", "pl4", ",", "4", ",", "5"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"ml2", ",", "pl1", ",", "1"}], "]"}], " ", 
+     RowBox[{"MHV", "[", 
+      RowBox[{"pl2", ",", "2", ",", "ml3"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"3", ",", "ml4", ",", "pl3"}], "]"}]}], "//", "N"}], "//", 
+   "Chop"}]}]], "Input",
+ CellChangeTimes->{{3.391106913915893*^9, 3.391106916208406*^9}, {
+  3.392987558531003*^9, 3.392987559658433*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"-", "41.06708258883883`"}], "+", 
+  RowBox[{"62.75691359140355`", " ", "\[ImaginaryI]"}]}]], "Output",
+ CellChangeTimes->{
+  3.391106534803875*^9, 3.391106621210187*^9, 3.391106920871318*^9, 
+   3.391107022068336*^9, 3.391108299672044*^9, 3.392985657656912*^9, {
+   3.392987560014684*^9, 3.392987570999335*^9}, 3.400903318886003*^9, 
+   3.401537925194791*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["\<\
+Where solh1 and  solh2 are the two contributions corresponding to the two \
+(not obviously vanishing) helicity configurations for the propagator \
+momenta.The first helicity configuration gives a vanishing coefficient.The \
+second solution for the loop momentum yields only vanishing solutions :\
+\>", "Text",
+ CellChangeTimes->{{3.401601128710972*^9, 3.401601137532149*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl1", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l1", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml1", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l1", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl2", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l2", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml2", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l2", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl3", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l3", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml3", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l3", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"pl4", ",", 
+   RowBox[{
+    RowBox[{"Num4V", "[", "l4", "]"}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], "]"}], "\[IndentingNewLine]", 
+ RowBox[{"DeclareSpinorMomentum", "[", 
+  RowBox[{"ml4", ",", 
+   RowBox[{
+    RowBox[{"-", 
+     RowBox[{"Num4V", "[", "l4", "]"}]}], "/.", 
+    RowBox[{"sols", "[", 
+     RowBox[{"[", "2", "]"}], "]"}]}]}], 
+  "]"}], "\[IndentingNewLine]"}], "Input",
+ CellChangeTimes->{{3.40090334123028*^9, 3.400903350814193*^9}},
+ CellTags->"print"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl1", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.1201347268880444`", "\[InvisibleSpace]", "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.4922063307531796`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.8497502376968582`"}], "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.398873488563955`"}], "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl1, " set to ", {
+    Complex[1.1201347268880444`, 0.2610238774713093], 
+    Complex[0.4922063307531796, 1.6121049025706673`], 
+    Complex[-1.8497502376968582`, -1.7739308566671674`], 
+    Complex[-2.398873488563955, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.40153792663597*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml1", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.1201347268880444`"}], "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.4922063307531796`"}], "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.8497502376968582`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.398873488563955`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml1, " set to ", {
+    Complex[-1.1201347268880444`, -0.2610238774713093], 
+    Complex[-0.4922063307531796, -1.6121049025706673`], 
+    Complex[1.8497502376968582`, 1.7739308566671674`], 
+    Complex[2.398873488563955, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537926731048*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl2", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "0.28478012297673594`"}], "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.7139060818422298`"}], "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.1619816543454378`"}], "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.7495737688570385`"}], "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl2, " set to ", {
+    Complex[-0.28478012297673594`, 0.2610238774713093], 
+    Complex[-0.7139060818422298, 1.6121049025706673`], 
+    Complex[-2.1619816543454378`, -1.7739308566671674`], 
+    Complex[-1.7495737688570385`, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537926782178*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml2", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"0.28478012297673594`", "\[InvisibleSpace]", "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.7139060818422298`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.1619816543454378`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.7495737688570385`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml2, " set to ", {
+    Complex[0.28478012297673594`, -0.2610238774713093], 
+    Complex[0.7139060818422298, -1.6121049025706673`], 
+    Complex[2.1619816543454378`, 1.7739308566671674`], 
+    Complex[1.7495737688570385`, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537926835436*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl3", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.639506208974263`"}], "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.24570478706038856`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.9106579879516947`"}], "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.672214632398507`"}], "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl3, " set to ", {
+    Complex[-1.639506208974263, 0.2610238774713093], 
+    Complex[0.24570478706038856`, 1.6121049025706673`], 
+    Complex[-1.9106579879516947`, -1.7739308566671674`], 
+    Complex[-2.672214632398507, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537926892356*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml3", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.639506208974263`", "\[InvisibleSpace]", "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.24570478706038856`"}], "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.9106579879516947`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.672214632398507`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml3, " set to ", {
+    Complex[1.639506208974263, -0.2610238774713093], 
+    Complex[-0.24570478706038856`, -1.6121049025706673`], 
+    Complex[1.9106579879516947`, 1.7739308566671674`], 
+    Complex[2.672214632398507, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537926990302*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "pl4", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "1.2042825012582414`"}], "+", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"0.555424396950561`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "1.6171248861458338`"}], "-", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "2.5865889519527983`"}], "+", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`pl4, " set to ", {
+    Complex[-1.2042825012582414`, 0.2610238774713093], 
+    Complex[0.555424396950561, 1.6121049025706673`], 
+    Complex[-1.6171248861458338`, -1.7739308566671674`], 
+    Complex[-2.5865889519527983`, 1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.401537927047772*^9},
+ CellTags->"print"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Momentum for spinor \"\>", "\[InvisibleSpace]", "ml4", 
+   "\[InvisibleSpace]", "\<\" set to \"\>", "\[InvisibleSpace]", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"1.2042825012582414`", "\[InvisibleSpace]", "-", 
+      RowBox[{"0.2610238774713093`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{
+      RowBox[{"-", "0.555424396950561`"}], "-", 
+      RowBox[{"1.6121049025706673`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"1.6171248861458338`", "\[InvisibleSpace]", "+", 
+      RowBox[{"1.7739308566671674`", " ", "\[ImaginaryI]"}]}], ",", 
+     RowBox[{"2.5865889519527983`", "\[InvisibleSpace]", "-", 
+      RowBox[{"1.576754827209798`", " ", "\[ImaginaryI]"}]}]}], "}"}], 
+   "\[InvisibleSpace]", "\<\".\"\>"}],
+  SequenceForm["Momentum for spinor ", $CellContext`ml4, " set to ", {
+    Complex[1.2042825012582414`, -0.2610238774713093], 
+    Complex[-0.555424396950561, -1.6121049025706673`], 
+    Complex[1.6171248861458338`, 1.7739308566671674`], 
+    Complex[2.5865889519527983`, -1.576754827209798]}, "."],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.40090335125766*^9, 3.40153792710464*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"sol2h1", "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     RowBox[{"MHV", "[", 
+      RowBox[{"ml1", ",", "pl4", ",", "4", ",", "5"}], "]"}], " ", 
+     RowBox[{"MHV", "[", 
+      RowBox[{"1", ",", "ml2", ",", "pl1"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"ml3", ",", "pl2", ",", "2"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"3", ",", "ml4", ",", "pl3"}], "]"}]}], "//", "N"}], "//", 
+   "Chop"}]}]], "Input",
+ CellChangeTimes->{{3.391106931636961*^9, 3.391106937960289*^9}, {
+  3.392987576922718*^9, 3.392987577978944*^9}},
+ CellTags->"print"],
+
+Cell[BoxData["0"], "Output",
+ CellChangeTimes->{3.391106540920915*^9, 3.391106625490921*^9, 
+  3.391106943931684*^9, 3.391107027113566*^9, 3.391108304378045*^9, 
+  3.392985661581286*^9, 3.39298758487097*^9, 3.40090335328102*^9, 
+  3.401537928832642*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"sol2h2", "=", 
+  RowBox[{
+   RowBox[{
+    RowBox[{
+     RowBox[{"MHV", "[", 
+      RowBox[{"ml1", ",", "pl4", ",", "4", ",", "5"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"ml2", ",", "pl1", ",", "1"}], "]"}], " ", 
+     RowBox[{"MHV", "[", 
+      RowBox[{"pl2", ",", "2", ",", "ml3"}], "]"}], " ", 
+     RowBox[{"MHVbar", "[", 
+      RowBox[{"3", ",", "ml4", ",", "pl3"}], "]"}]}], "//", "N"}], "//", 
+   "Chop"}]}]], "Input",
+ CellChangeTimes->{{3.3911069333558*^9, 3.391106941832703*^9}, {
+  3.392987580642409*^9, 3.392987581820318*^9}},
+ CellTags->"print"],
+
+Cell[BoxData["0"], "Output",
+ CellChangeTimes->{3.391106542220724*^9, 3.391106626663165*^9, 
+  3.391106944748354*^9, 3.391107027927843*^9, 3.391108307982217*^9, 
+  3.392985663052853*^9, 3.392987582095388*^9, 3.400903354096134*^9, 
+  3.401537929957917*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell["We can verify that the result is the right one :", "Text"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{
+   FractionBox[
+    RowBox[{"\[ImaginaryI]", " ", 
+     RowBox[{"s", "[", 
+      RowBox[{"1", ",", "2"}], "]"}], " ", 
+     RowBox[{"s", "[", 
+      RowBox[{"2", ",", "3"}], "]"}]}], "2"], " ", 
+   RowBox[{"MHV", "[", 
+    RowBox[{"1", ",", "2", ",", "3", ",", "4", ",", "5"}], "]"}]}], "//", 
+  "N"}]], "Input",
+ CellChangeTimes->{
+  3.392985512024708*^9, {3.400903466482905*^9, 3.400903468794025*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"-", "20.533541294419326`"}], "+", 
+  RowBox[{"31.37845679570183`", " ", "\[ImaginaryI]"}]}]], "Output",
+ CellChangeTimes->{3.391106547833932*^9, 3.391106628642752*^9, 
+  3.39110695398409*^9, 3.391107041529019*^9, 3.391108316332627*^9, 
+  3.392985665433818*^9, 3.400903166491828*^9, 3.400903356725051*^9, 
+  3.400903470016653*^9, 3.401537931391611*^9},
+ CellTags->"print"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"sol1h1", "+", "sol1h2", "+", "sol2h1", "+", "sol2h2"}], 
+  "2"]], "Input",
+ CellChangeTimes->{{3.391106956657755*^9, 3.391106986098804*^9}, {
+  3.391107047175338*^9, 3.391107047400906*^9}, {3.392985554148608*^9, 
+  3.392985580755202*^9}, {3.400903477787178*^9, 3.400903484617437*^9}},
+ CellTags->"print"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"-", "20.533541294419415`"}], "+", 
+  RowBox[{"31.378456795701776`", " ", "\[ImaginaryI]"}]}]], "Output",
+ CellChangeTimes->{{3.391106959246224*^9, 3.391106986472586*^9}, {
+   3.3911070431974*^9, 3.391107047687644*^9}, 3.391107119123878*^9, 
+   3.391108319564631*^9, 3.392985581260728*^9, 3.392985667421551*^9, 
+   3.40090348528416*^9, 3.401537932747962*^9},
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{640, 593},
+WindowMargins->{{Automatic, 160}, {31, Automatic}},
+FrontEndVersion->"6.0 for Linux x86 (32-bit) (April 20, 2007)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{
+ "print"->{
+  Cell[3830, 128, 298, 7, 46, "Input",
+   CellTags->"print"],
+  Cell[4131, 137, 869, 19, 21, "Print",
+   CellTags->"print"],
+  Cell[5037, 161, 308, 8, 28, "Input",
+   CellTags->"print"],
+  Cell[5370, 173, 506, 11, 21, "Print",
+   CellTags->"print"],
+  Cell[5879, 186, 708, 16, 24, "Print",
+   CellTags->"print"],
+  Cell[6987, 216, 386, 11, 99, "Input",
+   CellTags->"print"],
+  Cell[7376, 229, 112, 2, 31, "Output",
+   CellTags->"print"],
+  Cell[7491, 233, 134, 3, 31, "Output",
+   CellTags->"print"],
+  Cell[7628, 238, 144, 3, 31, "Output",
+   CellTags->"print"],
+  Cell[7775, 243, 154, 3, 31, "Output",
+   CellTags->"print"],
+  Cell[8170, 257, 853, 24, 143, "Input",
+   CellTags->"print"],
+  Cell[9026, 283, 1724, 41, 92, "Output",
+   CellTags->"print"],
+  Cell[10933, 334, 1949, 55, 209, "Input",
+   CellTags->"print"],
+  Cell[12907, 393, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[13232, 403, 1182, 24, 45, "Print",
+   CellTags->"print"],
+  Cell[14417, 429, 321, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[14741, 439, 1180, 24, 45, "Print",
+   CellTags->"print"],
+  Cell[15924, 465, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[16249, 475, 1191, 26, 45, "Print",
+   CellTags->"print"],
+  Cell[17443, 503, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[17768, 513, 1181, 22, 45, "Print",
+   CellTags->"print"],
+  Cell[18952, 537, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[19277, 547, 1184, 25, 45, "Print",
+   CellTags->"print"],
+  Cell[20464, 574, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[20789, 584, 1178, 23, 45, "Print",
+   CellTags->"print"],
+  Cell[21970, 609, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[22295, 619, 1185, 25, 45, "Print",
+   CellTags->"print"],
+  Cell[23483, 646, 322, 8, 24, "Print",
+   CellTags->"print"],
+  Cell[23808, 656, 1178, 23, 45, "Print",
+   CellTags->"print"],
+  Cell[25172, 690, 601, 16, 77, "Input",
+   CellTags->"print"],
+  Cell[25776, 708, 348, 6, 31, "Output",
+   CellTags->"print"],
+  Cell[26161, 719, 602, 16, 77, "Input",
+   CellTags->"print"],
+  Cell[26766, 737, 414, 9, 31, "Output",
+   CellTags->"print"],
+  Cell[27605, 759, 1948, 55, 209, "Input",
+   CellTags->"print"],
+  Cell[29578, 818, 1181, 24, 45, "Print",
+   CellTags->"print"],
+  Cell[30762, 844, 1184, 24, 45, "Print",
+   CellTags->"print"],
+  Cell[31949, 870, 1191, 26, 45, "Print",
+   CellTags->"print"],
+  Cell[33143, 898, 1185, 22, 45, "Print",
+   CellTags->"print"],
+  Cell[34331, 922, 1184, 25, 45, "Print",
+   CellTags->"print"],
+  Cell[35518, 949, 1182, 23, 45, "Print",
+   CellTags->"print"],
+  Cell[36703, 974, 1185, 25, 45, "Print",
+   CellTags->"print"],
+  Cell[37891, 1001, 1182, 23, 45, "Print",
+   CellTags->"print"],
+  Cell[39122, 1030, 602, 16, 77, "Input",
+   CellTags->"print"],
+  Cell[39727, 1048, 273, 5, 31, "Output",
+   CellTags->"print"],
+  Cell[40037, 1058, 600, 16, 77, "Input",
+   CellTags->"print"],
+  Cell[40640, 1076, 275, 5, 31, "Output",
+   CellTags->"print"],
+  Cell[41019, 1088, 458, 14, 46, "Input",
+   CellTags->"print"],
+  Cell[41480, 1104, 406, 8, 31, "Output",
+   CellTags->"print"],
+  Cell[41923, 1117, 343, 7, 45, "Input",
+   CellTags->"print"],
+  Cell[42269, 1126, 412, 8, 31, "Output",
+   CellTags->"print"]}
+ }
+*)
+(*CellTagsIndex
+CellTagsIndex->{
+ {"print", 43003, 1149}
+ }
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[590, 23, 149, 2, 73, "Section"],
+Cell[742, 27, 1101, 31, 99, "Text"],
+Cell[CellGroupData[{
+Cell[1868, 62, 144, 3, 28, "Input"],
+Cell[2015, 67, 372, 5, 243, "Print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2424, 77, 29, 0, 30, "Subsubsection"],
+Cell[2456, 79, 490, 15, 46, "Input"],
+Cell[2949, 96, 670, 22, 63, "Input"],
+Cell[3622, 120, 183, 4, 28, "Text"],
+Cell[CellGroupData[{
+Cell[3830, 128, 298, 7, 46, "Input",
+ CellTags->"print"],
+Cell[4131, 137, 869, 19, 21, "Print",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5037, 161, 308, 8, 28, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[5370, 173, 506, 11, 21, "Print",
+ CellTags->"print"],
+Cell[5879, 186, 708, 16, 24, "Print",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+Cell[6614, 206, 348, 6, 91, "Text"],
+Cell[CellGroupData[{
+Cell[6987, 216, 386, 11, 99, "Input",
+ CellTags->"print"],
+Cell[7376, 229, 112, 2, 31, "Output",
+ CellTags->"print"],
+Cell[7491, 233, 134, 3, 31, "Output",
+ CellTags->"print"],
+Cell[7628, 238, 144, 3, 31, "Output",
+ CellTags->"print"],
+Cell[7775, 243, 154, 3, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[7944, 249, 201, 4, 51, "Text"],
+Cell[CellGroupData[{
+Cell[8170, 257, 853, 24, 143, "Input",
+ CellTags->"print"],
+Cell[9026, 283, 1724, 41, 92, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[10765, 327, 143, 3, 51, "Text"],
+Cell[CellGroupData[{
+Cell[10933, 334, 1949, 55, 209, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[12907, 393, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[13232, 403, 1182, 24, 45, "Print",
+ CellTags->"print"],
+Cell[14417, 429, 321, 8, 24, "Print",
+ CellTags->"print"],
+Cell[14741, 439, 1180, 24, 45, "Print",
+ CellTags->"print"],
+Cell[15924, 465, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[16249, 475, 1191, 26, 45, "Print",
+ CellTags->"print"],
+Cell[17443, 503, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[17768, 513, 1181, 22, 45, "Print",
+ CellTags->"print"],
+Cell[18952, 537, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[19277, 547, 1184, 25, 45, "Print",
+ CellTags->"print"],
+Cell[20464, 574, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[20789, 584, 1178, 23, 45, "Print",
+ CellTags->"print"],
+Cell[21970, 609, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[22295, 619, 1185, 25, 45, "Print",
+ CellTags->"print"],
+Cell[23483, 646, 322, 8, 24, "Print",
+ CellTags->"print"],
+Cell[23808, 656, 1178, 23, 45, "Print",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+Cell[25013, 683, 134, 3, 51, "Text"],
+Cell[CellGroupData[{
+Cell[25172, 690, 601, 16, 77, "Input",
+ CellTags->"print"],
+Cell[25776, 708, 348, 6, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[26161, 719, 602, 16, 77, "Input",
+ CellTags->"print"],
+Cell[26766, 737, 414, 9, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[27195, 749, 385, 6, 91, "Text"],
+Cell[CellGroupData[{
+Cell[27605, 759, 1948, 55, 209, "Input",
+ CellTags->"print"],
+Cell[CellGroupData[{
+Cell[29578, 818, 1181, 24, 45, "Print",
+ CellTags->"print"],
+Cell[30762, 844, 1184, 24, 45, "Print",
+ CellTags->"print"],
+Cell[31949, 870, 1191, 26, 45, "Print",
+ CellTags->"print"],
+Cell[33143, 898, 1185, 22, 45, "Print",
+ CellTags->"print"],
+Cell[34331, 922, 1184, 25, 45, "Print",
+ CellTags->"print"],
+Cell[35518, 949, 1182, 23, 45, "Print",
+ CellTags->"print"],
+Cell[36703, 974, 1185, 25, 45, "Print",
+ CellTags->"print"],
+Cell[37891, 1001, 1182, 23, 45, "Print",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[39122, 1030, 602, 16, 77, "Input",
+ CellTags->"print"],
+Cell[39727, 1048, 273, 5, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[40037, 1058, 600, 16, 77, "Input",
+ CellTags->"print"],
+Cell[40640, 1076, 275, 5, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[40930, 1084, 64, 0, 31, "Text"],
+Cell[CellGroupData[{
+Cell[41019, 1088, 458, 14, 46, "Input",
+ CellTags->"print"],
+Cell[41480, 1104, 406, 8, 31, "Output",
+ CellTags->"print"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[41923, 1117, 343, 7, 45, "Input",
+ CellTags->"print"],
+Cell[42269, 1126, 412, 8, 31, "Output",
+ CellTags->"print"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

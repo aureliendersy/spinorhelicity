@@ -1,0 +1,428 @@
+(* Content-type: application/mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 6.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       145,          7]
+NotebookDataLength[     12198,        419]
+NotebookOptionsPosition[     11234,        382]
+NotebookOutlinePosition[     12086,        417]
+CellTagsIndexPosition[     12043,        414]
+WindowFrame->Palette
+ContainsDynamic->False*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ FormBox[
+  TagBox[GridBox[{
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{"\[LeftAngleBracket]", 
+           RowBox[{"\[SelectionPlaceholder]", "|", "\[Placeholder]"}], 
+           "\[RightAngleBracket]"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]},
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{"[", 
+           RowBox[{"\[SelectionPlaceholder]", "|", "\[Placeholder]"}], "]"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]},
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           RowBox[{"\[LeftAngleBracket]", 
+            RowBox[{
+            "\[SelectionPlaceholder]", "|", "\[Placeholder]", "|", 
+             "\[Placeholder]"}]}], "]"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]},
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           RowBox[{"[", 
+            RowBox[{
+            "\[SelectionPlaceholder]", "|", "\[Placeholder]", "|", 
+             "\[Placeholder]"}]}], "\[RightAngleBracket]"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]}
+    },
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}],
+   DisplayForm], TraditionalForm]], NotebookDefault],
+
+Cell[BoxData[
+ FormBox[
+  TagBox[GridBox[{
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           SubscriptBox["u", "+"], "(", "\[SelectionPlaceholder]", ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           SubscriptBox["u", "-"], "(", "\[SelectionPlaceholder]", ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]},
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           OverscriptBox[
+            SubscriptBox["u", "+"], "_"], "(", "\[SelectionPlaceholder]", 
+           ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           OverscriptBox[
+            SubscriptBox["u", "-"], "_"], "(", "\[SelectionPlaceholder]", 
+           ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]}
+    },
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}],
+   DisplayForm], TraditionalForm]], NotebookDefault],
+
+Cell[BoxData[
+ FormBox[
+  TagBox[GridBox[{
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{"\[Lambda]", "(", "\[SelectionPlaceholder]", ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           OverscriptBox["\[Lambda]", "~"], "(", "\[SelectionPlaceholder]", 
+           ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]},
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           UnderscriptBox["\[Lambda]", "_"], "(", "\[SelectionPlaceholder]", 
+           ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          RowBox[{
+           UnderscriptBox[
+            OverscriptBox["\[Lambda]", "~"], "_"], "(", 
+           "\[SelectionPlaceholder]", ")"}],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]}
+    },
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}],
+   DisplayForm], TraditionalForm]], NotebookDefault],
+
+Cell[BoxData[
+ FormBox[
+  TagBox[GridBox[{
+     {
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["\[Gamma]", "0"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["\[Gamma]", "1"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["\[Gamma]", "2"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["\[Gamma]", "3"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["\[Gamma]", "5"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["P", "+"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm], 
+      TagBox[
+       ButtonBox[
+        FormBox[
+         FormBox[
+          SubscriptBox["P", "-"],
+          TraditionalForm],
+         TraditionalForm]],
+       DisplayForm]}
+    },
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], 
+        Offset[0.], 
+        Offset[0.], 
+        Offset[0.], 
+        Offset[0.7], 
+        Offset[0.7], {
+         Offset[0.]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {
+        Offset[0.2], {
+         Offset[0.]}, 
+        Offset[0.2]}, "RowsIndexed" -> {}}],
+   DisplayForm], TraditionalForm]], NotebookDefault],
+
+Cell[BoxData[
+ FormBox[
+  TagBox[GridBox[{
+     {
+      ButtonBox[
+       RowBox[{
+        RowBox[{"\[LeftAngleBracket]", 
+         RowBox[{
+         "\[Placeholder]", "|", "\<\"...\"\>", "|", "\[Placeholder]"}], 
+         "\[RightAngleBracket]"}], "\[Rule]", 
+        InterpretationBox[
+         RowBox[{
+          RowBox[{
+           RowBox[{"\[LeftAngleBracket]", 
+            RowBox[{"\[Placeholder]", "|", "\[Placeholder]"}], 
+            "\[RightAngleBracket]"}], " ", 
+           RowBox[{"[", 
+            RowBox[{"\[Placeholder]", "|", "\[Placeholder]"}], "]"}]}], 
+          "\[InvisibleSpace]", "\<\" ...\"\>"}],
+         SequenceForm[
+         Spaa[\[Placeholder], \[Placeholder]] 
+          Spbb[\[Placeholder], \[Placeholder]], " ..."],
+         Editable->False]}],
+       ButtonData:>RowBox[{"SpOpen", "[", \[SelectionPlaceholder], "]"}],
+       ButtonFunction:>(NotebookApply[
+         SelectedNotebook[], #]& )]},
+     {
+      ButtonBox[
+       RowBox[{
+        RowBox[{"\[LeftAngleBracket]", 
+         RowBox[{
+         "\[Placeholder]", "|", "\<\"...\"\>", "|", "\[SelectionPlaceholder]",
+           "|", "\<\"...\"\>", "|", "\[Placeholder]"}], 
+         "\[RightAngleBracket]"}], "\[Rule]", 
+        InterpretationBox[
+         RowBox[{
+          RowBox[{
+           RowBox[{"\[LeftAngleBracket]", 
+            RowBox[{
+            "\[Placeholder]", "|", "\<\"...\"\>", "|", 
+             "\[SelectionPlaceholder]"}], "\[RightAngleBracket]"}], " ", 
+           RowBox[{
+            RowBox[{"[", 
+             RowBox[{
+             "\[SelectionPlaceholder]", "|", "\<\"...\"\>", "|", 
+              "\[Placeholder]"}]}], "\[RightAngleBracket]"}]}], 
+          "\[InvisibleSpace]", "\<\" ...\"\>"}],
+         SequenceForm[
+         Spaa[\[Placeholder], "...", \[SelectionPlaceholder]] 
+          Spba[\[SelectionPlaceholder], "...", \[Placeholder]], " ..."],
+         Editable->False]}],
+       ButtonData:>
+        RowBox[{"SpOpen", "[", \[SelectionPlaceholder], ",", \[Placeholder], 
+          "]"}],
+       ButtonFunction:>(NotebookApply[
+         SelectedNotebook[], #]& )]},
+     {
+      ButtonBox[
+       RowBox[{
+        InterpretationBox[
+         RowBox[{
+          RowBox[{
+           RowBox[{"\[LeftAngleBracket]", 
+            RowBox[{"\[Placeholder]", "|", "\[Placeholder]"}], 
+            "\[RightAngleBracket]"}], " ", 
+           RowBox[{"[", 
+            RowBox[{"\[Placeholder]", "|", "\[Placeholder]"}], "]"}]}], 
+          "\[InvisibleSpace]", "\<\" ...\"\>"}],
+         SequenceForm[
+         Spaa[\[Placeholder], \[Placeholder]] 
+          Spbb[\[Placeholder], \[Placeholder]], " ..."],
+         Editable->False], "\[Rule]", 
+        RowBox[{"\[LeftAngleBracket]", 
+         RowBox[{
+         "\[Placeholder]", "|", "\<\"...\"\>", "|", "\[Placeholder]"}], 
+         "\[RightAngleBracket]"}]}],
+       ButtonData:>RowBox[{"SpClose", "[", \[SelectionPlaceholder], "]"}],
+       ButtonFunction:>(NotebookApply[
+         SelectedNotebook[], #]& )]},
+     {
+      ButtonBox[
+       RowBox[{
+        InterpretationBox[
+         RowBox[{
+          RowBox[{
+           RowBox[{"\[LeftAngleBracket]", 
+            RowBox[{
+            "\[Placeholder]", "|", "\<\"...\"\>", "|", 
+             "\[SelectionPlaceholder]"}], "\[RightAngleBracket]"}], " ", 
+           RowBox[{
+            RowBox[{"[", 
+             RowBox[{
+             "\[SelectionPlaceholder]", "|", "\<\"...\"\>", "|", 
+              "\[Placeholder]"}]}], "\[RightAngleBracket]"}]}], 
+          "\[InvisibleSpace]", "\<\" ...\"\>"}],
+         SequenceForm[
+         Spaa[\[Placeholder], "...", \[SelectionPlaceholder]] 
+          Spba[\[SelectionPlaceholder], "...", \[Placeholder]], " ..."],
+         Editable->False], "\[Rule]", 
+        RowBox[{"\[LeftAngleBracket]", 
+         RowBox[{
+         "\[Placeholder]", "|", "\<\"...\"\>", "|", "\[SelectionPlaceholder]",
+           "|", "\<\"...\"\>", "|", "\[Placeholder]"}], 
+         "\[RightAngleBracket]"}]}],
+       ButtonData:>
+        RowBox[{"SpClose", "[", \[SelectionPlaceholder], ",", \[Placeholder], 
+          "]"}],
+       ButtonFunction:>(NotebookApply[
+         SelectedNotebook[], #]& )]}
+    },
+    GridBoxSpacings->{"Columns" -> {
+        Offset[0.27999999999999997`], {
+         Offset[0.]}, 
+        Offset[0.27999999999999997`]}, "ColumnsIndexed" -> {}, "Rows" -> {{
+         Offset[0.2]}}, "RowsIndexed" -> {}}],
+   DisplayForm], TraditionalForm]], NotebookDefault]
+},
+ClosingAutoSave->True,
+Editable->False,
+WindowToolbars->{},
+PageWidth->292,
+WindowSize->{221, 337},
+WindowMargins->{{5, Automatic}, {Automatic, 23}},
+WindowFrame->"Palette",
+WindowElements->{},
+WindowFrameElements->"CloseBox",
+WindowClickSelect->False,
+WindowTitle->"S@M Palette",
+ScrollingOptions->{"PagewiseScrolling"->False},
+ShowCellBracket->False,
+CellMargins->{{0, 0}, {Inherited, 0}},
+Active->True,
+CellOpen->True,
+ShowCellLabel->False,
+ShowCellTags->False,
+ImageMargins->{{0, Inherited}, {Inherited, 0}},
+Magnification->1,
+Background->Automatic,
+ButtonBoxOptions->{BaseStyle->"Paste"},
+FrontEndVersion->"6.0 for Linux x86 (32-bit) (June 19, 2007)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[569, 21, 1615, 58, 119, NotebookDefault],
+Cell[2187, 81, 1423, 53, 63, NotebookDefault],
+Cell[3613, 136, 1408, 52, 65, NotebookDefault],
+Cell[5024, 190, 1769, 73, 35, NotebookDefault],
+Cell[6796, 265, 4434, 115, 129, NotebookDefault]
+}
+]
+*)
+
+(* End of internal cache information *)
