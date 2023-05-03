@@ -12,6 +12,32 @@ To install requirements:
 pip install -r requirements.txt
 ```
 
+We provide here a set of datasets and trained models
+
+
+Dataset | Link 
+--- | --- 
+5pt with identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1oM1uzud_VzVyUwsCznrga9dfZUtqdqoz)
+5pt with identities (1 term max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1kmvl9N-c1b76DiP1D_bDZQfZIQc55_yi)
+5pt no identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1cTt9tCWW7lCe_gnR9z2mLp-AbhxrnNXW)
+New 5pt no identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1SAWiqo9gQYsT1yf5VI0D-QJ1oVeb5sYK)
+5pt no identities (1 term max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1MBeoNhD02mgVsDC2WvDXjPrlHPS95VHz)
+5pt contrastive learning | [Link](https://drive.google.com/uc?export=download&id=1TMLYbcrRBBk662M7qkeLUmnO1SQtdon4)
+New 5pt contrastive learning | [Link](https://drive.google.com/uc?export=download&id=1w2w5ECf3yKY08i2ehedPeD5E8NNteMV8)
+
+New datasets and models have momentum squared identities like $(p_1+p_2)^2=(p_3+p_4+p_5)^2$.
+
+
+Model | Link 
+--- | --- 
+Simplifier with identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1RRASnvXHtoeTLD0MTwOMEtCndAvwzmfX)
+Simplifier with identities (1 term max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1EQdIeEJA9BHQhu6ZXNZn9vU2CFa-SONM)
+Simplifier no identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1EpMKQUjTguISkNJXng7KLVzaDKBj627V)
+New Simplifier no identities (3 terms max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS)
+Simplifier no identities (1 term max in numerator) | [Link](https://drive.google.com/uc?export=download&id=1gV53-rn4yVLh0S5-Eo1aRW67-sYFixYR)
+Contrastive grouping | [Link](https://drive.google.com/uc?export=download&id=1bdPMiAFsvD33XftHMQiojxzJlG72LnN9)
+New Contrastive grouping (1) | [Link](https://drive.google.com/uc?export=download&id=1zrOkJsfERGMiK6fdadnItC8eM-33VAMP)
+New Contrastive grouping (2)| [Link](https://drive.google.com/uc?export=download&id=1eopg7hqbIU56Uf3o8LzKs6w2bPXQx7aE)
 
 ## Data generation
 Data generation can be done through the main.py script.
