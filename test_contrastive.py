@@ -83,7 +83,7 @@ def test_expression_factors(envir, module_transfo, input_equation, params, facto
 if __name__ == '__main__':
 
     # Whether to load parameters from file
-    user_run = False
+    user_run = True
 
     path_model1 = os.path.join('model/trained_models/', 'simplifier_model.pth')
     path_model2 = os.path.join('model/trained_models/', 'contrastive_group_model.pth')
