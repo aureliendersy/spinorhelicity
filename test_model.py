@@ -13,7 +13,7 @@ from model import build_modules, check_model_params
 from add_ons.mathematica_utils import *
 import sympy as sp
 from sympy import latex
-import urllib.request, gdown
+import gdown
 import os
 import user_args as args
 
