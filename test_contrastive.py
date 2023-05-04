@@ -108,8 +108,8 @@ if __name__ == '__main__':
             path_mod2 = args.model_path_contrastive if args.model_path_contrastive is not None else path_model2
             print('Using contrastive model from {}'.format(path_mod2))
     else:
-        path_mod1 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth'
-        path_mod2 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive2/checkpoint.pth'
+        path_mod1 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/checkpoint.pth'
+        path_mod2 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/exp2/checkpoint.pth'
 
     # Input equation to simplify
     input_eq = args.input_eq
@@ -206,7 +206,8 @@ if __name__ == '__main__':
     rng_torch.manual_seed(323)
 
     simplified_eq = total_simplification(envs, params, input_eq, (rng_np, rng_torch), const_blind=True,
-                                         init_cutoff=args.init_cutoff, power_decay=args.power_decay)
+                                         init_cutoff=args.init_cutoff, power_decay=args.power_decay,
+                                         dir_out=args.dir_out)
 
     print('Done')
 

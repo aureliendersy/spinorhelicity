@@ -14,11 +14,11 @@ from add_ons.mathematica_utils import *
 import sympy as sp
 from sympy import latex
 import gdown
-import os
+import os, csv
 import user_args as args
 
 
-def test_model_expression(envir, module_transfo, input_equation, params, verbose=True, latex_form=False):
+def test_model_expression(envir, module_transfo, input_equation, params, verbose=True, latex_form=False, dir_out=None):
     """
     Test the capacity of the transformer model to resolve a given input
     :param envir:
@@ -71,6 +71,8 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
     first_valid_num = None
 
+    data_out = []
+
     # Print out the scores and the hypotheses
     for num, (score, sent) in enumerate(sorted(hypotheses, key=lambda y: y[0], reverse=True)):
 
@@ -121,6 +123,12 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
             else:
                 print("%.5f  %s %s  %s %s" % (score, res, hyp, info_infix, remain))
 
+        if res == "INVALID PREFIX EXPRESSION":
+            data_out.append(['INVALID EXPR', 'NO', score, ''])
+        else:
+            hyp_mma = sp_to_mma(hyp, envir.npt_list, params.bracket_tokens, envir.func_dict)
+            data_out.append([hyp, res, score, hyp_mma])
+
     if verbose:
         if first_valid_num is None:
             print('Could not solve')
@@ -128,6 +136,24 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
             print('Solved in beam search')
         print("")
         print("")
+
+    if dir_out is not None:
+        f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
+        input_mma = sp_to_mma(f_sp, envir.npt_list, params.bracket_tokens, envir.func_dict)
+
+        file_path_out = os.path.join(dir_out, 'test_model.csv')
+        header_out = ['Guess', 'Valid', 'Score', 'MMA_form']
+        first_line = [f, 'INPUT', 0.0, input_mma]
+        data_out.insert(0, first_line)
+
+        with open(file_path_out, 'w', encoding='UTF8', newline='') as fout:
+            writer = csv.writer(fout)
+
+            # write the header
+            writer.writerow(header_out)
+
+            # write multiple rows
+            writer.writerows(data_out)
 
     return first_valid_num
 
@@ -225,7 +251,8 @@ if __name__ == '__main__':
         session = initialize_numerical_check(parameters.npt_list[0], lib_path=parameters.lib_path)
         env.session = session
 
-    first_num = test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
+    first_num = test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True,
+                                      dir_out=args.dir_out)
     print("First solution at position {}".format(first_num))
 
     if parameters.numerical_check:

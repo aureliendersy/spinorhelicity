@@ -4,6 +4,7 @@ Methods relevant for simplifying a large spinor helicity amplitude using both th
 
 from logging import getLogger
 import numpy as np
+import os, csv
 import sympy as sp
 from model.contrastive_learner import build_modules_contrastive
 from environment.utils import convert_sp_forms
@@ -661,7 +662,8 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
     return solution_generated + terms_left, terms_left_end, num_simplification
 
 
-def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99, power_decay=5, const_blind=False):
+def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99, power_decay=5, const_blind=False,
+                         dir_out=None):
     """
     Given an input equation we parse through its terms as many times as possible while the
     model finds a simplified form
@@ -730,5 +732,24 @@ def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99
 
     logger.info('Simplified form is {}'.format(simple_form))
     logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
+
+    if dir_out is not None:
+        file_path_out = os.path.join(dir_out, 'test_contrastive.csv')
+        header_out = ['Final_equation', 'Final_size', 'Initial_size', 'Num_simplifications', 'Final_equation_MMA',
+                      'Initial_equation_MMA']
+
+        simple_mma = sp_to_mma(simple_form, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
+        input_mma = sp_to_mma(load_equation(envir_s, input_eq_str, params_s), envir_s.npt_list, params_s.bracket_tokens,
+                              envir_s.func_dict)
+        data_out = [[simple_form, len_new, len_init, num_simplification, simple_mma, input_mma]]
+
+        with open(file_path_out, 'w', encoding='UTF8', newline='') as fout:
+            writer = csv.writer(fout)
+
+            # write the header
+            writer.writerow(header_out)
+
+            # write multiple rows
+            writer.writerows(data_out)
 
     return simple_form
