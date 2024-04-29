@@ -94,6 +94,7 @@ class CharEnv(object):
         self.max_scale = params.max_scale
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
+        self.min_scrambles = params.min_scrambles
         self.save_info_scr = params.save_info_scr
         self.save_info_scaling = params.save_info_scaling
         self.canonical_form = params.canonical_form
@@ -470,7 +471,8 @@ class CharEnv(object):
             simple_expr_env = SpinHelExpr(str(simple_expr), n_pt_gen)
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
                                                      canonical=self.canonical_form, session=self.session,
-                                                     numerator_only=self.numerator_only)
+                                                     numerator_only=self.numerator_only,
+                                                     min_scrambles=self.min_scrambles)
             # print("--- %s seconds for scrambling the amplitude---" % (time.time() - start_time))
             # start_time = time.time()
             simple_expr_env.cancel()
@@ -692,6 +694,8 @@ class EnvDataset(Dataset):
             self.data = [xy.split('\t') for _, xy in lines]
             self.data = [xy for xy in self.data if len(xy) == 2]
             logger.info(f"Loaded {len(self.data)} equations from the disk.")
+            logger.info("We have {} of reserved memory.".format(torch.cuda.memory_reserved(0)))
+            logger.info("We have {} of allocated memory.".format(torch.cuda.memory_allocated(0)))
 
     def collate_fn(self, elements):
         """

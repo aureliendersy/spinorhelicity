@@ -153,6 +153,10 @@ def init_distributed_mode(params):
     # set GPU device
     if not params.cpu:
         torch.cuda.set_device(params.local_rank)
+        print("We are using the {} GPU".format(torch.cuda.get_device_name(0)))
+        print("We have {} of total memory".format(torch.cuda.get_device_properties(0).total_memory))
+        print("We have {} of reserved memory.".format(torch.cuda.memory_reserved(0)))
+        print("We have {} of allocated memory.".format(torch.cuda.memory_allocated(0)))
 
     # initialize multi-GPU
     if params.multi_gpu:

@@ -49,7 +49,12 @@ def convert_single_numerator_prefix(prefix_form):
 
 
 def get_scaling_list(prefix_expr, envir):
-
+    """
+    For a given prefix expression we get the scaling list
+    :param prefix_expr:
+    :param envir:
+    :return:
+    """
     scaling_list = []
     rest = prefix_expr
 
@@ -61,7 +66,11 @@ def get_scaling_list(prefix_expr, envir):
 
 
 def get_scaling_id(scale_lst):
-
+    """
+    For a given list of scaling coefficients we can get a unique id
+    :param scale_lst:
+    :return:
+    """
     id_scale = 0
 
     for i, term in enumerate(scale_lst):
@@ -148,7 +157,15 @@ def convert_spinor_data(filepath, ids_tokens, env):
 
 
 def create_batched_split(env, params, pathin, size_set):
-
+    """
+    Given a path to a file we create a train, valid and test set
+    We also create a unique valid set that is not part of the train set by selecting examples that have similar scaling
+    :param env:
+    :param params:
+    :param pathin:
+    :param size_set:
+    :return:
+    """
     trn_path = pathin + '.train'
     vld_path = pathin + '.valid'
     tst_path = pathin + '.test'
@@ -247,6 +264,52 @@ def create_indices_valid_set(env, params, pathin, size_set):
     return index_used
 
 
+def convert_file_to_permutation_inv(inputpath):
+    """
+    Given an input file we open it and read it line by line.
+    For each line we extract the prefix expressions (separated by tabs) and convert them into
+    a form that is permutation invariant. Then we write back the obtained result
+    :param inputpath:
+    :return:
+    """
+    outpath = inputpath + '.perm'
+    print(f"Reading data from {inputpath} ...")
+    with io.open(inputpath, mode='r', encoding='utf-8') as f:
+        lines = [line for line in f]
+    total_size = len(lines)
+    print(f"Read {total_size} lines.")
+    print(f"Writing data to {outpath} ...")
+    f_out = io.open(outpath, mode='w', encoding='utf-8')
+
+    valid_tot = 0
+    for i, line in enumerate(lines):
+        if i % 100000 == 0:
+            print(i, end='...', flush=True)
+        parts_line = line.replace('\n', '').split('|')
+        prefix_parts = parts_line[-1].split('\t')
+        convert_prefix = []
+
+        skip_line = False
+        for prefix_part in prefix_parts:
+            convert_pre, success = convert_single_numerator_prefix(prefix_part.split(' '))
+            if success:
+                convert_prefix.append(' '.join(convert_pre))
+            else:
+                skip_line = True
+        if skip_line:
+            continue
+        else:
+            valid_tot += 1
+
+        parts_line[-1] = '\t'.join(convert_prefix)
+        out_line = '|'.join(parts_line)
+        f_out.write(out_line + '\n')
+
+    print('Wrote {} lines'.format(valid_tot))
+    print('Done')
+    f_out.close()
+
+
 class EnvDatasetContrastive(EnvDataset):
     def __init__(self, env, task, train, rng, params, path):
         super().__init__(env, task, train, rng, params, path)
@@ -255,6 +318,10 @@ class EnvDatasetContrastive(EnvDataset):
         self.ref_group_indices = None
 
     def open_dataset(self):
+        """
+        Open the dataset, either by generating it or by loading it from file
+        :return:
+        """
         self.env = CharEnv(self.params)
 
         if self.params.export_data and not self.batch_scalings:
@@ -287,9 +354,8 @@ class EnvDatasetContrastive(EnvDataset):
 
     def collate_fn(self, elements):
         """
-        Collate samples into a batch.
+        Collate a batch (list) of samples into a batch of tensors.
         """
-        #nb_examples = sum([[len(element_list)]*len(element_list) for element_list in elements], [])
         nb_examples = [len(element_list) for element_list in elements]
         terms_tensor = sum([[torch.LongTensor([self.env.word2id[w] for w in seq if w in self.env.word2id]) for seq in term] for term in elements], [])
         batches = self.env.batch_sequences(terms_tensor)

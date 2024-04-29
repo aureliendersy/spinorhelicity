@@ -201,11 +201,10 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
         return_expr = cancel(return_expr)
 
     # If we are missing any external momentum in the whole expression then we try again
-    # Do this only if there is any ambiguity
-    if len(npt_list) > 1 and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
-                                  for i in range(1, n_points+1)]):
+    if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
+            for i in range(1, n_points+1)]):
         return generate_random_amplitude(npt_list, rng, max_terms_scale, max_components, l_scale, str_out,
-                                         verbose, canonical_form, generator_id, info_scaling)
+                                         verbose, canonical_form, generator_id, info_scaling, session)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))

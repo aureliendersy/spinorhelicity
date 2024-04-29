@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import torch
 import json
@@ -90,6 +91,7 @@ def main(params):
 
 
 if __name__ == '__main__':
+
     parameters = AttrDict({
 
         # Name
@@ -105,6 +107,7 @@ if __name__ == '__main__':
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
+        'min_scrambles': 1,
         'save_info_scr': True,
         'save_info_scaling': True,
         'int_base': 10,
@@ -153,6 +156,8 @@ if __name__ == '__main__':
         # Evaluation
         #'eval_only': True,
         'eval_only': False,
+        'test_file': True,
+        'valid_file': False,
         'numerical_check': True,
         'eval_verbose': 2,
         'eval_verbose_print': True,

@@ -171,7 +171,8 @@ class Evaluator(object):
             for data_type in ['valid', 'test']:
                 for task in self.params.tasks:
                     if self.params.beam_eval:
-                        self.enc_dec_step_beam(data_type, task, scores)
+                        if (data_type == 'test' and self.params.test_file) or (data_type == 'valid' and self.params.valid_file):
+                            self.enc_dec_step_beam(data_type, task, scores)
                     else:
                         self.enc_dec_step(data_type, task, scores)
 
@@ -192,12 +193,12 @@ class Evaluator(object):
 
         # stats
         xe_loss = 0
-        n_valid = torch.zeros(1000, dtype=torch.long)
-        n_total = torch.zeros(1000, dtype=torch.long)
+        n_valid = torch.zeros(2000, dtype=torch.long)
+        n_total = torch.zeros(2000, dtype=torch.long)
 
         # evaluation details
         if params.eval_verbose:
-            eval_path = os.path.join(params.dump_path, f"eval.{task}.{scores['epoch']}")
+            eval_path = os.path.join(params.dump_path, f"eval.{task}.{data_type}.{scores['epoch']}")
             f_export = open(eval_path, 'w')
             logger.info(f"Writing evaluation results in {eval_path} ...")
 
@@ -313,8 +314,8 @@ class Evaluator(object):
 
         # stats
         xe_loss = 0
-        n_valid = torch.zeros(1000, params.beam_size, dtype=torch.long)
-        n_total = torch.zeros(1000, dtype=torch.long)
+        n_valid = torch.zeros(2000, params.beam_size, dtype=torch.long)
+        n_total = torch.zeros(2000, dtype=torch.long)
 
         # iterator
         iterator = env.create_test_iterator(data_type, task, params=params, data_path=self.trainer.data_path)

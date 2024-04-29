@@ -134,7 +134,7 @@ class SpinHelExpr:
         sign = 1 if ((bk_type == 'ab' and pout1 == bk_in.args[0]) or (bk_type == 'sb' and pout1 == bk_in.args[1]))\
             else -1
 
-        # Add all of the terms of the identity one by one and divide by the appropriate bracket term
+        # Add all the terms of the identity one by one and divide by the appropriate bracket term
         ret_expr = 0
         denom_bk = self.func_dict[bk_type_opp](in_arg, pout2) if bk_type == 'ab' \
             else self.func_dict[bk_type_opp](pout2, in_arg)
@@ -161,7 +161,7 @@ class SpinHelExpr:
         """Implement momentum conservation squared on the given pattern
         We feed in the desired bracket, along with the additional momenta that are to be multiplied
         So e.g (5pt) if <12> is the input and 3 is also given then the identity is
-        (p1+p2+p3)^3=(p4+p5)^2" -> <12>[12]+<13>[13]+<23>[23]=<45>[45]"""
+        (p1+p2+p3)^2=(p4+p5)^2" -> <12>[12]+<13>[13]+<23>[23]=<45>[45]"""
 
         # Unpack the bracket information (name, arguments)
         bk_type = bk_in.func.__name__
@@ -202,7 +202,7 @@ class SpinHelExpr:
 
     def identity_mul(self, rng, new_bk, order, canonical=False, numerator_only=False):
         """Multiply a given random part of the sympy expression by inserting the identity in
-        a non trivial way. """
+        a non-trivial way. """
 
         # Choose a random term in the expression that contains multiplicative factors
         if numerator_only:
@@ -317,11 +317,11 @@ class SpinHelExpr:
         return rdm_fct
 
     def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False,
-                        reduced=False, session=None, numerator_only=False):
+                        reduced=False, session=None, numerator_only=False, min_scrambles=1):
         """ Choose a random number of scrambling moves """
         if rng is None:
             rng = np.random.RandomState()
-        scr_num = rng.randint(1, max_scrambles + 1)
+        scr_num = rng.randint(min_scrambles, max_scrambles + 1)
         if out_info:
             info_s = self.scramble(scr_num, session, rng, verbose=verbose, out_info=True, reduced=reduced,
                                    numerator_only=numerator_only, canonical=canonical)
@@ -416,6 +416,8 @@ class SpinHelExpr:
                 tok_add = self.identity_mul(rng, new_bk, order_bk, canonical=canonical, numerator_only=numerator_only)
                 info_s.append([tok, str(new_bk)])
                 info_s.append(tok_add[0])
+                if verbose:
+                    print('Using Identity Multiplication')
                 # print("--- %s seconds for Multiplication ---" % (time.time() - start_time))
 
             elif act_num == 5:
@@ -429,8 +431,12 @@ class SpinHelExpr:
                 if success:
                     info_s.append([tok, str(base_bk)])
                     info_s.append(tok_add[0])
+                    if verbose:
+                        print('Using Zero Addition')
                 else:
                     i = i - 1
+                    if verbose:
+                        print('Failed Zero Addition')
                 # print("--- %s seconds for Addition ---" % (time.time() - start_time))
 
             if numerator_only:
@@ -581,3 +587,14 @@ if __name__ == '__main__':
     test1a.together()
     print(test1a)
     print("\n")
+
+    print('Start from amplitude')
+    testamp = SpinHelExpr("ab(1,2)**3/(ab(2,3)*ab(3,4)*ab(4,5)*ab(5,1))")
+    print(testamp)
+    print(latex(testamp))
+    testamp.scramble(1, 'NotRequired', numerator_only=True, verbose=True, reduced=False, canonical=True)
+    testamp.together()
+    print(testamp)
+    print(latex(testamp))
+    print(testamp.str_expr)
+

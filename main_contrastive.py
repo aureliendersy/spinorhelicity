@@ -1,7 +1,7 @@
 import numpy as np
 import json
 from environment.utils import AttrDict
-from environment.contrastive_data import convert_spinor_data, create_batched_split
+from environment.contrastive_data import convert_spinor_data, create_batched_split, convert_file_to_permutation_inv
 from add_ons.slurm import init_signal_handler, init_distributed_mode
 import environment
 from environment.utils import initialize_exp
@@ -18,6 +18,9 @@ def main(params):
 
     environment.utils.CUDA = not params.cpu
     env = build_env(params)
+
+    #convert_file_to_permutation_inv('/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data_contrastive.prefix.counts.train')
+    #exit()
 
     if params.export_data:
         if params.batch_scalings:
@@ -85,6 +88,7 @@ if __name__ == '__main__':
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
+        'min_scrambles': 1,
         'save_info_scr': False,
         'save_info_scaling': False,
         'int_base': 10,

@@ -67,6 +67,7 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
         print(f"Input function f: {f}")
         if latex_form:
             print(latex(f))
+            print(latex(f.together()))
         print("")
 
     first_valid_num = None
@@ -177,7 +178,7 @@ if __name__ == '__main__':
             print('Using simplifier model from {}'.format(path_mod1))
 
     else:
-        path_mod1 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_c/checkpoint.pth'
+        path_mod1 = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/checkpoint.pth'
 
     # Input equation to simplify
     input_eq = args.input_eq
@@ -191,6 +192,7 @@ if __name__ == '__main__':
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
+        'min_scrambles': 1,
         'save_info_scr': False,
         'save_info_scaling': False,
         'numeral_decomp': True,

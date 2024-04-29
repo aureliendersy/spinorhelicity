@@ -674,6 +674,7 @@ def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99
     :param init_cutoff:
     :param const_blind:
     :param power_decay:
+    :param dir_out:
     :return:
     """
     # Load the environment and the parameters
