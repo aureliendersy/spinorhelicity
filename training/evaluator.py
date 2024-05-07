@@ -385,6 +385,8 @@ class Evaluator(object):
                     temperature=params.temperature
                 )
             except (TimeoutError, Exception) as e:
+                logger.info("Exception {} while generating beam".format(e))
+                logger.info("TimeoutError when generating beam")
                 _, _, generations = decoder.generate_beam(
                     encoded.transpose(0, 1),
                     len1,
@@ -422,6 +424,7 @@ class Evaluator(object):
                 try:
                     outputs.append(check_hypothesis(input_eq, self.session))
                 except (TimeoutError, Exception) as e:
+                    logger.info("TimeoutError when checking hypothesis")
                     outputs.append(outputs[-1])
 
             # read results

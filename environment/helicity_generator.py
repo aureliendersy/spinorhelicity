@@ -9,6 +9,9 @@ from environment.bracket_env import ab, sb
 from add_ons.mathematica_utils import solve_diophantine_systems
 from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr_detail, build_scale_factor
 from sympy import latex, Function, sympify, fraction, cancel
+from logging import getLogger
+import sys
+logger = getLogger()
 
 
 def dual_partition(nint):
@@ -143,7 +146,8 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
 
 
 def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
-                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False, session=None):
+                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False, session=None,
+                              all_momenta=True):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
     We constrain the amplitude to be physically viable
@@ -158,6 +162,7 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     :param generator_id:
     :param info_scaling:
     :param session:
+    :param all_momenta:
     :return:
     """
 
@@ -194,17 +199,21 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
         if session is None:
             raise TypeError('Need a valid Mathematica Session to generate multiple terms and respect scaling')
         coeff_add_num_list = solve_diophantine_systems(n_points, scaling_list[0], components-1, session)
+        # If we are not able to solve the diophantine equation (with required number of solutions)
+        if coeff_add_num_list is None:
+            return None, None, None
         for new_coeff_num in coeff_add_num_list:
             new_num = build_scale_factor(new_coeff_num, ab, sb, n_points)
-            return_expr += (new_num / denominator)
+            sign = 1 if rng.randint(0, 2) == 0 else -1
+            return_expr += (sign * new_num / denominator)
 
         return_expr = cancel(return_expr)
 
     # If we are missing any external momentum in the whole expression then we try again
-    if any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
-            for i in range(1, n_points+1)]):
+    if all_momenta and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
+                            for i in range(1, n_points+1)]):
         return generate_random_amplitude(npt_list, rng, max_terms_scale, max_components, l_scale, str_out,
-                                         verbose, canonical_form, generator_id, info_scaling, session)
+                                         verbose, canonical_form, generator_id, info_scaling, session, all_momenta)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))

@@ -128,8 +128,10 @@ def solve_diophantine_systems(n_points, coefficients, num_sol, session):
         solutions = []
         for i in range(num_sol):
             solutions.append(solve_diophantine_system_mma(coefficients, session, eqvar, solutions))
-
-    return solutions
+    if None in solutions:
+        return None
+    else:
+        return solutions
 
 
 def solve_diophantine_system(n_points, coefficients, session):

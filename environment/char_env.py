@@ -103,6 +103,7 @@ class CharEnv(object):
         self.l_scale = params.l_scale
         self.numerator_only = params.numerator_only
         self.reduced_voc = params.reduced_voc
+        self.all_momenta = params.all_momenta
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
@@ -463,7 +464,10 @@ class CharEnv(object):
                                                                          canonical_form=self.canonical_form,
                                                                          generator_id=self.generator_id,
                                                                          info_scaling=self.save_info_scaling,
-                                                                         session=self.session)
+                                                                         session=self.session,
+                                                                         all_momenta=self.all_momenta)
+            if simple_expr is None:
+                return None
             # print("--- %s seconds for generating the amplitude---" % (time.time() - start_time))
 
             # start_time = time.time()
@@ -694,8 +698,6 @@ class EnvDataset(Dataset):
             self.data = [xy.split('\t') for _, xy in lines]
             self.data = [xy for xy in self.data if len(xy) == 2]
             logger.info(f"Loaded {len(self.data)} equations from the disk.")
-            logger.info("We have {} of reserved memory.".format(torch.cuda.memory_reserved(0)))
-            logger.info("We have {} of allocated memory.".format(torch.cuda.memory_allocated(0)))
 
     def collate_fn(self, elements):
         """

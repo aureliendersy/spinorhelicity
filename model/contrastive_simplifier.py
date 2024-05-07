@@ -545,7 +545,7 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     # Nucleus sampling
     beam_hypothesis = generate_nucleus_hyp(encoded_term, len1, decoder_s, params_s, rng)
     valid, solution = check_hypothesis(terms_to_simplify, num_terms_init, beam_hypothesis, envir_s, params_s,
-                                       rng_active_num)
+                                       rng_active_num,  ref_term=ref_term)
     if valid:
         logger.info('Found simplified form with nucleus sampling')
         logger.info('Expression found is {}'.format(solution))

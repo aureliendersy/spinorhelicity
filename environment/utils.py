@@ -365,12 +365,15 @@ def convert_sp_forms(sp_expr, func_dict):
 
 def generate_random_bk(bk_fct, n_points, rng, canonical=False):
     """Provided with the bracket type, generate a bracket with random momenta"""
-    pi = rng.randint(1, n_points if canonical else n_points+1)
+    pi = rng.randint(1, n_points + 1)
+    pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
     if canonical:
-        pj = rng.choice([i for i in range(pi+1, n_points + 1)])
+        if pi < pj:
+            return bk_fct(pi, pj)
+        else:
+            return bk_fct(pj, pi)
     else:
-        pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
-    return bk_fct(pi, pj)
+        return bk_fct(pi, pj)
 
 
 def reorder_expr(hel_expr):
