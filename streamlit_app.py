@@ -18,6 +18,38 @@ import gdown
 import os, csv
 import user_args as args
 from pathlib import Path
+import requests
+
+def download_file_from_google_drive(id, destination):
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params = { 'id' : id }, stream = True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = { 'id' : id, 'confirm' : token }
+        response = session.get(URL, params = params, stream = True)
+
+    save_response_content(response, destination)
+
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+
+    return None
+
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
 
 
 @st.cache
@@ -29,8 +61,8 @@ def load_model():
 
     if not f_checkpoint.exists():
         with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
-            download_path = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
-            gdown.download(download_path, f_checkpoint, quiet=False)
+            download_id = '1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
+            download_file_from_google_drive(download_id, f_checkpoint)
 
     return f_checkpoint
 
