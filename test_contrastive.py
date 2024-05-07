@@ -208,9 +208,9 @@ if __name__ == '__main__':
 
     modules = build_modules_contrastive(env_c, parameters_c)
 
-    cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
+    #cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
 
-    simplified_eq = total_simplification(envs, params, input_eq, (rng_np, rng_torch), const_blind=False,
+    simplified_eq = total_simplification(envs, params, input_eq, (rng_np, rng_torch), const_blind=True,
                                          init_cutoff=args.init_cutoff, power_decay=args.power_decay,
                                          dir_out=args.dir_out)
 

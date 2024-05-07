@@ -495,7 +495,7 @@ def get_helicity_expr(spin_hel_exp, func_list):
     :param func_list:
     :return:
     """
-
+    raise ValueError
     x1 = sp.Symbol('x1')
     map_dict = {func_list[0]: x1, func_list[1]: 1/x1}
     repl_rule = {bk: map_dict[bk.func]*bk for bk in spin_hel_exp.atoms(sp.Function)}
@@ -552,8 +552,8 @@ def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=Fal
 
 def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
     """
-        Given a list of factors build the correct spin helicity expression
-        Assumes canonical form already
+    Given a list of factors build the correct spin helicity expression
+    Assumes canonical form already
     :param scale_list:
     :param abfunc:
     :param sbfunc:
@@ -607,17 +607,21 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
     else:
         term = sp_numerator
 
-    if term.args[0] == - 1:
-        term = term * -1
+    if isinstance(term, sp.Integer):
+        return [mass_dim] + scalings
+    elif isinstance(term, func_dict[0]):
+        momentas = term.args
+        scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] - 1
+        scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] - 1
+        mass_dim += 1
+    elif isinstance(term, func_dict[1]):
+        momentas = term.args
+        scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + 1
+        scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + 1
+        mass_dim += 1
 
-    for arg in term.args:
-        if isinstance(arg, sp.Pow):
-            func, power = arg.args
-        elif isinstance(arg, sp.Integer):
-            continue
-        else:
-            power = 1
-            func = arg
+    elif isinstance(term, sp.Pow):
+        func, power = term.args
         mass_dim += power
         momentas = func.args
 
@@ -628,5 +632,44 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
         scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + sign * power
         scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + sign * power
 
+    elif isinstance(term, sp.Mul):
+
+        if term.args[0] == - 1:
+            term = term * -1
+
+        for arg in term.args:
+            if isinstance(arg, sp.Pow):
+                func, power = arg.args
+            elif isinstance(arg, sp.Integer):
+                continue
+            else:
+                power = 1
+                func = arg
+            mass_dim += power
+            momentas = func.args
+
+            if isinstance(func, func_dict[0]):
+                sign = -1
+            else:
+                sign = 1
+            scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + sign * power
+            scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + sign * power
+
     return [mass_dim] + scalings
+
+
+def get_expression_lg_scaling(sp_expression, func_dict, npt=5):
+    """
+    Fast method to get the scaling for an expression
+    :param sp_expression:
+    :param func_dict:
+    :param npt:
+    :return:
+    """
+    num, denom = sp.fraction(sp_expression)
+    num_scalings = np.array(get_numerator_lg_scaling(num, func_dict, npt))
+    denom_scalings = np.array(get_numerator_lg_scaling(denom, func_dict, npt))
+
+    return num_scalings - denom_scalings
+
 

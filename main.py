@@ -119,6 +119,7 @@ if __name__ == '__main__':
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': False,
+        'all_momenta': True,
 
         # model parameters
         'emb_dim': 512,

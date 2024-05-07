@@ -203,7 +203,8 @@ if __name__ == '__main__':
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
-        'reduced_voc': False,
+        'reduced_voc': True,
+        'all_momenta': True,
 
         # model parameters
         'emb_dim': 512,
