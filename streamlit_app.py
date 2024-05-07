@@ -20,6 +20,7 @@ import user_args as args
 from pathlib import Path
 import requests
 
+
 def download_file_from_google_drive(id, destination):
     URL = "https://docs.google.com/uc?export=download"
 
@@ -192,9 +193,6 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
 path_mod1 = load_model()
 
-input_eq = st.text_input("Input Equation", "ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4))/ab(2, 3)")
-
-st.latex(r'''{}'''.format(latex(input_eq)))
 
 parameters = AttrDict({
     'tasks': 'spin_hel',
@@ -236,12 +234,12 @@ parameters = AttrDict({
 
     # Evaluation
     'beam_eval': True,
-    'beam_size': args.beam_size,
+    'beam_size': 10,
     'beam_length_penalty': 1,
     'beam_early_stopping': True,
-    'nucleus_sampling': args.nucleus_sampling,
-    'nucleus_p': args.nucleus_p,
-    'temperature': args.temperature,
+    'nucleus_sampling': True,
+    'nucleus_p': 0.95,
+    'temperature': 2,
 
     # SLURM/GPU param
     'cpu': True,
@@ -261,4 +259,11 @@ environment.utils.CUDA = not parameters.cpu
 env = build_env(parameters)
 modules = build_modules(env, parameters)
 
-test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
+input_eq = st.text_input("Input Equation", "ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4))/ab(2, 3)")
+f = sp.parse_expr(input_eq, local_dict=env.func_dict)
+if parameters.canonical_form:
+    f = reorder_expr(f)
+f = f.cancel()
+st.latex(r'''{}'''.format(latex(f)))
+
+#test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
