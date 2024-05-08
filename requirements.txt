@@ -1,4 +1,4 @@
-torch
+torch==2.3.0
 numpy~=1.23.2
 sympy~=1.10.1
 wolframclient~=1.1.7
