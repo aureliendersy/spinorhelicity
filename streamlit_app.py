@@ -26,10 +26,10 @@ def load_model():
     save_dest = Path('model')
     save_dest.mkdir(exist_ok=True)
 
-    f_checkpoint = Path("model/5pt.pth")
-    f_checkpoint = f_checkpoint.resolve()
+    f_checkpoint_in = Path("model/5pt.pth")
+    f_checkpoint = f_checkpoint_in.resolve()
     f_checkpoint_path = '/'.join(list(f_checkpoint.parts))
-    if not f_checkpoint.exists():
+    if not f_checkpoint_in.exists():
         download_path_simplifier = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
         gdown.download(download_path_simplifier, f_checkpoint_path, quiet=False)
 
