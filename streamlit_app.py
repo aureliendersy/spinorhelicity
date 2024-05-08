@@ -259,7 +259,7 @@ environment.utils.CUDA = not parameters.cpu
 env = build_env(parameters)
 #modules = build_modules(env, parameters)
 
-input_eq = st.text_input("Input Equation", "ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4))/ab(2, 3)")
+input_eq = st.text_input("Input Equation", "ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(4,5)*sb(4,5)/ab(2,3)")
 f = sp.parse_expr(input_eq, local_dict=env.func_dict)
 if parameters.canonical_form:
     f = reorder_expr(f)
