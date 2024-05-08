@@ -21,54 +21,22 @@ from pathlib import Path
 import requests
 
 
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
-
-    session = requests.Session()
-
-    response = session.get(URL, params = { 'id' : id }, stream = True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = { 'id' : id, 'confirm' : token }
-        response = session.get(URL, params = params, stream = True)
-
-    save_response_content(response, destination)
-
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-
-    return None
-
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
-
-
-@st.cache
+@st.cache_resource
 def load_model():
     save_dest = Path('model')
     save_dest.mkdir(exist_ok=True)
 
     f_checkpoint = Path("model/5pt.pth")
-
+    f_checkpoint = f_checkpoint.resolve()
+    f_checkpoint_path = '/'.join(list(f_checkpoint.parts))
     if not f_checkpoint.exists():
-        with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
-            download_id = '1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
-            download_file_from_google_drive(download_id, f_checkpoint)
+        download_path_simplifier = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
+        gdown.download(download_path_simplifier, f_checkpoint_path, quiet=False)
 
-    return f_checkpoint
+    return f_checkpoint_path
 
 
-def test_model_expression(envir, module_transfo, input_equation, params, verbose=True, latex_form=False):
+def test_model_expression(envir, module_transfo, f_eq, params, verbose=True, latex_form=False):
     """
     Test the capacity of the transformer model to resolve a given input
     :param envir:
@@ -86,11 +54,7 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
     encoder.eval()
     decoder.eval()
 
-    f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
-    if params.canonical_form:
-        f = reorder_expr(f)
-    f = f.cancel()
-    f_prefix = envir.sympy_to_prefix(f)
+    f_prefix = envir.sympy_to_prefix(f_eq)
     x1_prefix = f_prefix
     x1 = torch.LongTensor([envir.eos_index] + [envir.word2id[w] for w in x1_prefix] + [envir.eos_index]).view(-1, 1)
     len1 = torch.LongTensor([len(x1)])
@@ -113,85 +77,35 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
     hypotheses = beam[0].hyp
     assert len(hypotheses) == beam_size
 
-    if verbose:
-        print(f"Input function f: {f}")
-        if latex_form:
-            print(latex(f))
-            print(latex(f.together()))
-        print("")
-
-    first_valid_num = None
-
-    data_out = []
-
+    out_hyp = []
     # Print out the scores and the hypotheses
     for num, (score, sent) in enumerate(sorted(hypotheses, key=lambda y: y[0], reverse=True)):
 
         # parse decoded hypothesis
         ids = sent[1:].tolist()  # decoded token IDs
         tok = [envir.id2word[wid] for wid in ids]  # convert to prefix
-        hyp_disp = ''
+
         # Parse the identities if required
         try:
             hyp = envir.prefix_to_infix(tok)
-            if '&' in tok:
-                prefix_info = tok[tok.index('&'):]
-                info_infix = envir.scr_prefix_to_infix(prefix_info)
-            else:
-                info_infix = ''
 
             # convert to infix
             hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
             hyp_disp = convert_sp_forms(hyp, env.func_dict)
-
-            # When integrating the symbol
-            if params.numerical_check:
-                hyp_mma = sp_to_mma(hyp, envir.npt_list, params.bracket_tokens, envir.func_dict)
-                f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
-                tgt_mma = sp_to_mma(f_sp, envir.npt_list, params.bracket_tokens, envir.func_dict)
-                matches, error = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
-            else:
-                matches = None
-                error = None
-
-            res = "Unknown" if matches is None else ("OK" if (matches or error == -1) else "NO")
-            # remain = "" if matches else " | {} remaining".format(remaining_diff)
-            remain = ""
-
-            if (matches or error == -1) and first_valid_num is None:
-                first_valid_num = num + 1
-
+            out_hyp.append(hyp_disp)
         except:
-            res = "INVALID PREFIX EXPRESSION"
-            hyp = tok
-            remain = ""
-            info_infix = ''
+            pass
 
-        if verbose:
-            # print result
-            if latex_form:
-                print("%.5f  %s %s %s %s" % (score, res, hyp, info_infix, latex(hyp_disp)))
-            else:
-                print("%.5f  %s %s  %s %s" % (score, res, hyp, info_infix, remain))
-
-        if res == "INVALID PREFIX EXPRESSION":
-            data_out.append(['INVALID EXPR', 'NO', score, ''])
-        else:
-            hyp_mma = sp_to_mma(hyp, envir.npt_list, params.bracket_tokens, envir.func_dict)
-            data_out.append([hyp, res, score, hyp_mma])
-
-    if verbose:
-        if first_valid_num is None:
-            print('Could not solve')
-        else:
-            print('Solved in beam search')
-        print("")
-        print("")
-
-    return first_valid_num
+    return list(set(out_hyp))
 
 
-path_mod1 = load_model()
+with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
+    path_mod1 = load_model()
+
+beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=50, step=1, value=10)
+nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.05, value=0.95)
+temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.5, value=1.5)
+sample_method = st.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
 
 
 parameters = AttrDict({
@@ -214,7 +128,7 @@ parameters = AttrDict({
     'generator_id': 2,
     'l_scale': 0.75,
     'numerator_only': True,
-    'reduced_voc': True,
+    'reduced_voc': False,
     'all_momenta': True,
 
     # model parameters
@@ -234,12 +148,12 @@ parameters = AttrDict({
 
     # Evaluation
     'beam_eval': True,
-    'beam_size': 10,
+    'beam_size': beam_size,
     'beam_length_penalty': 1,
     'beam_early_stopping': True,
-    'nucleus_sampling': True,
-    'nucleus_p': 0.95,
-    'temperature': 2,
+    'nucleus_sampling': sample_method == "Nucleus Sampling",
+    'nucleus_p': nucleus_p,
+    'temperature': temperature,
 
     # SLURM/GPU param
     'cpu': True,
@@ -257,13 +171,17 @@ environment.utils.CUDA = not parameters.cpu
 
 # Load the model and environment
 env = build_env(parameters)
-#modules = build_modules(env, parameters)
+modules = build_modules(env, parameters)
 
-input_eq = st.text_input("Input Equation", "ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(4,5)*sb(4,5)/ab(2,3)")
+input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
 f = sp.parse_expr(input_eq, local_dict=env.func_dict)
 if parameters.canonical_form:
     f = reorder_expr(f)
 f = f.cancel()
 st.latex(r'''{}'''.format(latex(f)))
 
-#test_model_expression(env, modules, input_eq, parameters, verbose=True, latex_form=True)
+if st.button("Click Here to Simplify"):
+    hyp_found = test_model_expression(env, modules, f, parameters, verbose=True, latex_form=True)
+    st.write("Generated List of Unique Hypotheses")
+    for i, hyp in enumerate(hyp_found):
+        st.write(f"Hypothesis {i+1} : ${latex(hyp)}$")

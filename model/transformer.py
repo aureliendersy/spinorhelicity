@@ -418,7 +418,6 @@ class TransformerModel(nn.Module):
 
         return generated[:cur_len], gen_len
 
-    @timeout(10000)
     def generate_beam(self, src_enc, src_len, beam_size, length_penalty, early_stopping, max_len=200,
                       stochastic=True, nucl_p=0.95, temperature=1, rng_gen=None):
         """
