@@ -36,24 +36,93 @@ def load_model():
     return f_checkpoint_path
 
 
-def test_model_expression(envir, module_transfo, f_eq, params, verbose=True, latex_form=False):
+@st.cache_data
+def create_base_env(path_model):
+    parameters = AttrDict({
+        'tasks': 'spin_hel',
+
+        # environment parameters
+        'env_name': 'char_env',
+        'npt_list': [5],
+        'max_scale': 2,
+        'max_terms': 3,
+        'max_scrambles': 3,
+        'min_scrambles': 1,
+        'save_info_scr': False,
+        'save_info_scaling': False,
+        'numeral_decomp': True,
+        'int_base': 10,
+        'max_len': 2048,
+        'canonical_form': True,
+        'bracket_tokens': True,
+        'generator_id': 2,
+        'l_scale': 0.75,
+        'numerator_only': True,
+        'reduced_voc': False,
+        'all_momenta': True,
+
+        # model parameters
+        'emb_dim': 512,
+        'n_enc_layers': 3,
+        'n_dec_layers': 3,
+        'n_heads': 8,
+        'dropout': 0,
+        'n_max_positions': 2560,
+        'attention_dropout': 0,
+        'sinusoidal_embeddings': False,
+        'share_inout_emb': True,
+        'positional_encoding': True,
+
+        # Specify the path to the simplifier model
+        'reload_model': path_model,
+
+        # Evaluation
+        'beam_eval': True,
+        'beam_size': 5,
+        'beam_length_penalty': 1,
+        'beam_early_stopping': True,
+        'nucleus_sampling': True,
+        'nucleus_p': 0.95,
+        'temperature': 1.5,
+
+        # SLURM/GPU param
+        'cpu': True,
+
+        # Specify the path to Spinors Mathematica Library
+        'lib_path': None,
+        'mma_path': None,
+        'numerical_check': False,
+    })
+    environment.utils.CUDA = not parameters.cpu
+
+    return parameters
+
+
+@st.cache_resource
+def load_models(base_parameters):
+    # Load the model and environment
+    envir = build_env(base_parameters)
+    modules_ml = build_modules(envir, base_parameters)
+    # load the transformer
+    encoder = modules_ml['encoder']
+    decoder = modules_ml['decoder']
+    encoder.eval()
+    decoder.eval()
+
+    return envir, (encoder, decoder)
+
+
+def test_model_expression(envir, module_transfo, f_eq, params_in):
     """
     Test the capacity of the transformer model to resolve a given input
     :param envir:
     :param module_transfo:
     :param input_equation:
     :param params:
-    :param verbose:
-    :param latex_form:
     :return:
     """
 
-    # load the transformer
-    encoder = module_transfo['encoder']
-    decoder = module_transfo['decoder']
-    encoder.eval()
-    decoder.eval()
-
+    encoder, decoder = module_transfo
     f_prefix = envir.sympy_to_prefix(f_eq)
     x1_prefix = f_prefix
     x1 = torch.LongTensor([envir.eos_index] + [envir.word2id[w] for w in x1_prefix] + [envir.eos_index]).view(-1, 1)
@@ -64,15 +133,15 @@ def test_model_expression(envir, module_transfo, f_eq, params, verbose=True, lat
     encoded = encoder('fwd', x=x1, lengths=len1, causal=False)
 
     # Beam decoding
-    beam_size = params.beam_size
+    beam_sz, nucleus_sampling, nucleus_prob, temp = params_in
     with torch.no_grad():
-        _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_size,
-                                           length_penalty=params.beam_length_penalty,
-                                           early_stopping=params.beam_early_stopping,
-                                           max_len=params.max_len,
-                                           stochastic=params.nucleus_sampling,
-                                           nucl_p=params.nucleus_p,
-                                           temperature=params.temperature)
+        _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_sz,
+                                           length_penalty=1,
+                                           early_stopping=True,
+                                           max_len=2048,
+                                           stochastic=nucleus_sampling,
+                                           nucl_p=nucleus_prob,
+                                           temperature=temp)
         assert len(beam) == 1
     hypotheses = beam[0].hyp
     assert len(hypotheses) == beam_size
@@ -102,86 +171,27 @@ def test_model_expression(envir, module_transfo, f_eq, params, verbose=True, lat
 with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
     path_mod1 = load_model()
 
+base_params = create_base_env(path_mod1)
+env, modules = load_models(base_params)
+
 beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
 nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.05, value=0.95)
 temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.5, value=1.5)
 sample_method = st.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
 
 
-parameters = AttrDict({
-    'tasks': 'spin_hel',
-
-    # environment parameters
-    'env_name': 'char_env',
-    'npt_list': [5],
-    'max_scale': 2,
-    'max_terms': 3,
-    'max_scrambles': 3,
-    'min_scrambles': 1,
-    'save_info_scr': False,
-    'save_info_scaling': False,
-    'numeral_decomp': True,
-    'int_base': 10,
-    'max_len': 2048,
-    'canonical_form': True,
-    'bracket_tokens': True,
-    'generator_id': 2,
-    'l_scale': 0.75,
-    'numerator_only': True,
-    'reduced_voc': False,
-    'all_momenta': True,
-
-    # model parameters
-    'emb_dim': 512,
-    'n_enc_layers': 3,
-    'n_dec_layers': 3,
-    'n_heads': 8,
-    'dropout': 0,
-    'n_max_positions': 2560,
-    'attention_dropout': 0,
-    'sinusoidal_embeddings': False,
-    'share_inout_emb': True,
-    'positional_encoding': True,
-
-    # Specify the path to the simplifier model
-    'reload_model': path_mod1,
-
-    # Evaluation
-    'beam_eval': True,
-    'beam_size': beam_size,
-    'beam_length_penalty': 1,
-    'beam_early_stopping': True,
-    'nucleus_sampling': sample_method == "Nucleus Sampling",
-    'nucleus_p': nucleus_p,
-    'temperature': temperature,
-
-    # SLURM/GPU param
-    'cpu': True,
-
-    # Specify the path to Spinors Mathematica Library
-    'lib_path': None,
-    'mma_path': None,
-    'numerical_check': False,
-})
-
-# Start the logger
-check_model_params(parameters)
-
-environment.utils.CUDA = not parameters.cpu
-
-# Load the model and environment
-env = build_env(parameters)
-modules = build_modules(env, parameters)
-
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
 f = sp.parse_expr(input_eq, local_dict=env.func_dict)
-if parameters.canonical_form:
+if base_params.canonical_form:
     f = reorder_expr(f)
 f = f.cancel()
 st.latex(r'''{}'''.format(latex(f)))
 
+
 if st.button("Click Here to Simplify"):
-    hyp_found = test_model_expression(env, modules, f, parameters, verbose=True, latex_form=True)
+    nucleus_sampling = sample_method == 'Nucleus Sampling'
+    params_input = (beam_size, nucleus_sampling, nucleus_p, temperature)
+    hyp_found = test_model_expression(env, modules, f, params_input)
     st.write("Generated List of Unique Hypotheses")
     for i, hyp in enumerate(hyp_found):
         st.write(f"Hypothesis {i+1} : ${latex(hyp)}$")
