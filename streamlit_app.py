@@ -102,7 +102,7 @@ def test_model_expression(envir, module_transfo, f_eq, params, verbose=True, lat
 with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
     path_mod1 = load_model()
 
-beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=50, step=1, value=10)
+beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
 nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.05, value=0.95)
 temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.5, value=1.5)
 sample_method = st.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
