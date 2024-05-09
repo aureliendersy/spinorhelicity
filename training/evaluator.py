@@ -11,7 +11,8 @@ import os
 import torch
 import sympy as sp
 
-from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv
+from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
+from add_ons.numerical_evaluations import check_numerical_equiv_local
 from environment.utils import to_cuda, timeout, TimeoutError
 from environment.char_env import InvalidPrefixExpression
 
@@ -62,7 +63,7 @@ def check_valid_solution(env, src, tgt, hyp, session):
     if env.save_info_scr or env.save_info_scaling:
         tgt = tgt[0]
 
-    if env.numerical_check:
+    if env.numerical_check > 0:
         # Pre check symbolically
         valid = sp.simplify(hyp - tgt, seconds=0.5) == 0
 
@@ -71,11 +72,16 @@ def check_valid_solution(env, src, tgt, hyp, session):
 
         # Do the numerical check
         if not valid:
-            hyp_mma = sp_to_mma(hyp, env.npt_list, env.bracket_tokens, env.func_dict)
-            tgt_mma = sp_to_mma(tgt, env.npt_list, env.bracket_tokens, env.func_dict)
-            valid, _ = check_numerical_equiv(session, hyp_mma, tgt_mma)
-            if valid:
-                logger.info("Hypothesis is numerically valid")
+            if env.numerical_check == 1:
+                hyp_mma = sp_to_mma(hyp, env.npt_list, env.bracket_tokens, env.func_dict)
+                tgt_mma = sp_to_mma(tgt, env.npt_list, env.bracket_tokens, env.func_dict)
+                valid, _ = check_numerical_equiv_mma(session, hyp_mma, tgt_mma)
+                if valid:
+                    logger.info("Hypothesis is numerically valid")
+            elif env.numerical_check == 2:
+                valid, _ = check_numerical_equiv_local(env.special_tokens, hyp, tgt)
+            else:
+                raise ValueError("Numerical check is either 0,1,2")
     else:
         valid = sp.simplify(hyp - tgt, seconds=5) == 0
     return valid

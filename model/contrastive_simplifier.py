@@ -10,7 +10,7 @@ from model.contrastive_learner import build_modules_contrastive
 from environment.utils import convert_sp_forms
 from model import build_modules
 from environment.utils import reorder_expr, to_cuda
-from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv
+from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 import torch
 import torch.nn as nn
 
@@ -386,7 +386,7 @@ def check_valid_solution(terms_to_simplify, num_terms_init, hyp_sp, envir_s, par
     hyp_mma = sp_to_mma(hyp_sp, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
     f_sp = envir_s.infix_to_sympy(envir_s.prefix_to_infix(envir_s.sympy_to_prefix(terms_to_simplify)))
     tgt_mma = sp_to_mma(f_sp, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-    matches, error = check_numerical_equiv(envir_s.session, hyp_mma, tgt_mma)
+    matches, error = check_numerical_equiv_mma(envir_s.session, hyp_mma, tgt_mma)
 
     # Hypothesis agrees numerically
     if matches:

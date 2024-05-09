@@ -318,7 +318,7 @@ def sp_to_mma_single_token(sp_expr, npt_def=None):
     return mma_str
 
 
-def check_numerical_equiv(session, mma_hyp, mma_tgt):
+def check_numerical_equiv_mma(session, mma_hyp, mma_tgt):
     """
     Check the numerical equivalence between the hypothesis and the target
     :param session:

@@ -98,7 +98,7 @@ if __name__ == '__main__':
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
-        'numerical_check': False,
+        'numerical_check': 0,
         'numerator_only': True,
         'reduced_voc': True,
 

@@ -11,6 +11,7 @@ from environment import build_env
 import environment
 from model import build_modules, check_model_params
 from add_ons.mathematica_utils import *
+from add_ons.numerical_evaluations import check_numerical_equiv_local
 import sympy as sp
 from sympy import latex
 import gdown
@@ -92,14 +93,18 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
 
             # convert to infix
             hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
-            hyp_disp = convert_sp_forms(hyp, env.func_dict)
+            hyp_disp = convert_sp_forms(hyp, envir.func_dict)
+
 
             # When integrating the symbol
-            if params.numerical_check:
+            if params.numerical_check == 1:
                 hyp_mma = sp_to_mma(hyp, envir.npt_list, params.bracket_tokens, envir.func_dict)
                 f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
                 tgt_mma = sp_to_mma(f_sp, envir.npt_list, params.bracket_tokens, envir.func_dict)
-                matches, error = check_numerical_equiv(envir.session, hyp_mma, tgt_mma)
+                matches, error = check_numerical_equiv_mma(envir.session, hyp_mma, tgt_mma)
+            elif params.numerical_check == 2:
+                f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
+                matches, error = check_numerical_equiv_local(envir.special_tokens, max(envir.npt_list), hyp, f_sp)
             else:
                 matches = None
                 error = None
@@ -236,7 +241,7 @@ if __name__ == '__main__':
         # Specify the path to Spinors Mathematica Library
         'lib_path': args.spinors_lib_path,
         'mma_path': args.mathematica_path,
-        'numerical_check': True,
+        'numerical_check': 2,
     })
 
     # Start the logger
@@ -250,7 +255,7 @@ if __name__ == '__main__':
     modules = build_modules(env, parameters)
 
     # start the wolfram session
-    if parameters.numerical_check:
+    if parameters.numerical_check == 1:
         session = initialize_numerical_check(parameters.npt_list[0], lib_path=parameters.lib_path)
         env.session = session
 
@@ -258,5 +263,5 @@ if __name__ == '__main__':
                                       dir_out=args.dir_out)
     print("First solution at position {}".format(first_num))
 
-    if parameters.numerical_check:
+    if parameters.numerical_check == 1:
         env.session.stop()

@@ -36,7 +36,7 @@ def main(params):
     if params.eval_only:
         # Set the seed for the nucleus sampling
         torch.random.manual_seed(42)
-        if params.numerical_check:
+        if params.numerical_check == 1:
             session = initialize_numerical_check(env.max_npt, lib_path=params.lib_path)
             evaluator.add_mathematica_session(session)
         scores = evaluator.run_all_evals()
@@ -44,7 +44,7 @@ def main(params):
             logger.info("%s -> %.6f" % (k, v))
         logger.info("__log__:%s" % json.dumps(scores))
 
-        if params.numerical_check:
+        if params.numerical_check == 1:
             end_wolfram_session(session)
         exit()
 
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         'eval_only': False,
         'test_file': True,
         'valid_file': False,
-        'numerical_check': True,
+        'numerical_check': 1,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,

@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
         # SLURM/GPU param
         'cpu': True,
-        'numerical_check': True,
+        'numerical_check': 1,
         'mma_path': args.mathematica_path
 
     }

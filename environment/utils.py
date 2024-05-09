@@ -21,7 +21,7 @@ import errno
 import signal
 from functools import wraps, partial
 from sympy import Function
-from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv, initialize_numerical_check
+from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma, initialize_numerical_check
 
 
 class LogFormatter:
@@ -323,7 +323,7 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=Tr
             sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
             mma1 = sp_to_mma(sp1, env.npt_list, env.bracket_tokens, env.func_dict)
 
-            matches, res_left = check_numerical_equiv(session, mma1, mma2)
+            matches, res_left = check_numerical_equiv_mma(session, mma1, mma2)
 
             if not matches:
                 print('Residue is {}'.format(res_left))
