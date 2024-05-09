@@ -182,7 +182,7 @@ f = sp.parse_expr(input_eq, local_dict=env.func_dict)
 if base_params.canonical_form:
     f = reorder_expr(f)
 f = f.cancel()
-st.latex(r'''{}'''.format(latex(f)))
+st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env.func_dict))))
 
 
 if st.button("Click Here to Simplify"):
