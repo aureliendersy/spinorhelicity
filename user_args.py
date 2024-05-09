@@ -10,7 +10,8 @@ dir_out = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Tes
 # Simple example
 
 #input_eq = 'ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(4,5)*sb(4,5)/ab(2, 3)'
-input_eq = 'ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(2,4)*sb(2,4)/ab(2, 3)'
+#input_eq = 'ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(2,4)*sb(2,4)/ab(2, 3)'
+input_eq = "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))"
 
 #input_eq = '(-ab(1, 2)**3*ab(1, 3)*ab(3, 4)*ab(3, 5)*sb(1, 5)*sb(2, 3)**2 - ab(1, 2)**3*ab(1, 3)*ab(3, 4)*ab(4, 5)*sb(1, 4)*sb(2, 3)*sb(2, 5) - ab(1, 2)**3*ab(1, 4)*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(2, 4)*sb(4, 5) - ab(1, 2)**3*ab(1, 5)*ab(2, 3)*ab(4, 5)*sb(1, 2)*sb(2, 5)**2)/(ab(1, 3)*ab(1, 4)*ab(1, 5)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 2)**2*sb(1, 5))'
 

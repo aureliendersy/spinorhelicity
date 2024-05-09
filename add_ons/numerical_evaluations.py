@@ -182,10 +182,11 @@ def check_numerical_equiv_local(tokens, npt, hypothesis, target):
     :param npt:
     :return:
     """
-    token_sp = [sp.parse_expr(tok) for tok in tokens]
+    # Add temporary check on the canonical ordering
+    token_sp = [sp.parse_expr(tok) for tok in tokens if tok[-1] > tok[-2]]
     func_hyp = sp.lambdify(token_sp, hypothesis)
     func_tgt = sp.lambdify(token_sp, target)
-    relevant_keys = ['{}pt'.format(npt)+tok for tok in tokens]
+    relevant_keys = ['{}pt'.format(npt)+tok for tok in tokens if tok[-1] > tok[-2]]
 
     rel_diff = 0
     for momenta_vals in MOMENTA_DICTS:

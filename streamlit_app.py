@@ -3,22 +3,17 @@ Test desired model on a given input expression
 """
 
 
-from statistics import mean
 import torch
 import streamlit as st
-from add_ons.slurm import init_signal_handler, init_distributed_mode
-from environment.utils import AttrDict, to_cuda, initialize_exp, convert_sp_forms, reorder_expr
+from environment.utils import AttrDict, to_cuda, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
-from model import build_modules, check_model_params
-from add_ons.mathematica_utils import *
+from model import build_modules
+from add_ons.numerical_evaluations import check_numerical_equiv_local
 import sympy as sp
 from sympy import latex
 import gdown
-import os, csv
-import user_args as args
 from pathlib import Path
-import requests
 
 
 @st.cache_resource
@@ -91,7 +86,7 @@ def create_base_env(path_model):
         # Specify the path to Spinors Mathematica Library
         'lib_path': None,
         'mma_path': None,
-        'numerical_check': False,
+        'numerical_check': 2,
     })
     environment.utils.CUDA = not parameters.cpu
 
@@ -133,13 +128,13 @@ def test_model_expression(envir, module_transfo, f_eq, params_in):
     encoded = encoder('fwd', x=x1, lengths=len1, causal=False)
 
     # Beam decoding
-    beam_sz, nucleus_sampling, nucleus_prob, temp = params_in
+    beam_sz, nucleus_sample, nucleus_prob, temp = params_in
     with torch.no_grad():
         _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_sz,
                                            length_penalty=1,
                                            early_stopping=True,
                                            max_len=2048,
-                                           stochastic=nucleus_sampling,
+                                           stochastic=nucleus_sample,
                                            nucl_p=nucleus_prob,
                                            temperature=temp)
         assert len(beam) == 1
@@ -161,7 +156,9 @@ def test_model_expression(envir, module_transfo, f_eq, params_in):
             # convert to infix
             hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
             hyp_disp = convert_sp_forms(hyp, env.func_dict)
-            out_hyp.append(hyp_disp)
+            f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f_eq)))
+            matches, _ = check_numerical_equiv_local(envir.special_tokens, max(envir.npt_list), hyp, f_sp)
+            out_hyp.append((matches, hyp_disp))
         except:
             pass
 
@@ -175,8 +172,8 @@ base_params = create_base_env(path_mod1)
 env, modules = load_models(base_params)
 
 beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
-nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.05, value=0.95)
-temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.5, value=1.5)
+nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.01, value=0.95)
+temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.1, value=1.5)
 sample_method = st.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
 
 
@@ -193,5 +190,8 @@ if st.button("Click Here to Simplify"):
     params_input = (beam_size, nucleus_sampling, nucleus_p, temperature)
     hyp_found = test_model_expression(env, modules, f, params_input)
     st.write("Generated List of Unique Hypotheses")
-    for i, hyp in enumerate(hyp_found):
-        st.write(f"Hypothesis {i+1} : ${latex(hyp)}$")
+    for i, (match, hyp) in enumerate(hyp_found):
+        str_match = "(Valid)" if match else "(Invalid)"
+        st.write(f"Hypothesis {i+1} {str_match}: ${latex(hyp)}$")
+
+#"Link: https://spinorhelicity-itaxwjut6ymapaze8phteq.streamlit.app/"
