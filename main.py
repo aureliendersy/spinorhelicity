@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [6],
+        'npt_list': [4],
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
@@ -132,14 +132,16 @@ if __name__ == '__main__':
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
         'positional_encoding': True,
+        'reload_model': '',
         #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Simplifier_Models/6pt/n6_i1_3_l1000_10Mex.pth',
+        #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Simplifier_Models/6pt/n6_i1_3_l1000_10Mex.pth',
 
         # Trainer param
-        #'export_data': True,
-        'export_data': False,
+        'export_data': True,
+        #'export_data': False,
+        'reload_data': '',
         #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000',
+        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -155,8 +157,8 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        'eval_only': True,
-        #'eval_only': False,
+        #'eval_only': True,
+        'eval_only': False,
         'test_file': True,
         'valid_file': False,
         'numerical_check': 2,

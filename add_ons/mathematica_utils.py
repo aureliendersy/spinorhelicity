@@ -158,7 +158,13 @@ def solve_diophantine_system(n_points, coefficients, session):
     if session == 'NotRequired':
         return solve_diophantine_system_python(coefficients, eqvar)
     else:
-        return solve_diophantine_system_mma(coefficients, session, eqvar)
+        # Try to solve with MMA (correct only for the numerator scalings)
+        # If not possible then solve locally (with minimal solution set that also modifies the denominators)
+        sol = solve_diophantine_system_mma(coefficients, session, eqvar)
+        if sol is None:
+            return solve_diophantine_system_python(coefficients, eqvar)
+        else:
+            return sol
 
 
 def solve_diophantine_system_python(coefficients, eqvar):
@@ -170,7 +176,7 @@ def solve_diophantine_system_python(coefficients, eqvar):
     """
 
     mass_dim = [1 for i in range(len(eqvar))]
-    lg_eqs = [list(np.array([1 if 'a' in vara and str(i+1) in vara  else 0 for vara in eqvar]) + np.array([-1 if 'b' in varb and str(i+1) in varb else 0 for varb in eqvar])) for i in range(len(coefficients[1:]))]
+    lg_eqs = [list(np.array([1 if 'a' in vara and str(i+1) in vara else 0 for vara in eqvar]) + np.array([-1 if 'b' in varb and str(i+1) in varb else 0 for varb in eqvar])) for i in range(len(coefficients[1:]))]
     a_matrix = sp.Matrix([mass_dim] + lg_eqs)
     b_matrix = sp.Matrix(coefficients)
     sol_random = random.choice(diophantine_solve(a_matrix, b_matrix))
