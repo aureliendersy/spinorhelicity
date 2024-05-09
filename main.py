@@ -95,7 +95,7 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_data_spin_hel',
+        'exp_name': 'Test_evav_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
         'exp_id': 'test',
         'save_periodic': 0,
@@ -103,22 +103,22 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [5],
+        'npt_list': [6],
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
         'min_scrambles': 1,
-        'save_info_scr': True,
-        'save_info_scaling': True,
+        'save_info_scr': False,
+        'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
-        'max_len': 2048,
+        'max_len': 1000,
         'canonical_form': True,
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
-        'reduced_voc': False,
+        'reduced_voc': True,
         'all_momenta': True,
 
         # model parameters
@@ -133,13 +133,13 @@ if __name__ == '__main__':
         'share_inout_emb': True,
         'positional_encoding': True,
         #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
-        'reload_model': '',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Simplifier_Models/6pt/n6_i1_3_l1000_10Mex.pth',
 
         # Trainer param
-        'export_data': True,
-        #'export_data': False,
+        #'export_data': True,
+        'export_data': False,
         #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
-        'reload_data': '',
+        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000',
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 500,
@@ -155,17 +155,17 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        #'eval_only': True,
-        'eval_only': False,
+        'eval_only': True,
+        #'eval_only': False,
         'test_file': True,
         'valid_file': False,
-        'numerical_check': 1,
+        'numerical_check': 2,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
         'beam_size': 10,
         'beam_length_penalty': 1,
-        'beam_early_stopping': False,
+        'beam_early_stopping': True,
         'nucleus_sampling': False,
         'nucleus_p': 0.95,
         'temperature': 2,

@@ -173,15 +173,17 @@ MOMENTA_DICT2 = {'4pt1': [0.574462717966232665019345509971475687048769179170527,
 MOMENTA_DICTS = [MOMENTA_DICT1, MOMENTA_DICT2]
 
 
-def check_numerical_equiv_local(tokens, npt, hypothesis, target):
+def check_numerical_equiv_local(tokens, hypothesis, target):
     """
     Given two sympy expressions we check numerically if they are equal
     :param tokens:
     :param hypothesis:
     :param target:
-    :param npt:
     :return:
     """
+    # Check the n-pt of the expression to check
+    npt = max([int(str(symb)[-1]) for symb in hypothesis.free_symbols | target.free_symbols])
+
     # Add temporary check on the canonical ordering
     token_sp = [sp.parse_expr(tok) for tok in tokens if tok[-1] > tok[-2]]
     func_hyp = sp.lambdify(token_sp, hypothesis)
@@ -194,7 +196,7 @@ def check_numerical_equiv_local(tokens, npt, hypothesis, target):
         hyp_num = sp.N(func_hyp(*relevant_coeffs), ZERO_ERROR_POW_LOCAL+5)
         tgt_num = sp.N(func_tgt(*relevant_coeffs), ZERO_ERROR_POW_LOCAL+5)
         diff = abs(tgt_num - hyp_num)
-        rel_diff += diff/abs(tgt_num)
+        rel_diff += float(diff/abs(tgt_num))
 
     valid = rel_diff < 10 ** (-ZERO_ERROR_POW_LOCAL)
     return valid, rel_diff

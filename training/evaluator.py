@@ -67,7 +67,7 @@ def check_valid_solution(env, src, tgt, hyp, session):
         # Pre check symbolically
         valid = sp.simplify(hyp - tgt, seconds=0.5) == 0
 
-        if session is None:
+        if env.numerical_check == 1 and session is None:
             raise ValueError('Session should not be None to numerically evaluate')
 
         # Do the numerical check

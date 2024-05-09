@@ -104,7 +104,7 @@ def test_model_expression(envir, module_transfo, input_equation, params, verbose
                 matches, error = check_numerical_equiv_mma(envir.session, hyp_mma, tgt_mma)
             elif params.numerical_check == 2:
                 f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f)))
-                matches, error = check_numerical_equiv_local(envir.special_tokens, max(envir.npt_list), hyp, f_sp)
+                matches, error = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp)
             else:
                 matches = None
                 error = None
