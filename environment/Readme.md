@@ -24,7 +24,7 @@ python split_data.py data.prefix.counts 5000
 ```shell
    mv data.prefix.counts.train data.prefix.counts.train_combined
    shuf data.prefix.counts.train_combined > temp_file
-   sort -t '|' -k 1,1n temp_file > data.prefix.counts.train
+   sort -t '|' -k 1,1nr temp_file > data.prefix.counts.train
    rm temp_file
    ```
 6) To restrict the number of tokens that compose the input (and output amplitudes) we use
