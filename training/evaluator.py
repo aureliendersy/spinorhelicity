@@ -79,7 +79,9 @@ def check_valid_solution(env, src, tgt, hyp, session):
                 if valid:
                     logger.info("Hypothesis is numerically valid")
             elif env.numerical_check == 2:
-                valid, _ = check_numerical_equiv_local(env.special_tokens, hyp, tgt)
+                # If we have more than 1 input npt then we can't assert which one it is
+                npt = env.npt_list[0] if len(env.npt_list) == 1 else None
+                valid, _ = check_numerical_equiv_local(env.special_tokens, hyp, tgt, npt=npt)
             else:
                 raise ValueError("Numerical check is either 0,1,2")
     else:

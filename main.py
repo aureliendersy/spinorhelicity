@@ -49,7 +49,7 @@ def main(params):
         exit()
 
     # training
-    for _ in range(params.max_epoch):
+    for _ in range(params.max_epoch - trainer.epoch):
         logger.info("============ Starting epoch %i ... ============" % trainer.epoch)
 
         trainer.n_equations = 0
@@ -95,15 +95,15 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_evav_spin_hel',
+        'exp_name': 'Test_eval_spin_hel',
         'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
-        'exp_id': 'test',
+        'exp_id': 'test_eval',
         'save_periodic': 0,
         'tasks': 'spin_hel',
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [4],
+        'npt_list': [5],
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
@@ -112,14 +112,14 @@ if __name__ == '__main__':
         'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
-        'max_len': 1000,
+        'max_len': 1000000,
         'canonical_form': True,
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
-        'all_momenta': True,
+        'all_momenta': False,
 
         # model parameters
         'emb_dim': 512,
@@ -132,19 +132,21 @@ if __name__ == '__main__':
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
         'positional_encoding': True,
-        'reload_model': '',
+        #'reload_model': '',
+        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/n5_i1_3_1000/checkpoint.pth',
         #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
         #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Simplifier_Models/6pt/n6_i1_3_l1000_10Mex.pth',
 
         # Trainer param
-        'export_data': True,
-        #'export_data': False,
-        'reload_data': '',
+        #'export_data': True,
+        'export_data': False,
+        #'reload_data': '',
+        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000',
         #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
         #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/n6_i1_3/test_n6_i1_3_1000',
         'reload_size': '',
         'epoch_size': 1000,
-        'max_epoch': 500,
+        'max_epoch': 10,
         'amp': -1,
         'fp16': False,
         'accumulate_gradients': 1,
@@ -157,15 +159,15 @@ if __name__ == '__main__':
         'batch_size': 1,
 
         # Evaluation
-        #'eval_only': True,
-        'eval_only': False,
+        'eval_only': True,
+        #'eval_only': False,
         'test_file': True,
         'valid_file': False,
         'numerical_check': 2,
         'eval_verbose': 2,
         'eval_verbose_print': True,
         'beam_eval': True,
-        'beam_size': 10,
+        'beam_size': 5,
         'beam_length_penalty': 1,
         'beam_early_stopping': True,
         'nucleus_sampling': False,
@@ -176,7 +178,7 @@ if __name__ == '__main__':
         'cpu': True,
         'local_rank': -1,
         'master_port': -1,
-        'num_workers': 0,
+        'num_workers': 3,
         'debug_slurm': False,
         'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
         #'mma_path': 'NotRequired',

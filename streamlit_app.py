@@ -157,7 +157,8 @@ def test_model_expression(envir, module_transfo, f_eq, params_in):
             hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
             hyp_disp = convert_sp_forms(hyp, env.func_dict)
             f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f_eq)))
-            matches, _ = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp)
+            npt = envir.npt_list[0] if len(envir.npt_list) == 1 else None
+            matches, _ = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp,  npt=npt)
             out_hyp.append((matches, hyp_disp))
         except:
             pass
