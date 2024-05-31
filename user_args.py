@@ -46,7 +46,7 @@ mathematica_path = None
 
 # #############  Models: Can specify the path directly or else download it
 #model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/model/trained_models/simplifier_model.pth'
-model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Simplifier_Models/5pt/n5_i1_3_l1000_10Mex.pth'
+model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Run2/Simplifier_Models/5pt/n5_i1_3_l1000_10Mex.pth'
 download_path_simplifier = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
 
 model_path_contrastive = None

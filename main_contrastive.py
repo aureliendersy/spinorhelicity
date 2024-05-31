@@ -114,6 +114,7 @@ if __name__ == '__main__':
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
         'positional_encoding': True,
+        'norm_ffn': None,
         'reload_model': '',
 
         # Data param

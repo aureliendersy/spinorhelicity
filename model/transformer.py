@@ -340,7 +340,7 @@ class TransformerModel(nn.Module):
         loss = F.cross_entropy(scores, y, reduction='mean')
         return scores, loss
 
-    def generate(self, src_enc, src_len, max_len=200, sample_temperature=None):
+    def generate(self, src_enc, src_len, max_len=200, sample_temperature=None, last_word=False):
         """
         Decode a sentence given initial start.
         `x`:
@@ -352,6 +352,7 @@ class TransformerModel(nn.Module):
         `positions`:
             - False, for regular "arange" positions (LM)
             - True, to reset positions from the new generation (MT)
+        'last_word': explicitly only retain the last word predicton (when cache is not updated)
         """
 
         # input batch
@@ -388,6 +389,8 @@ class TransformerModel(nn.Module):
                 src_len=src_len,
                 cache=cache
             )
+            if last_word:
+                tensor = tensor[-1::]
             assert tensor.size() == (1, bs, self.dim), (cur_len, max_len, src_enc.size(), tensor.size(), (1, bs, self.dim))
             tensor = tensor.data[-1, :, :].type_as(src_enc)  # (bs, dim)
             scores = self.proj(tensor)                       # (bs, n_words)

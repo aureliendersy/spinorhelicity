@@ -7,7 +7,8 @@ import random
 from itertools import combinations
 from environment.bracket_env import ab, sb
 from add_ons.mathematica_utils import solve_diophantine_systems
-from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr_detail, build_scale_factor
+from environment.utils import (reorder_expr, generate_random_bk, get_scaling_expr_detail, build_scale_factor,
+                               get_expression_detail_lg_scaling)
 from sympy import latex, Function, sympify, fraction, cancel
 from logging import getLogger
 import sys
@@ -188,7 +189,7 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
                                                           rng, canonical_form=canonical_form,
                                                           zero_allowed=components == 1)
     denominator = fraction(return_expr)[-1]
-    scaling_list = get_scaling_expr_detail(return_expr, [ab, sb], n_points)
+    scaling_list = get_expression_detail_lg_scaling(return_expr, [ab, sb], n_points)
     if info_scaling:
         scale_list = np.array(scaling_list[0]) - np.array(scaling_list[1])
 

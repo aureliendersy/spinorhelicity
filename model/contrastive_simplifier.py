@@ -1,5 +1,5 @@
 """
-Methods relevant for simplifying a large spinor helicity amplitude using both the contrastive model and the simplier
+Methods relevant for simplifying a large spinor helicity amplitude using both the contrastive model and the simplifier
 """
 
 from logging import getLogger

@@ -6,7 +6,7 @@ import numpy as np
 import random, time
 import sympy as sp
 from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr,\
-    random_scale_factor, get_scaling_expr_detail, build_scale_factor
+    random_scale_factor, get_scaling_expr_detail, build_scale_factor, get_expression_detail_lg_scaling
 from sympy import Function, latex
 from environment.helicity_generator import generate_random_fraction_unbounded
 from add_ons.mathematica_utils import solve_diophantine_system
@@ -260,8 +260,8 @@ class SpinHelExpr:
                                                               canonical_form=canonical, zero_allowed=False)
         else:
             # Get the scaling necessary to correct it
-            num_scales, denom_scales = get_scaling_expr_detail(add_expr_in, [ab, sb], self.n_point)
-            bk_scales, _ = get_scaling_expr_detail(bk_base, [ab, sb], self.n_point)
+            num_scales, denom_scales = get_expression_detail_lg_scaling(add_expr_in, [ab, sb], self.n_point)
+            bk_scales, _ = get_expression_detail_lg_scaling(bk_base, [ab, sb], self.n_point)
             num_scales = np.array(num_scales) - np.array(bk_scales)
 
             coeff_add_num = solve_diophantine_system(self.n_point, num_scales, session)

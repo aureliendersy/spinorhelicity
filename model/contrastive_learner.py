@@ -13,11 +13,12 @@ logger = getLogger()
 
 class FFNHead(nn.Module):
 
-    def __init__(self, embed_dim, layer_nums):
+    def __init__(self, embed_dim, layer_nums, norm=None):
         super().__init__()
         self.activation = nn.ReLU()
         self.embed_dim = embed_dim
         self.layer_nums = layer_nums
+        self.norm_layer = norm
 
         layer_list = []
 
@@ -25,6 +26,10 @@ class FFNHead(nn.Module):
             layer_list.append(('layer_%d' % (i + 1), nn.Linear(self.embed_dim, self.embed_dim)))
 
             if i + 1 < self.layer_nums:
+                if self.norm_layer == 'batchnorm':
+                    layer_list.append(nn.BatchNorm1d(self.embed_dim))
+                elif self.norm_layer == 'layernorm':
+                    layer_list.append(nn.LayerNorm(self.embed_dim, eps=1e-12))
                 layer_list.append(('activation_%d' % (i + 1), self.activation))
 
         self.model = nn.Sequential(OrderedDict(layer_list))
@@ -41,7 +46,7 @@ class TransformerEncoderC(TransformerModel):
         Transformer model (encoder or decoder).
         """
         super().__init__(params, id2word, True, False)
-        self.ffnhead = FFNHead(params.emb_dim, params.head_layers)
+        self.ffnhead = FFNHead(params.emb_dim, params.head_layers, params.norm_ffn)
 
     def forward(self, mode, **kwargs):
         """

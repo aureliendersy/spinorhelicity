@@ -13,7 +13,7 @@ import sympy as sp
 
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 from add_ons.numerical_evaluations import check_numerical_equiv_local
-from environment.utils import to_cuda, timeout, TimeoutError
+from environment.utils import to_cuda, timeout, TimeoutError, get_expression_lg_scaling, convert_sp_forms
 from environment.char_env import InvalidPrefixExpression
 
 logger = getLogger()
@@ -201,6 +201,8 @@ class Evaluator(object):
 
         # stats
         xe_loss = 0
+        valid_m_scalings = 0
+        valid_lg_scalings = 0
         n_valid = torch.zeros(2000, dtype=torch.long)
         n_total = torch.zeros(2000, dtype=torch.long)
 
@@ -239,6 +241,36 @@ class Evaluator(object):
             t[pred_mask] += word_scores.max(1)[1] == y
             valid = (t.sum(0) == len2 - 1).cpu().long()
 
+            if params.scaling_eval:
+                for i in range(len(len1)):
+                    if not valid[i]:
+                        tgt_sp = idx_to_sp(env, x2[1:len2[i] - 1, i].tolist())
+                        tgt_scalings = get_expression_lg_scaling(convert_sp_forms(tgt_sp, env.func_dict),
+                                                                 list(env.func_dict.values()), max(env.npt_list))
+                        if not params.cpu:
+                            encoded = encoded.type(torch.float16)
+                        greedy_sol, _ = decoder.generate(encoded[:len1[i:i+1], i:i+1, :].transpose(0, 1),
+                                                         src_len=len1[i:i+1], max_len=params.max_len,
+                                                         sample_temperature=None, last_word=params.scaling_eval)
+                        try:
+                            pred_sp = idx_to_sp(env, greedy_sol[1:- 1][:, 0].tolist())
+                        except RecursionError:
+                            pred_sp = None
+                        # If we have a valid prediction we look at its scaling and compare it to the target
+                        if pred_sp is not None:
+                            try:
+                                pred_scalings = get_expression_lg_scaling(convert_sp_forms(pred_sp, env.func_dict),
+                                                                          list(env.func_dict.values()), max(env.npt_list))
+                                valid_m_scalings += tgt_scalings[0] == pred_scalings[0]
+                                valid_lg_scalings += all(tgt_scalings[1:] == pred_scalings[1:])
+                            except:
+                                print(greedy_sol[1:- 1][:, 0].tolist())
+                                print(pred_sp)
+                                print(convert_sp_forms(pred_sp, env.func_dict))
+                    else:
+                        valid_m_scalings += 1
+                        valid_lg_scalings += 1
+
             # export evaluation details
             if params.eval_verbose:
                 for i in range(len(len1)):
@@ -269,11 +301,13 @@ class Evaluator(object):
         scores[f'{data_type}_{task}_xe_loss'] = xe_loss / _n_total
         scores[f'{data_type}_{task}_acc'] = 100. * _n_valid / _n_total
 
+        if params.scaling_eval:
+            scores[f'{data_type}_{task}_m_scaling'] = 100. * valid_m_scalings / _n_total
+            scores[f'{data_type}_{task}_lg_scaling'] = 100. * valid_lg_scalings / _n_total
         # per class perplexity and prediction accuracy
         for i in range(len(n_total)):
             if n_total[i].item() == 0:
                 continue
-            # logger.info(f"{i}: {n_valid[i].item()} / {n_total[i].item()} ({100. * n_valid[i].item() / max(n_total[i].item(), 1)}%)")
             scores[f'{data_type}_{task}_acc_{i}'] = 100. * n_valid[i].item() / max(n_total[i].item(), 1)
 
     def enc_dec_step_beam(self, data_type, task, scores):
