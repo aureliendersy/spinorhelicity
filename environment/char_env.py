@@ -68,11 +68,11 @@ class CharEnv(object):
     OPERATORS = {
         # Elementary functions
         'add': 2,
-        'sub': 2,
         'mul': 2,
-        'div': 2,
         'pow': 2,
-        'inv': 1,
+
+        # Allow for div to represent rationals (even if we don't train on them directly)
+        'div': 2,
 
         # Brackets
         'ab': 2,
@@ -108,8 +108,11 @@ class CharEnv(object):
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
 
-        # parse operators with their weights
-        self.operators = sorted(list(self.OPERATORS.keys()))
+        # Don't need the ab and sb operators if we are using combined brackets
+        if self.bracket_tokens:
+            self.operators = sorted([el for el in list(self.OPERATORS.keys()) if el != 'ab' and el != 'sb'])
+        else:
+            self.operators = sorted(list(self.OPERATORS.keys()))
 
         # Possible constants and variables. The variables used are to denote the momenta.
         # For the constants we use letters to represent the type of identity used
@@ -147,7 +150,8 @@ class CharEnv(object):
             self.local_dict[k] = v
 
         # vocabulary
-        if self.reduced_voc:
+
+        if self.reduced_voc and not (self.save_info_scr or self.save_info_scaling):
             self.words = SPECIAL_WORDS2 + self.operators + self.symbols + self.elements + self.special_tokens
         else:
             self.words = SPECIAL_WORDS + self.constants + list(self.variables.keys()) +\
@@ -419,10 +423,10 @@ class CharEnv(object):
         :return:
         """
 
-        # List of coefficients are already given as sympy integers
+        # List of coefficients are already converted to sympy integers
         prefix_ret = []
         for info_vec in info_scale:
-            prefix_ret.extend(self.sympy_to_prefix(info_vec))
+            prefix_ret.extend(self.sympy_to_prefix(sp.sympify(info_vec)))
         return prefix_ret
 
     def scale_prefix_to_infix(self, infos_prefix):

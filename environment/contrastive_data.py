@@ -55,9 +55,11 @@ def get_scaling_list(prefix_expr, envir):
     :param envir:
     :return:
     """
+    raise ValueError
     scaling_list = []
     rest = prefix_expr
 
+    # Try to parse the expression and whatever is left will be containing the scaling of the expression
     while len(rest) > 0:
         integ, rest = envir._prefix_to_infix(rest)
         scaling_list.append(int(sp.parse_expr(integ)))
@@ -73,6 +75,8 @@ def get_scaling_id(scale_lst):
     """
     id_scale = 0
 
+    # For each scaling we create a unique identifier by multiplying each scaling by a given power
+    # Power indices are spaced by 2 to account for scalings that go up to 100
     for i, term in enumerate(scale_lst):
         id_scale += term*10**(2*(len(scale_lst)-1-i))
 
@@ -100,19 +104,22 @@ def invert_scaling_id(scale_id, n_pt):
     return scalings
 
 
-def convert_spinor_data(filepath, ids_tokens, env):
+def convert_spinor_data(filepath, ids_tokens, env, check_ids=False):
     """
     Given a prefix file path that contains equations and their simple form we retain
     only equations that are one identity away. This is defined by the tokens ids given.
     :param filepath:
     :param ids_tokens:
     :param env:
+    :param check_ids:
     :return:
     """
 
+    # Create a progress bar based on the file size
     file_size = os.path.getsize(filepath)
     pbar = tqdm(total=file_size, unit="MB")
 
+    # Define the path where we ouput the data
     outpath = filepath.replace('data', 'data_contrastive')
     print('Writing data in {}'.format(outpath))
 
@@ -124,27 +131,57 @@ def convert_spinor_data(filepath, ids_tokens, env):
             # Loop through each line of the input file and get the number of identities
             while line := f_in.readline():
                 pbar.update(sys.getsizeof(line) - sys.getsizeof('\n'))
-                idsinfo = line.split('&')[1]
-                numids = np.array([idsinfo.count(token) for token in ids_tokens]).sum()
-                numids_forbidden = np.array([idsinfo.count(token) for token in ['Z', 'ID']]).sum()
 
-                prefix_start = line.split('\t')[1].split('&')[0][:-1].split(' ')
+                # If we want to check whether the equation is generated using a single identity
+                if check_ids:
+                    idsinfo = line.split('&')[1]
+                    numids = np.array([idsinfo.count(token) for token in ids_tokens]).sum()
+                    numids_forbidden = np.array([idsinfo.count(token) for token in ['Z', 'ID']]).sum()
+
+                prefix_start = line.split('\t')[1].split('&')[0][:-1].split()
 
                 # If the number of identities is 1 then we extract the relevant equation
                 # Also verify that the simple form had only 1 term (just to be wary of surprises)
-                if numids == 1 and numids_forbidden == 0 and 'add' not in prefix_start:
+                valid_id_line = numids == 1 and numids_forbidden == 0 if check_ids else True
+
+                if valid_id_line and 'add' not in prefix_start:
+
+                    # Convert the input to a sympy form and extract the numerator and denominator
                     eqprefix = line.split('\t')[0].split('|')[-1].split(' ')
                     eqsp = env.infix_to_sympy(env.prefix_to_infix(eqprefix))
-                    numerator, _ = sp.fraction(eqsp)
+                    numerator, denominator = sp.fraction(eqsp)
 
-                    # Add the lg scaling information
-                    scale_list = get_numerator_lg_scaling(convert_sp_forms(numerator, env.func_dict),
+                    # Do the same for the expected output
+                    eqsptgt = env.infix_to_sympy(env.prefix_to_infix(prefix_start))
+                    numerator_tgt, denominator_tgt = sp.fraction(eqsptgt)
+
+                    # If the target is not 0 then we put it and the input on some common denominator
+                    # Choose that denominator to be minimal
+                    if numerator_tgt != 0:
+                        relative_denominator = denominator/denominator_tgt
+                        rel_denom1, rel_denom2 = sp.fraction(relative_denominator)
+
+                        # If output denominator is a subset of input denominator then scaling is easy
+                        if rel_denom2 == 1:
+                            numerator_tgt = numerator_tgt * rel_denom1
+                        else:
+                            numerator_tgt = numerator_tgt * rel_denom1
+                            numerator = numerator * rel_denom2
+
+                    combined_numerator = numerator - numerator_tgt
+
+                    # Add the lg scaling information by converting it to a unique ID
+                    scale_list = get_numerator_lg_scaling(convert_sp_forms(combined_numerator, env.func_dict),
                                                           list(env.func_dict.values()), npt=env.npt_list[0])
                     scale_id = get_scaling_id(scale_list)
 
-                    assert isinstance(numerator, sp.Add)
+                    # If we have multiple numerator terms in the input then we aggregate them
+                    if isinstance(combined_numerator, sp.Add):
+                        termsnum = [' '.join(env.sympy_to_prefix(term)) for term in combined_numerator.args]
+                    else:
+                        termsnum = [' '.join(env.sympy_to_prefix(combined_numerator))]
 
-                    termsnum = [' '.join(env.sympy_to_prefix(term)) for term in numerator.args]
+                    # Write all the numerators separated by tab and preceded by the scaling ID
                     f_out.write(f'{scale_id}|')
                     for i, term in enumerate(termsnum):
                         if i == len(termsnum)-1:
@@ -166,21 +203,26 @@ def create_batched_split(env, params, pathin, size_set):
     :param size_set:
     :return:
     """
+
+    # Define the paths to output the data
     trn_path = pathin + '.train'
     vld_path = pathin + '.valid'
     tst_path = pathin + '.test'
 
     print(f"Reading data from {pathin} ...")
 
+    # Read the data of numerator terms in prefix notation
     with io.open(pathin, mode='r', encoding='utf-8') as f:
         lines = [line for line in f]
     total_size = len(lines)
     print(f"Read {total_size} lines.")
 
+    # Obtain relevant indices for the validation and test set (that mix expressions with the same LG scaling)
     valid_indices = create_indices_valid_set(env, params, pathin, size_set)
     params.env_base_seed = params.env_base_seed + 1
     test_indices = create_indices_valid_set(env, params, pathin, size_set)
 
+    # Assure that the indices generated are not found in both sets
     unique_valid_indices = list(dict.fromkeys([idx for idx in valid_indices if idx not in test_indices]))
     print('Generated {} indices for the validation set'.format(len(unique_valid_indices)))
     unique_test_indices = list(dict.fromkeys([idx for idx in test_indices if idx not in valid_indices]))
@@ -196,6 +238,8 @@ def create_batched_split(env, params, pathin, size_set):
     valid_lines = []
     test_lines = []
 
+    # Write the appropriate indices in the appropriate files
+    # For the test and valid files we write later - after sorting
     for i, line in enumerate(lines):
         if i in unique_valid_indices:
             valid_lines.append(line)
@@ -211,6 +255,7 @@ def create_batched_split(env, params, pathin, size_set):
     ordering_valid = [sorted_valid_index.index(x) for x in unique_valid_indices]
     ordering_test = [sorted_test_index.index(x) for x in unique_test_indices]
 
+    # Write the validation and test set
     for i in ordering_valid:
         f_valid.write(valid_lines[i])
 
@@ -232,23 +277,29 @@ def create_indices_valid_set(env, params, pathin, size_set):
     :param size_set:
     :return:
     """
+
+    # Build the contrastive environment
     envdata = EnvDatasetContrastive(env, 'contrastive', True, None, params, pathin)
     envdata.open_dataset()
     envdata.init_rng()
     index_used = []
 
     for i in range(size_set):
+        # If we have a group then select a random index half the time
+        # If we don't have a group then always select it randomly
         if envdata.ref_group_indices is None or envdata.rng.randint(2) == 0:
             batch_index = False
             index = envdata.rng.randint(len(envdata.data))
+        # Select the index from the appropriate group otherwise
         else:
             batch_index = True
             index = int(envdata.rng.choice(envdata.ref_group_indices))
 
+        # Recover the id of the batch and retain the example index used
         batch_id, _ = envdata.data[index]
-
         index_used.append(index)
 
+        # Update the group indices that we have considered so far and remove the one considered
         if envdata.ref_group_indices is None:
             envdata.ref_group_indices = deepcopy(envdata.batch_refs[batch_id])
             envdata.ref_group_indices.remove(index)
@@ -256,7 +307,10 @@ def create_indices_valid_set(env, params, pathin, size_set):
         if batch_index:
             envdata.ref_group_indices.remove(index)
 
-        if len(envdata.ref_group_indices) == 0:
+        # If we have no more relevant examples in the group indices then we mark the group as done
+        # Also do that on a random basis to make sure that the entire LG scaling group does not
+        # populate the current split
+        if len(envdata.ref_group_indices) == 0 or envdata.rng.randint(20) == 0:
             envdata.ref_group_indices = None
 
     print('Generated indices for a set with {} equations'.format(len(index_used)))
@@ -322,6 +376,7 @@ class EnvDatasetContrastive(EnvDataset):
         Open the dataset, either by generating it or by loading it from file
         :return:
         """
+        # Create the base enviorment
         self.env = CharEnv(self.params)
 
         if self.params.export_data and not self.batch_scalings:
@@ -342,9 +397,13 @@ class EnvDatasetContrastive(EnvDataset):
                             break
                         if i % self.n_gpu_per_node == self.local_rank:
                             lines.append(line.rstrip().split('|'))
+
+            # If we want to create batches by IDS we extract the scaling ID
             if self.batch_scalings:
                 self.data = [(scale_ids, xy.split('\t')) for _, scale_ids, xy in lines]
                 self.batch_refs = defaultdict(list)
+
+                # Create a mapping dictionary associating IDs to example number
                 for i, (k, v) in enumerate(self.data):
                     self.batch_refs[k].append(i)
                 self.batch_refs.default_factory = None
@@ -395,7 +454,7 @@ class EnvDatasetContrastive(EnvDataset):
             if batch_index:
                 self.ref_group_indices.remove(index)
 
-            if len(self.ref_group_indices) == 0:
+            if len(self.ref_group_indices) == 0 or self.rng.randint(20) == 0:
                 self.ref_group_indices = None
         elif self.batch_scalings and not self.train:
             _, samples = self.data[index]

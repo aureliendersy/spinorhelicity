@@ -128,8 +128,8 @@ if __name__ == '__main__':
         'max_terms': 1,
         'max_scrambles': 5,
         'min_scrambles': 1,
-        'save_info_scr': True,
-        'save_info_scaling': True,
+        'save_info_scr': False,
+        'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 2048,
@@ -139,6 +139,7 @@ if __name__ == '__main__':
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
+        'all_momenta': True,
 
         # model parameters
         'emb_dim': 512,

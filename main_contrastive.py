@@ -23,10 +23,11 @@ def main(params):
     #exit()
 
     if params.export_data:
-        if params.batch_scalings:
-            create_batched_split(env, params, params.prefix_path, 5000)
-        else:
-            convert_spinor_data(params.prefix_path, ['M', 'S'], env)
+        pass
+        #convert_spinor_data(params.prefix_path, ['M', 'S'], env)
+        #exit()
+    if params.batch_scalings and params.export_data:
+        create_batched_split(env, params, params.prefix_path, 10000)
         exit()
     else:
         modules = build_modules_contrastive(env, params)
@@ -76,9 +77,9 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_train_contrastive',
-        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/dumped/',
-        'exp_id': 'temp_0.1',
+        'exp_name': 'n5_i1',
+        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/',
+        'exp_id': 'train',
         'save_periodic': 0,
         'tasks': 'contrastive',
 
@@ -93,14 +94,14 @@ if __name__ == '__main__':
         'save_info_scaling': False,
         'int_base': 10,
         'numeral_decomp': True,
-        'max_len': 2048,
+        'max_len': 1000,
         'canonical_form': True,
         'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
-        'numerical_check': 0,
         'numerator_only': True,
         'reduced_voc': True,
+        'all_momenta': False,
 
         # model parameters
         'emb_dim': 512,
@@ -109,23 +110,23 @@ if __name__ == '__main__':
         'n_heads': 8,
         'dropout': 0,
         'head_layers': 2,
-        'n_max_positions': 384,
+        'n_max_positions': 256,
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
         'positional_encoding': True,
-        'norm_ffn': None,
+        'norm_ffn': 'layernorm',
         'reload_model': '',
 
         # Data param
-        'export_data': True,
-        #'export_data': False,
-        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data_contrastive.prefix.counts',
-        #'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data.prefix.counts.full',
+        #'export_data': True,
+        'export_data': False,
+        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000',
         'mma_path': None,
 
         # Trainer param
-        'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5_final/data_contrastive.prefix.counts.full.test',
+        #'reload_data': False,
+        'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.test',
         'reload_size': '',
         'epoch_size': 5000,
         'max_epoch': 500,
@@ -142,10 +143,10 @@ if __name__ == '__main__':
         'batch_size': 32,
         'temp_contrastive': 0.25,
         'batch_scalings': True,
-        'minimal_denom_mask': True,
 
         # Evaluation
         'eval_only': False,
+        'numerical_check': 0,
 
         # SLURM/GPU param
         'cpu': True,

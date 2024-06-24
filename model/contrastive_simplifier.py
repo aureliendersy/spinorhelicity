@@ -208,7 +208,7 @@ def normalize_term(term_in):
     return term_in / const
 
 
-def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c, const_blind=False):
+def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c, const_blind=False, masked=True):
     """
     Given a reference term we compute its cosine similarity with a list of target terms.
     We calculate the cosine similarity only on the parts of the terms that do not
@@ -218,13 +218,17 @@ def masked_similarity_term(envir_c, term_ref, terms_comp, encoder_c, const_blind
     :param terms_comp:
     :param encoder_c:
     :param const_blind:
+    :param masked:
     :return:
     """
     metric_sim = nn.CosineSimilarity(dim=-1)
     similarity_vect = torch.zeros(len(terms_comp))
     for i, term in enumerate(terms_comp):
 
-        newterm_ref, newterm_comp = sp.fraction(sp.cancel(term_ref / term))
+        if masked:
+            newterm_ref, newterm_comp = sp.fraction(sp.cancel(term_ref / term))
+        else:
+            newterm_ref, newterm_comp = term_ref, term
 
         if const_blind:
             newterm_ref = normalize_term(newterm_ref)

@@ -27,9 +27,9 @@ class FFNHead(nn.Module):
 
             if i + 1 < self.layer_nums:
                 if self.norm_layer == 'batchnorm':
-                    layer_list.append(nn.BatchNorm1d(self.embed_dim))
+                    layer_list.append(('batch_norm_%d' % (i+1), nn.BatchNorm1d(self.embed_dim)))
                 elif self.norm_layer == 'layernorm':
-                    layer_list.append(nn.LayerNorm(self.embed_dim, eps=1e-12))
+                    layer_list.append(('layer_norm_%d' % (i+1),nn.LayerNorm(self.embed_dim, eps=1e-12)))
                 layer_list.append(('activation_%d' % (i + 1), self.activation))
 
         self.model = nn.Sequential(OrderedDict(layer_list))
