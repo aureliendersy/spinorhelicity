@@ -8,7 +8,7 @@ import streamlit as st
 from environment.utils import AttrDict, to_cuda, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
-from model import build_modules
+from model import build_modules, MODULE_REGISTRAR
 from add_ons.numerical_evaluations import check_numerical_equiv_local
 import sympy as sp
 from sympy import latex
@@ -17,28 +17,28 @@ from pathlib import Path
 
 
 @st.cache_resource
-def load_model():
+def load_model(module_npt_name):
     save_dest = Path('model')
     save_dest.mkdir(exist_ok=True)
 
-    f_checkpoint_in = Path("model/5pt.pth")
+    f_checkpoint_in = Path("model/{}.pth".format(module_npt_name))
     f_checkpoint = f_checkpoint_in.resolve()
     f_checkpoint_path = '/'.join(list(f_checkpoint.parts))
     if not f_checkpoint_in.exists():
-        download_path_simplifier = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
+        download_path_simplifier = MODULE_REGISTRAR[module_npt_name]
         gdown.download(download_path_simplifier, f_checkpoint_path, quiet=False)
 
     return f_checkpoint_path
 
 
 @st.cache_data
-def create_base_env(path_model):
+def create_base_env(path_model, module_npt_name):
     parameters = AttrDict({
         'tasks': 'spin_hel',
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [5],
+        'npt_list': [int(module_npt_name[0])],
         'max_scale': 2,
         'max_terms': 3,
         'max_scrambles': 3,
@@ -53,8 +53,8 @@ def create_base_env(path_model):
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
-        'reduced_voc': False,
-        'all_momenta': True,
+        'reduced_voc': True,
+        'all_momenta': False,
 
         # model parameters
         'emb_dim': 512,
@@ -166,10 +166,12 @@ def test_model_expression(envir, module_transfo, f_eq, params_in):
     return list(set(out_hyp))
 
 
-with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
-    path_mod1 = load_model()
+module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"))
 
-base_params = create_base_env(path_mod1)
+with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
+    path_mod1 = load_model(module_npt)
+
+base_params = create_base_env(path_mod1, module_npt)
 env, modules = load_models(base_params)
 
 beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
