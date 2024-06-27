@@ -166,7 +166,15 @@ def test_model_expression(envir, module_transfo, f_eq, params_in):
     return list(set(out_hyp))
 
 
-module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"))
+module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
+
+if 'module_npt' not in st.session_state:
+    st.session_state['module_npt'] = module_npt
+
+if st.session_state['module_npt'] != module_npt:
+    st.cache_resource.clear()
+    create_base_env.clear()
+    st.session_state['module_npt'] = module_npt
 
 with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
     path_mod1 = load_model(module_npt)
@@ -174,10 +182,10 @@ with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
 base_params = create_base_env(path_mod1, module_npt)
 env, modules = load_models(base_params)
 
+sample_method = st.sidebar.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
 beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
 nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.01, value=0.95)
 temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.1, value=1.5)
-sample_method = st.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search"))
 
 
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
