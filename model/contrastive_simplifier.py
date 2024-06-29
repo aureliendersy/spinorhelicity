@@ -10,6 +10,7 @@ from model.contrastive_learner import build_modules_contrastive
 from environment.utils import convert_sp_forms
 from model import build_modules
 from environment.utils import reorder_expr, to_cuda
+from model.simplifier_methods import blind_constants, extract_num_denom
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 import torch
 import torch.nn as nn
@@ -39,22 +40,6 @@ def load_modules(envir_c, envir_s, params_c, params_s):
     decoder_s.eval()
 
     return encoder_c, encoder_s, decoder_s
-
-
-def extract_num_denom(input_eq):
-    """
-    Given a sympy equation we recover the numerator and the denominator
-    :param input_eq:
-    :return:
-    """
-    f = input_eq.cancel()
-    numerator, denominator = sp.fraction(f)
-
-    if isinstance(numerator, sp.Add):
-        terms = np.asarray(numerator.args)
-    else:
-        terms = np.asarray([numerator])
-    return terms, denominator
 
 
 def check_for_overall_const(input_eq):
@@ -156,34 +141,6 @@ def encode_s_term(envir_s, term, encoder_s):
         encoded_s = encoder_s('fwd', x=x1, lengths=len1, causal=False)
 
     return encoded_s, len1
-
-
-def blind_constants(input_expression):
-    """
-    Given an input equation we isolate the numerator terms and return the expression
-    with all constants set to 1 or -1 depending on the sign. Also return the list of constants
-    :param input_expression: 
-    :return: 
-    """
-    num, denom = extract_num_denom(input_expression)
-    new_num = []
-    const_list = []
-    for term in num:
-        if isinstance(term, sp.Add) or isinstance(term, sp.Mul):
-            const = [term_mult for term_mult in term.args if isinstance(term_mult, sp.Integer)]
-        else:
-            const = []
-        if len(const) == 0:
-            new_num.append(term)
-            const_list.append(1)
-        elif len(const) == 1:
-            new_num.append(term/abs(const[0]))
-            const_list.append(const[0])
-        else:
-            print(num)
-            print(const)
-            raise ValueError('Found two constants in a numerator term')
-    return (np.array(new_num).sum()) / denom, np.array(const_list)
 
 
 def normalize_term(term_in):

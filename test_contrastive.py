@@ -15,7 +15,8 @@ from environment.utils import initialize_exp, get_numerator_lg_scaling
 from environment import build_env
 from model.contrastive_learner import build_modules_contrastive
 from add_ons.mathematica_utils import initialize_numerical_check
-from model.contrastive_simplifier import total_simplification, blind_constants
+from model.simplifier_methods import blind_constants
+from model.contrastive_simplifier import total_simplification
 
 
 def test_expression_factors(envir, module_transfo, input_equation, params, factor_mask=False, const_blind=True):

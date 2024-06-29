@@ -172,6 +172,7 @@ if 'module_npt' not in st.session_state:
     st.session_state['module_npt'] = module_npt
 
 if st.session_state['module_npt'] != module_npt:
+    # Clear the resource cache if we change the number of n-pts
     st.cache_resource.clear()
     create_base_env.clear()
     st.session_state['module_npt'] = module_npt
