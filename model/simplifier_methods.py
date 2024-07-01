@@ -8,56 +8,99 @@ from environment.utils import to_cuda, convert_sp_forms
 from add_ons.numerical_evaluations import check_numerical_equiv_local
 
 
-def test_model_expression(envir, module_transfo, f_eq, params_in):
+def one_hot_encode_sp(sp_equation, envir):
+    """
+    Take a sympy equation and an associated environment and return a one-hot encoded
+    version of the equation that can be passed through a transformer
+    :param sp_equation:
+    :param envir:
+    :return:
+    """
+    f_prefix = envir.sympy_to_prefix(sp_equation)
+    x1_prefix = f_prefix
+    x1 = torch.LongTensor([envir.eos_index] + [envir.word2id[w] for w in x1_prefix] + [envir.eos_index]).view(-1, 1)
+    len1 = torch.LongTensor([len(x1)])
+
+    return x1, len1
+
+
+def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=False):
     """
     Test the capacity of the transformer model to resolve a given input
     :param envir:
     :param module_transfo:
-    :param input_equation:
-    :param params:
+    :param f_eq:
+    :param params_in:
+    :param blind_const
     :return:
     """
 
+    # Load the transformer models
     encoder, decoder = module_transfo
-    f_prefix = envir.sympy_to_prefix(f_eq)
-    x1_prefix = f_prefix
-    x1 = torch.LongTensor([envir.eos_index] + [envir.word2id[w] for w in x1_prefix] + [envir.eos_index]).view(-1, 1)
-    len1 = torch.LongTensor([len(x1)])
+
+    # Convert the sympy equation to prefix and one hot encode it - save its length and push it to device
+    try:
+        # If we blind constants we normalize each of the numerator terms
+        if blind_const:
+            eq_to_simplify, const_list = blind_constants(f_eq)
+        else:
+            eq_to_simplify = f_eq
+            const_list = None
+        x1, len1 = one_hot_encode_sp(eq_to_simplify, envir)
+    except AssertionError:
+        raise AssertionError("Equation not encoded correctly with amplitude type selected !")
     x1, len1 = to_cuda(x1, len1)
 
-    # forward
+    # Recover the sympy version of the input equation apt for the numerical check
+    f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f_eq)))
+
+    # forward pass of the encoder network
     encoded = encoder('fwd', x=x1, lengths=len1, causal=False)
 
-    # Beam decoding
-    beam_sz, nucleus_sample, nucleus_prob, temp = params_in
+    # Beam decoding or nucleus sampling
+    beam_sz, sample_method, nucleus_prob, temp = params_in
+
     with torch.no_grad():
-        _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_sz,
-                                           length_penalty=1,
-                                           early_stopping=True,
-                                           max_len=2048,
-                                           stochastic=nucleus_sample,
-                                           nucl_p=nucleus_prob,
-                                           temperature=temp)
-        assert len(beam) == 1
-    hypotheses = beam[0].hyp
-    assert len(hypotheses) == beam_sz
+        # Generate a greedy solution
+        if sample_method == 'Greedy Decoding':
+            greedy_sol, _ = decoder.generate(encoded.transpose(0, 1), src_len=len1, max_len=2048,
+                                             sample_temperature=None)
+            hypotheses = [(0.0, greedy_sol[:-1].squeeze())]
+        else:
+            # Generate multiple candidate solutions
+            nucleus_sample = sample_method == 'Nucleus Sampling'
+            _, _, beam = decoder.generate_beam(encoded.transpose(0, 1), len1, beam_size=beam_sz,
+                                               length_penalty=1,
+                                               early_stopping=True,
+                                               max_len=2048,
+                                               stochastic=nucleus_sample,
+                                               nucl_p=nucleus_prob,
+                                               temperature=temp)
+            assert len(beam) == 1
+            hypotheses = beam[0].hyp
+            assert len(hypotheses) == beam_sz
 
     out_hyp = []
-    # Print out the scores and the hypotheses
+
+    # Iterate through the generated hypothesis, parse them and check their accuracy
     for num, (score, sent) in enumerate(sorted(hypotheses, key=lambda y: y[0], reverse=True)):
 
         # parse decoded hypothesis
         ids = sent[1:].tolist()  # decoded token IDs
         tok = [envir.id2word[wid] for wid in ids]  # convert to prefix
 
-        # Parse the identities if required
         try:
-            hyp = envir.prefix_to_infix(tok)
 
-            # convert to infix
-            hyp = envir.infix_to_sympy(hyp)  # convert to SymPy
+            # convert to sympy expressions before checking if they are numerically equivalent
+            hyp = envir.prefix_to_infix(tok)
+            hyp = envir.infix_to_sympy(hyp)
             hyp_disp = convert_sp_forms(hyp, envir.func_dict)
-            f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f_eq)))
+
+            if blind_const:
+                min_const = min(abs(const_list))
+                hyp_disp = sp.cancel(f_eq - eq_to_simplify * min_const + hyp_disp * min_const)
+                hyp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(hyp_disp)))
+
             npt = envir.npt_list[0] if len(envir.npt_list) == 1 else None
             matches, _ = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp,  npt=npt)
             out_hyp.append((matches, hyp_disp))
