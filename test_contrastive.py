@@ -1,13 +1,13 @@
 """
 Module for testing a trained model for contrastive learning
 """
+import os, csv
 import sympy as sp
 import numpy as np
 from copy import deepcopy
 import torch
 import torch.nn as nn
 from environment.utils import AttrDict, reorder_expr, to_cuda
-from add_ons.slurm import init_signal_handler, init_distributed_mode
 import environment
 import os, gdown
 import user_args as args
@@ -215,9 +215,11 @@ if __name__ == '__main__':
     input_equation = load_equation(env_s, input_eq, parameters_s)
     modules = load_modules(env_c, env_s, parameters_c, parameters_s)
 
-    simplified_eq = total_simplification(envs, params, input_equation, modules, (rng_np, rng_torch), const_blind=True,
-                                         init_cutoff=args.init_cutoff, power_decay=args.power_decay,
-                                         dir_out=args.dir_out)
+    simplified_eq, out_frame = total_simplification(envs, params, input_equation, modules, (rng_np, rng_torch), const_blind=True,
+                                         init_cutoff=args.init_cutoff, power_decay=args.power_decay)
+    if args.dir_out is not None:
+        file_path_out = os.path.join(args.dir_out, 'output_simplification.csv')
+        out_frame.to_csv(file_path_out, index=False)
 
     print('Done')
 

@@ -9,7 +9,8 @@ from environment.utils import AttrDict, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
 from model import MODULE_REGISTRAR
-from model.simplifier_methods import one_shot_simplify, load_modules, load_equation
+from model.simplifier_methods import all_one_shot_simplify, load_modules, load_equation
+from model.contrastive_simplifier import total_simplification
 from add_ons.mathematica_utils import mma_to_sp_string, create_response_frame
 import sympy as sp
 import numpy as np
@@ -192,6 +193,7 @@ sample_methods = [False, False, False]
 labels_methods = ["Nucleus Sampling", "Beam Search", "Greedy Decoding"]
 for i in range(3):
     sample_methods[i] = st.sidebar.checkbox(labels_methods[i], value=i == 0)
+inference_methods = [label for label, sample in zip(labels_methods, sample_methods) if sample]
 st.sidebar.divider()
 
 # Choose the inference parameters (sidebar)
@@ -199,6 +201,11 @@ beam_size = st.sidebar.slider('Beam Size (Beam Search and Nucleus Sampling)', mi
 nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.01, value=0.95)
 temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.1, value=1.5)
 
+# Parameters for the iterative simplification
+st.sidebar.divider()
+st.sidebar.write("Iterative simplification parameters")
+init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_value=1.0, step=0.01, value=0.95)
+power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=5.0, step=0.5, value=0.0)
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
@@ -214,30 +221,43 @@ st.divider()
 # Choose which simplification method to apply
 simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Iterative simplification"),
                                      index=0)
-blind_constants = st.checkbox("Blind Constants", value=False)
+blind_constants = st.checkbox("Blind Constants", value=True)
 
 # Allow the user the option to simplify the equation
 if st.button("Click Here to Simplify") and any(sample_methods):
-    hyps_found = []
-    try:
-        # Go through each selected inference method and generate the candidates
-        for j, sample_method in enumerate(sample_methods):
-            if sample_method:
-                params_input = (beam_size, labels_methods[j], nucleus_p, temperature)
-                hyp_found = one_shot_simplify(env_s, modules_s, f, params_input, blind_const=blind_constants,
-                                              rng=rng_torch)
-                hyps_found.extend(hyp_found)
-        # Display the list of generated candidate solutions
-        st.write("Generated List of Unique Hypotheses")
-        for i, (match, hyp) in enumerate(list(dict.fromkeys(hyps_found))):
-            str_match = "(Valid)" if match else "(Invalid)"
-            st.write(f"Hypothesis {i+1} {str_match}: ${latex(hyp)}$")
-        # Create a download option for the generated responses
-        response_frame = create_response_frame(hyps_found, env_s)
-        st.download_button(label="Download Data", data=response_frame.to_csv().encode('utf-8'),
+
+    if simplification_method == "One-shot simplification":
+
+        hyps_found = []
+        params_input = (beam_size, nucleus_p, temperature)
+        try:
+            # Go through each selected inference method and generate the candidates
+            hyps_found = all_one_shot_simplify(inference_methods, env_s, modules_s, f, params_input,
+                                               blind_const=blind_constants, rng=rng_torch)
+
+            # Display the list of generated candidate solutions
+            st.write("Generated List of Unique Hypotheses")
+            for i, (match, hyp, diff) in enumerate(hyps_found):
+                str_match = "(Valid)" if match else "(Invalid)"
+                st.write(f"Hypothesis {i+1} {str_match}: ${latex(hyp)}$")
+
+            # Create a download option for the generated responses
+            response_frame = create_response_frame(hyps_found, env_s)
+            st.download_button(label="Download Data", data=response_frame.to_csv().encode('utf-8'),
+                               file_name='hypothesis.csv', mime='text/csv')
+        except AssertionError as e:
+            st.write("Error: {}".format(e))
+
+    elif simplification_method == "Iterative simplification":
+        envs = (env_c, env_s)
+        params = (base_params_contrastive, base_params_simplifier)
+        modules = (module_c,) + modules_s
+        simplified_eq, out_frame = total_simplification(envs, params, f, modules, (rng_np, rng_torch),
+                                                        inf_method=inference_methods, const_blind=blind_constants,
+                                                        init_cutoff=init_cutoff, power_decay=power_decay, verbose=True)
+        st.write(f"Simplified form: ${latex(simplified_eq)}$")
+        st.download_button(label="Download Simplification Summary", data=out_frame.to_csv().encode('utf-8'),
                            file_name='hypothesis.csv', mime='text/csv')
-    except AssertionError as e:
-        st.write("Error: {}".format(e))
 
 
 #"Link: https://spinorhelicity-nnwpdnyaaulfzizcmbfhjs.streamlit.app/"

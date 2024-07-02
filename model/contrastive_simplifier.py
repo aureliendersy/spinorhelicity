@@ -4,11 +4,13 @@ Methods relevant for simplifying a large spinor helicity amplitude using the con
 
 from logging import getLogger
 import numpy as np
-import os, csv
+
+import pandas as pd
 import sympy as sp
 from environment.utils import convert_sp_forms
 from environment.utils import to_cuda
-from model.simplifier_methods import blind_constants, extract_num_denom
+from model.simplifier_methods import (blind_constants, extract_num_denom, all_one_shot_simplify,
+                                      retain_valid_hypothesis, count_numerator_terms)
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 import torch
 import torch.nn as nn
@@ -33,28 +35,6 @@ def check_for_overall_const(input_eq):
         terms = [numerator]
 
     return any([any([isinstance(termst, sp.Integer) and abs(termst) > 1 for termst in term.args]) for term in terms])
-
-
-
-def count_numerator_terms(expression):
-    """
-    Given an input expression we look at the number of terms in the numerator
-    :param expression:
-    :return:
-    """
-
-    numerator, denominator = sp.fraction(expression)
-
-    if isinstance(numerator, sp.Add):
-        num_terms = len(numerator.args)
-    elif numerator == 0:
-        num_terms = 0
-    elif len(numerator.atoms(sp.Add)) == 0:
-        num_terms = 1
-    else:
-        logger.info('Could not determine the number of terms in the numerator')
-        return None
-    return num_terms
 
 
 def encode_term(envir_c, term, encoder_c):
@@ -477,8 +457,8 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     return None
 
 
-def single_simplification_pass(input_equation, modules, envs, params_s, rng, denom_incl=True, cutoff=0.9,
-                               const_blind=False):
+def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf_method=None,
+                               cutoff=0.9, const_blind=False, verbose=True):
     """
     Go over all the terms in the input equation and try to find relevant terms with which they can simplify
     Once all the terms have been considered we stop the simplification search
@@ -486,10 +466,11 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
     :param modules:
     :param envs:
     :param params_s:
-    :param denom_incl:
     :param cutoff:
     :param rng:
+    :param inf_method:
     :param const_blind:
+    :param verbose:
     :return:
     """
     # Unpack the modules
@@ -516,20 +497,19 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
     num_simplification = 0
     short_search = False
 
-    logger.info('Start our pass over the terms in the expression')
-    logger.info('We start with {} terms in the numerator'.format(len(terms_left)))
-    logger.info('We start with expression {} '.format(sp.cancel(terms_left.sum()/denom)))
-    logger.info('We use a similarity cut-off of {}'.format(cutoff))
+    if verbose:
+        logger.info('Start our pass over the terms in the expression')
+        logger.info('We start with {} terms in the numerator'.format(len(terms_left)))
+        logger.info('We start with expression {} '.format(sp.cancel(terms_left.sum()/denom)))
+        logger.info('We use a similarity cut-off of {}'.format(cutoff))
 
     # Loop till we have considered all the terms
     while len(terms_left) > 0 and index_term < len(terms_left):
 
         # Find the terms most likely to cancel with the reference term
-        sim_term = masked_similarity_term(env_c, terms_left[index_term], terms_left, encoder_c,
-                                          const_blind=const_blind)
-        denom_in = denom if denom_incl else None
+        sim_term = masked_similarity_term(env_c, terms_left[index_term], terms_left, encoder_c, const_blind=const_blind)
         simplifier_t, rest_t = find_single_simplification_terms(sim_term, terms_left, cutoff=cutoff,
-                                                                denominator=denom_in, short_search=short_search)
+                                                                denominator=denom, short_search=short_search)
 
         # If we expect a simplification we try it out else we consider the next term
         if simplifier_t is not None:
@@ -537,16 +517,27 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
             num_t_attempt = len(sim_term) - len(rest_t)
 
             # Attempt the simplification with greedy + beam + nucleus
-            solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
-                                                      const_blind=const_blind)
+            if inf_method is None:
+                solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
+                                                          const_blind=const_blind)
+            else:
+                params_input = (params_s.beam_size, params_s.nucleus_p, params_s.temperature)
+
+                # Simplify initial term and count its length
+                simplifier_t = simplifier_t.cancel()
+                hyps_found = all_one_shot_simplify(inf_method, env_s, (encoder_s, decoder_s), simplifier_t,
+                                                   params_input, blind_const=blind_constants, rng=rng[1][1])
+                solution_attempt = retain_valid_hypothesis(hyps_found, simplifier_t, rng[0])
 
             # If we simplified then we update the terms to consider
             if solution_attempt is not None:
                 num_simplification += 1
                 terms_left = rest_t
                 num_terms_simple = count_numerator_terms(solution_attempt)
-                str_search = 'short' if short_search else 'long'
-                logger.info('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
+                if verbose:
+                    str_search = 'short' if short_search else 'long'
+                    print('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
+                    logger.info('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
                 terms_simplified_num += num_terms_simple
                 solution_generated = solution_generated + solution_attempt
                 short_search = False
@@ -554,8 +545,6 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
             # If we only searched for a long expression we allow to search the smaller one
             elif not short_search and num_t_attempt > 4:
                 short_search = True
-                # short_search = False
-                # index_term += 1
 
             # If no simplification and already short search we consider the next term
             else:
@@ -568,23 +557,22 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
 
     terms_left_end = len(terms_left)+terms_simplified_num
 
-    logger.info('Finished our pass over the terms in the expression')
-    logger.info('We now have {} terms left in the numerator'.format(terms_left_end))
+    if verbose:
+        logger.info('Finished our pass over the terms in the expression')
+        logger.info('We now have {} terms left in the numerator'.format(terms_left_end))
+        print('We now have {} terms left in the numerator'.format(terms_left_end))
 
     # Craft back the expression from the terms left over ( maybe not as fast as could be as we will call cancel later)
     # But for now good enough - also cancel can help reduce the length of num and denom
     terms_left = terms_left.sum()
     terms_left = terms_left / denom
 
-    if not denom_incl:
-        solution_generated = solution_generated / denom
-
     # Return the expression to be considered in the next pass
     return solution_generated + terms_left, terms_left_end, num_simplification
 
 
-def total_simplification(envirs, params, input_equation, modules, rng_gen, init_cutoff=0.99, power_decay=5,
-                         const_blind=False, dir_out=None):
+def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_method=None, const_blind=False,
+                         init_cutoff=0.99, power_decay=5, verbose=True):
     """
     Given an input equation we parse through its terms as many times as possible while the
     model finds a simplified form
@@ -593,10 +581,12 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, init_
     :param input_equation:
     :param modules:
     :param rng_gen:
+    :param inf_method:
     :param init_cutoff:
     :param const_blind:
     :param power_decay:
     :param dir_out:
+    :param verbose:
     :return:
     """
     # Load the environment and the parameters
@@ -606,23 +596,25 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, init_
     # Initialize loop parameters
     reducing = True
     rng_active = False
-    len_init = count_numerator_terms(sp.cancel(input_equation))
+    len_init = count_numerator_terms(input_equation)
     len_in = len_init
     num_simplification = 0
     rng_passes = 0
     cutoff = init_cutoff
 
-    logger.info('\n' + 'Starting the simplification of {}'.format(input_equation))
+    if verbose:
+        logger.info('\n' + 'Starting the simplification of {}'.format(input_equation))
+
 
     # Try to simplify as long as we hope for a simplification
     while reducing:
 
         # Do a simplification pass over all the terms in the expressions
         simple_form, len_new, num_simple = single_simplification_pass(input_equation, modules, envirs, params_s,
-                                                                      (rng_active, rng_gen), denom_incl=True,
+                                                                      (rng_active, rng_gen), inf_method=inf_method,
                                                                       cutoff=cutoff, const_blind=const_blind)
 
-        # If the expression decreased in size we iterate
+        # If the expression decreased in size or we simplified it we iterate
         if len_in > len_new or num_simple > 0:
             num_simplification += num_simple
             input_equation = simple_form
@@ -632,42 +624,36 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, init_
 
         # If the expression is of size 1 it is maximally simplified
         elif len_new == 1:
-            logger.info('Maximally simplified')
+            if verbose:
+                logger.info('Maximally simplified')
             reducing = False
 
         # If it has not decreased we still allow for a number of extra loops in case we need to reshuffle the expression
         # We start to randomly swap terms and simplify to expressions of same length to increase diversity
         else:
             rng_passes += 1
-            logger.info('No obvious simplification anymore - Using random shuffling to increase diversity')
-            logger.info('Start from expression {}'.format(sp.cancel(simple_form)))
-            logger.info('Start rng pass number {}'.format(rng_passes))
+            if verbose:
+                logger.info('No obvious simplification anymore - Using random shuffling to increase diversity')
+                logger.info('Start from expression {}'.format(sp.cancel(simple_form)))
+                logger.info('Start rng pass number {}'.format(rng_passes))
             rng_active = True
-            reducing = rng_passes < 100
+            reducing = rng_passes < 5
 
+        # At each pass we lower the similarity cutoff
         cutoff = cutoff*(init_cutoff**power_decay)
 
     simple_form = sp.cancel(simple_form)
 
-    logger.info('Simplified form is {}'.format(simple_form))
-    logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
+    if verbose:
+        logger.info('Simplified form is {}'.format(simple_form))
+        logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
 
-    if dir_out is not None:
-        file_path_out = os.path.join(dir_out, 'test_contrastive.csv')
-        header_out = ['Final_equation', 'Final_size', 'Initial_size', 'Num_simplifications', 'Final_equation_MMA',
-                      'Initial_equation_MMA']
+    header_out = ['Final_equation', 'Final_size', 'Initial_size', 'Num_simplifications', 'Final_equation_MMA',
+                  'Initial_equation_MMA']
 
-        simple_mma = sp_to_mma(simple_form, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-        input_mma = sp_to_mma(input_equation, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-        data_out = [[simple_form, len_new, len_init, num_simplification, simple_mma, input_mma]]
+    simple_mma = sp_to_mma(simple_form, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
+    input_mma = sp_to_mma(input_equation, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
+    data_out = pd.DataFrame([[simple_form, len_new, len_init, num_simplification, simple_mma, input_mma]],
+                            columns=header_out)
 
-        with open(file_path_out, 'w', encoding='UTF8', newline='') as fout:
-            writer = csv.writer(fout)
-
-            # write the header
-            writer.writerow(header_out)
-
-            # write multiple rows
-            writer.writerows(data_out)
-
-    return simple_form
+    return simple_form, data_out

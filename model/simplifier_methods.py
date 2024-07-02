@@ -143,8 +143,8 @@ def one_shot_simplify(envir, module_transfo, f_eq, params_in, blind_const=False,
                 hyp = revert_sp_form(hyp_disp)
 
             npt = envir.npt_list[0] if len(envir.npt_list) == 1 else None
-            matches, _ = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp,  npt=npt)
-            out_hyp.append((matches, hyp_disp))
+            matches, rel_diff = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp,  npt=npt)
+            out_hyp.append((matches, hyp_disp, rel_diff))
         except:
             pass
 
@@ -166,6 +166,26 @@ def extract_num_denom(input_eq):
     else:
         terms = np.asarray([numerator])
     return terms, denominator
+
+
+def count_numerator_terms(expression):
+    """
+    Given an input expression we look at the number of terms in the numerator
+    :param expression:
+    :return:
+    """
+
+    numerator, denominator = sp.fraction(expression)
+
+    if isinstance(numerator, sp.Add):
+        num_terms = len(numerator.args)
+    elif numerator == 0:
+        num_terms = 0
+    elif len(numerator.atoms(sp.Add)) == 0:
+        num_terms = 1
+    else:
+        raise ValueError('Could not determine the number of terms in the numerator')
+    return num_terms
 
 
 def blind_constants(input_expression):
@@ -199,3 +219,58 @@ def blind_constants(input_expression):
 
     # Return the expression with contants set to +- 1 and the list of original constants
     return (np.array(new_num).sum()) / denom, np.array(const_list)
+
+
+def all_one_shot_simplify(inference_methods, envir, module_transfo, f_eq, params_in, blind_const=False, rng=None):
+    """
+    Iterate through each inference method and retain the generated hypothesis
+    :param inference_methods:
+    :param envir:
+    :param module_transfo:
+    :param f_eq:
+    :param params_in:
+    :param blind_const:
+    :param rng:
+    :return:
+    """
+    hyps_found = []
+    for inference_method in inference_methods:
+        beam_size, nucleus_p, temperature = params_in
+        params_input = (beam_size, inference_method, nucleus_p, temperature)
+        hyp_found = one_shot_simplify(envir, module_transfo, f_eq, params_input, blind_const=blind_const, rng=rng)
+        hyps_found.extend(hyp_found)
+
+    return list(dict.fromkeys(hyps_found))
+
+
+def retain_valid_hypothesis(hyps_list, term_init, rng_active):
+    """
+    Go through a list of generated hypotheses and retain the shortest one (or the one with the smallest constants)
+    :param hyps_list:
+    :param term_init:
+    :return:
+    """
+    solution_returned = None
+    _, const_list_init = blind_constants(term_init)
+    min_terms = len(const_list_init)
+    min_const_mag = abs(const_list_init).sum()
+
+    for (match, hyp, diff) in hyps_list:
+
+        # If the relative difference is 4 we just have the wrong overall sign (since we check on two datasets)
+        if diff == 4:
+            hyp = -hyp
+            match = True
+        if match:
+            _, const_list_new = blind_constants(hyp)
+            num_terms_new = len(const_list_new)
+            new_const_mag = abs(const_list_new).sum()
+            if num_terms_new <= min_terms and ((new_const_mag <= min_const_mag and rng_active) or
+                                               new_const_mag < min_const_mag):
+                min_terms = num_terms_new
+                min_const_mag = new_const_mag
+                solution_returned = hyp
+        else:
+            pass
+
+    return solution_returned

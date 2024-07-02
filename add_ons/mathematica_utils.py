@@ -394,7 +394,7 @@ def create_response_frame(hyp_list, envir):
     :return:
     """
 
-    data_in = pd.DataFrame(hyp_list, columns=['Valid Hypothesis', 'Sympy String'])
+    data_in = pd.DataFrame(hyp_list, columns=['Valid Hypothesis', 'Sympy String', 'Score'])
     data_in['Latex String'] = data_in['Sympy String'].apply(latex)
     data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.bracket_tokens,
                                                                                    envir.func_dict))
