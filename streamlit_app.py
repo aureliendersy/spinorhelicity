@@ -5,12 +5,12 @@ Test desired model on a given input expression
 
 import torch
 import streamlit as st
-from environment.utils import AttrDict, to_cuda, convert_sp_forms, reorder_expr
+from environment.utils import AttrDict, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
 from model import build_modules, MODULE_REGISTRAR
 from model.simplifier_methods import test_model_expression
-from add_ons.mathematica_utils import mma_to_sp_string
+from add_ons.mathematica_utils import mma_to_sp_string, create_response_frame
 import sympy as sp
 from sympy import latex
 import gdown
@@ -171,6 +171,10 @@ if st.button("Click Here to Simplify"):
         for i, (match, hyp) in enumerate(hyp_found):
             str_match = "(Valid)" if match else "(Invalid)"
             st.write(f"Hypothesis {i+1} {str_match}: ${latex(hyp)}$")
+        response_frame = create_response_frame(hyp_found, env)
+
+        st.download_button(label="Download Data", data=response_frame.to_csv().encode('utf-8'),
+                           file_name='hypothesis.csv', mime='text/csv')
     except AssertionError as e:
         st.write("Error: {}".format(e))
 

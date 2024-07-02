@@ -9,8 +9,10 @@ from wolframclient.language import wl, wlexpr
 from wolframclient.serializers import export
 from logging import getLogger
 from diophantine import solve as diophantine_solve
+from sympy import latex
 import random
 import re
+import pandas as pd
 
 logger = getLogger()
 
@@ -381,3 +383,19 @@ def mma_to_sp_string(mma_expr):
     sp_str = sp_str.replace('^', '**')
 
     return sp_str
+
+
+def create_response_frame(hyp_list, envir):
+    """
+    Given a list of Hypothesis generated in the Streamlit App we return a dataframe with
+    the relevant info
+    :param hyp_list:
+    :param envir:
+    :return:
+    """
+
+    data_in = pd.DataFrame(hyp_list, columns=['Valid Hypothesis', 'Sympy String'])
+    data_in['Latex String'] = data_in['Sympy String'].apply(latex)
+    data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.bracket_tokens,
+                                                                                   envir.func_dict))
+    return data_in

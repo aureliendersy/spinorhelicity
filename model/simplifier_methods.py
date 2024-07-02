@@ -107,7 +107,7 @@ def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=Fa
         except:
             pass
 
-    return list(set(out_hyp))
+    return list(dict.fromkeys(out_hyp))
 
 
 def extract_num_denom(input_eq):
