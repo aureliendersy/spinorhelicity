@@ -5,8 +5,8 @@ Environment used to handle spinor helicity expressions
 import numpy as np
 import random, time
 import sympy as sp
-from environment.utils import reorder_expr, generate_random_bk, get_scaling_expr,\
-    random_scale_factor, get_scaling_expr_detail, build_scale_factor, get_expression_detail_lg_scaling
+from environment.utils import (reorder_expr, generate_random_bk, random_scale_factor, build_scale_factor,
+                               get_expression_detail_lg_scaling)
 from sympy import Function, latex
 from environment.helicity_generator import generate_random_fraction_unbounded
 from add_ons.mathematica_utils import solve_diophantine_system

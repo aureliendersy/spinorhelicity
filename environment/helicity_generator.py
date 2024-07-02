@@ -7,8 +7,7 @@ import random
 from itertools import combinations
 from environment.bracket_env import ab, sb
 from add_ons.mathematica_utils import solve_diophantine_systems
-from environment.utils import (reorder_expr, generate_random_bk, get_scaling_expr_detail, build_scale_factor,
-                               get_expression_detail_lg_scaling)
+from environment.utils import reorder_expr, generate_random_bk, build_scale_factor, get_expression_detail_lg_scaling
 from sympy import latex, Function, sympify, fraction, cancel
 from logging import getLogger
 import sys

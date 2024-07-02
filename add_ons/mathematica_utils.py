@@ -10,6 +10,7 @@ from wolframclient.serializers import export
 from logging import getLogger
 from diophantine import solve as diophantine_solve
 import random
+import re
 
 logger = getLogger()
 
@@ -359,3 +360,24 @@ def check_numerical_equiv_mma(session, mma_hyp, mma_tgt):
             return False, -1
 
     return valid, res_rel
+
+
+def mma_to_sp_string(mma_expr):
+    """
+    Given a Mathematica expression, derived in the S@M package we return a valid Sympy string
+    :param mma_expr:
+    :return:
+    """
+
+    # Replace the angle brackets (Can have either momenta as arguments or Sp[momenta])
+    sp_str = re.sub(r'Spaa\[Sp\[(\d+)\], Sp\[(\d+)\]\]', r'ab(\1,\2)', mma_expr)
+    sp_str = re.sub(r'Spaa\[(\d+), (\d+)\]', r'ab(\1,\2)', sp_str)
+
+    # Replace the square brackets
+    sp_str = re.sub(r'Spbb\[Sp\[(\d+)\], Sp\[(\d+)\]\]', r'sb(\1,\2)', sp_str)
+    sp_str = re.sub(r'Spbb\[(\d+), (\d+)\]', r'sb(\1,\2)', sp_str)
+
+    # Replace the power signs
+    sp_str = sp_str.replace('^', '**')
+
+    return sp_str

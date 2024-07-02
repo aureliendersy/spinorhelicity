@@ -351,17 +351,32 @@ def convert_sp_forms(sp_expr, func_dict):
     :param func_dict:
     :return:
     """
-
     replace_dict = {}
-
+    # If we get the wrong format
     if isinstance(sp_expr, list):
         return None
-
+    # Look at the list of composite tokens and convert them
     for symbol in sp_expr.free_symbols:
         replace_dict.update({symbol: func_dict[symbol.name[0:2]](symbol.name[2], symbol.name[3])})
 
     return sp_expr.subs(replace_dict)
 
+
+def revert_sp_form(sp_expr):
+    """
+    Given a sympy form using ab and sb functionals, revert it to the regular sympy form u
+    :param sp_expr:
+    :return:
+    """
+    replace_dict = {}
+    # If we get the wrong format
+    if isinstance(sp_expr, list):
+        return None
+    # Look at the list of ab and sb functionals and revert them back to composite tokens
+    for functional in sp_expr.atoms(sp.Function):
+        replace_dict.update({functional: sp.Symbol(str(functional.func) + ''.join(map(str, functional.args)))})
+
+    return sp_expr.subs(replace_dict)
 
 def generate_random_bk(bk_fct, n_points, rng, canonical=False):
     """Provided with the bracket type, generate a bracket with random momenta"""
@@ -393,130 +408,6 @@ def reorder_expr(hel_expr):
     return_expr = hel_expr.subs(replace_dict)
 
     return return_expr
-
-
-def get_scaling_expr(spin_hel_expr, func_list):
-    """
-    Given a spinor helicity expression we figure out the number of angle brackets
-    and square brackets in the numerator and denominator
-    :param spin_hel_expr:
-    :param func_list:
-    :return:
-    """
-    raise ValueError
-    if isinstance(spin_hel_expr, sp.Add):
-        expr_f = spin_hel_expr.args[0]
-    else:
-        expr_f = spin_hel_expr
-
-    # Separate out the numerator and the denominator
-    num, denom = sp.fraction(expr_f)
-
-    # To deal with brackets to higher power we replace them by some placeholder value
-    x1 = sp.Symbol('x1')
-    x2 = sp.Symbol('x2')
-    map_dict = {func_list[0]: x1, func_list[1]: x2}
-    repl_rule = {bk: map_dict[bk.func] for bk in expr_f.atoms(sp.Function)}
-    num_subs = num.subs(repl_rule)
-    denom_subs = denom.subs(repl_rule)
-
-    return [sp.total_degree(num_subs, x1), sp.total_degree(num_subs, x2), sp.total_degree(denom_subs, x1),
-            sp.total_degree(denom_subs, x2)]
-
-
-def get_scaling_expr_detail(spin_hel_expr, func_list, n_point):
-    raise ValueError
-    """
-        Given a spinor helicity expression we figure out the little group scaling
-        for each momentum along with the mass dimension. Return it for the
-        numerator and denominator as two vectors, starting with the mass dimension
-        :param spin_hel_expr:
-        :param func_list:
-        :param n_point:
-        :return:
-        """
-
-    if isinstance(spin_hel_expr, sp.Add):
-        expr_f = spin_hel_expr.args[0]
-    else:
-        expr_f = spin_hel_expr
-
-    # Separate out the numerator and the denominator
-    num, denom = sp.fraction(expr_f)
-
-    return get_lg_ms(num, func_list, n_point), get_lg_ms(denom, func_list, n_point)
-
-
-def get_ms_expr(in_expr):
-    raise ValueError
-    """
-    Recover the mass dimension of a given expression
-    :param in_expr:
-    :return:
-    """
-
-    ms = sp.Symbol('ms')
-    dict_mass_scale = {bk: ms for bk in in_expr.atoms(sp.Function)}
-    expr_subs_ms = in_expr.subs(dict_mass_scale)
-
-    expr_ms = sp.total_degree(expr_subs_ms, ms)
-
-    return expr_ms
-
-
-def get_lg_ms(in_expr, func_list, n_point):
-    raise ValueError
-    """
-    Get the mass dimension along with the little group scaling of an expression
-    :param in_expr:
-    :param func_list:
-    :param n_point:
-    :return:
-    """
-
-    # To deal with brackets to higher power we replace them by some placeholder value
-    xvars = [sp.Symbol('x{}'.format(i + 1)) for i in range(n_point)]
-    map_dict_ab = {func_list[0](i + 1, j + 1): xvars[i] * xvars[j] for i in range(n_point) for j in range(n_point)}
-    map_dict_sb = {func_list[1](i + 1, j + 1): 1 / (xvars[i] * xvars[j]) for i in range(n_point) for j in
-                   range(n_point)}
-
-    ms = sp.Symbol('ms')
-    dict_mass_scale = {bk: ms for bk in in_expr.atoms(sp.Function)}
-
-    expr_subs = in_expr.subs(map_dict_ab).subs(map_dict_sb)
-    expr_subs_ms = in_expr.subs(dict_mass_scale)
-
-    lg_degrees = [sp.total_degree(sp.fraction(expr_subs)[0], xvar) - sp.total_degree(sp.fraction(expr_subs)[1], xvar) for xvar in xvars]
-    expr_ms = sp.total_degree(expr_subs_ms, ms)
-
-    return [expr_ms] + lg_degrees
-
-
-def get_helicity_expr(spin_hel_exp, func_list):
-    """
-    Get the total helicity by looking at its little group scaling
-    :param spin_hel_exp:
-    :param func_list:
-    :return:
-    """
-    raise ValueError
-    x1 = sp.Symbol('x1')
-    map_dict = {func_list[0]: x1, func_list[1]: 1/x1}
-    repl_rule = {bk: map_dict[bk.func]*bk for bk in spin_hel_exp.atoms(sp.Function)}
-    repl_rule_num = {bk: np.random.random_sample() for bk in spin_hel_exp.atoms(sp.Function)}
-    scale_expr = spin_hel_exp.subs(repl_rule)
-    res_num = (sp.log((scale_expr / spin_hel_exp).subs(repl_rule_num)) / sp.log(x1)).subs(
-        {x1: np.random.random_sample()})
-    try:
-        int_res = round(res_num)
-
-    except:
-        return 'Undefined'
-
-    if abs(int_res - res_num) < 10**(-8):
-        return int_res
-    else:
-        return 'Undefined'
 
 
 def get_n_point(spin_hel_exp):

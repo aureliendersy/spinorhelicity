@@ -4,7 +4,7 @@ Helper functions for the contrastive and simplifier transformers
 import torch
 import numpy as np
 import sympy as sp
-from environment.utils import to_cuda, convert_sp_forms
+from environment.utils import to_cuda, convert_sp_forms, revert_sp_form
 from add_ons.numerical_evaluations import check_numerical_equiv_local
 
 
@@ -52,7 +52,7 @@ def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=Fa
     x1, len1 = to_cuda(x1, len1)
 
     # Recover the sympy version of the input equation apt for the numerical check
-    f_sp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(f_eq)))
+    f_sp = revert_sp_form(f_eq)
 
     # forward pass of the encoder network
     encoded = encoder('fwd', x=x1, lengths=len1, causal=False)
@@ -99,7 +99,7 @@ def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=Fa
             if blind_const:
                 min_const = min(abs(const_list))
                 hyp_disp = sp.cancel(f_eq - eq_to_simplify * min_const + hyp_disp * min_const)
-                hyp = envir.infix_to_sympy(envir.prefix_to_infix(envir.sympy_to_prefix(hyp_disp)))
+                hyp = revert_sp_form(hyp_disp)
 
             npt = envir.npt_list[0] if len(envir.npt_list) == 1 else None
             matches, _ = check_numerical_equiv_local(envir.special_tokens, hyp, f_sp,  npt=npt)

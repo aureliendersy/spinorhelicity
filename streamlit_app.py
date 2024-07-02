@@ -10,6 +10,7 @@ from environment import build_env
 import environment
 from model import build_modules, MODULE_REGISTRAR
 from model.simplifier_methods import test_model_expression
+from add_ons.mathematica_utils import mma_to_sp_string
 import sympy as sp
 from sympy import latex
 import gdown
@@ -107,6 +108,13 @@ def load_models(base_parameters):
     return envir, (encoder, decoder)
 
 
+st.title("Spinor Helicity Simplification")
+st.caption('This app simplifies spinor-helicity amplitudes which are expressed as combinations of square'
+           ' and angle brackets. The simplification is done using transformer models trained on amplitude'
+           ' data with 4,5 or 6 massless external particles. The models are trained on expressions that simplify to'
+           ' simple linear combinations of rational functions without any spurious poles. We do not explicitly train on'
+           ' expressions with arbitrary constants but offer an option to blind constants and attempt a simplification'
+           ' regardless.')
 module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
 
 if 'module_npt' not in st.session_state:
@@ -131,13 +139,15 @@ temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5,
 blind_constants = st.sidebar.checkbox("Blind Constants", value=False)
 
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
+if "Spaa" in input_eq or "Spbb" in input_eq:
+    input_eq = mma_to_sp_string(input_eq)
 f = sp.parse_expr(input_eq, local_dict=env.func_dict)
 if base_params.canonical_form:
     f = reorder_expr(f)
 f = f.cancel()
 st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env.func_dict))))
 
-
+st.divider()
 
 if st.button("Click Here to Simplify"):
 
