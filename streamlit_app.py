@@ -22,14 +22,27 @@ def load_model(module_npt_name):
     save_dest = Path('model')
     save_dest.mkdir(exist_ok=True)
 
-    f_checkpoint_in = Path("model/{}.pth".format(module_npt_name))
-    f_checkpoint = f_checkpoint_in.resolve()
-    f_checkpoint_path = '/'.join(list(f_checkpoint.parts))
-    if not f_checkpoint_in.exists():
-        download_path_simplifier = MODULE_REGISTRAR[module_npt_name]
-        gdown.download(download_path_simplifier, f_checkpoint_path, quiet=False)
+    # Resolve the Path to the Simplifier Model
+    path_in_simplifier = Path("model/{}.pth".format(module_npt_name))
+    path_simplifier_res = path_in_simplifier.resolve()
+    path_simplifier = '/'.join(list(path_simplifier_res.parts))
 
-    return f_checkpoint_path
+    # Resolve the Path to the Contrastive Model
+    path_in_contrastive = Path("model/{}-contrastive.pth".format(module_npt_name))
+    path_contrastive_res = path_in_contrastive.resolve()
+    path_contrastive = '/'.join(list(path_contrastive_res.parts))
+
+    # If the Simplifier model is not present we download it from Drive
+    if not path_in_simplifier.exists():
+        download_path_simplifier = MODULE_REGISTRAR[module_npt_name]
+        gdown.download(download_path_simplifier, path_simplifier, quiet=False)
+
+    # If the Contrastive model is not present we download it from Drive
+    if not path_in_contrastive.exists():
+        download_path_contrastive = MODULE_REGISTRAR[module_npt_name+'-contrastive']
+        gdown.download(download_path_contrastive, path_contrastive, quiet=False)
+
+    return path_simplifier, path_contrastive
 
 
 @st.cache_data
@@ -127,9 +140,9 @@ if st.session_state['module_npt'] != module_npt:
     st.session_state['module_npt'] = module_npt
 
 with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
-    path_mod1 = load_model(module_npt)
+    path_mod_simplifier, path_mod_contrastive = load_model(module_npt)
 
-base_params = create_base_env(path_mod1, module_npt)
+base_params = create_base_env(path_mod_simplifier, module_npt)
 env, modules = load_models(base_params)
 
 sample_method = st.sidebar.selectbox("Sampling Method", ("Nucleus Sampling", "Beam Search", "Greedy Decoding"))
