@@ -17,6 +17,7 @@ from model.contrastive_learner import build_modules_contrastive
 from add_ons.mathematica_utils import initialize_numerical_check
 from model.simplifier_methods import blind_constants
 from model.contrastive_simplifier import total_simplification
+from model.simplifier_methods import load_modules, load_equation
 
 
 def test_expression_factors(envir, module_transfo, input_equation, params, factor_mask=False, const_blind=True):
@@ -211,8 +212,10 @@ if __name__ == '__main__':
     modules = build_modules_contrastive(env_c, parameters_c)
 
     #cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
+    input_equation = load_equation(env_s, input_eq, parameters_s)
+    modules = load_modules(env_c, env_s, parameters_c, parameters_s)
 
-    simplified_eq = total_simplification(envs, params, input_eq, (rng_np, rng_torch), const_blind=True,
+    simplified_eq = total_simplification(envs, params, input_equation, modules, (rng_np, rng_torch), const_blind=True,
                                          init_cutoff=args.init_cutoff, power_decay=args.power_decay,
                                          dir_out=args.dir_out)
 

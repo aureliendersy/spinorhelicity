@@ -1,11 +1,51 @@
 """
-Helper functions for the contrastive and simplifier transformers
+Helper functions for the contrastive and simplifier transformers simplification
 """
 import torch
 import numpy as np
 import sympy as sp
-from environment.utils import to_cuda, convert_sp_forms, revert_sp_form
+from environment.utils import to_cuda, convert_sp_forms, revert_sp_form, reorder_expr
 from add_ons.numerical_evaluations import check_numerical_equiv_local
+from model.contrastive_learner import build_modules_contrastive
+from model import build_modules
+
+
+def load_modules(envir_c, envir_s, params_c, params_s):
+    """
+    Given the simplifier and contrastive environments and parameters we construct and load the appropriate
+    transformer models
+    :param envir_c:
+    :param envir_s:
+    :param params_c:
+    :param params_s:
+    :return:
+    """
+
+    module_contrastive = build_modules_contrastive(envir_c, params_c)
+    encoder_c = module_contrastive['encoder_c']
+    encoder_c.eval()
+
+    modules_simplifier = build_modules(envir_s, params_s)
+    encoder_s = modules_simplifier['encoder']
+    decoder_s = modules_simplifier['decoder']
+    encoder_s.eval()
+    decoder_s.eval()
+
+    return encoder_c, encoder_s, decoder_s
+
+
+def load_equation(envir, input_equation, params):
+    """
+    Given an initial input equation given in str form we isolate the numerator terms
+    :param envir:
+    :param input_equation:
+    :param params:
+    :return:
+    """
+    f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
+    if params.canonical_form:
+        f = reorder_expr(f)
+    return f
 
 
 def one_hot_encode_sp(sp_equation, envir):
@@ -24,7 +64,7 @@ def one_hot_encode_sp(sp_equation, envir):
     return x1, len1
 
 
-def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=False):
+def one_shot_simplify(envir, module_transfo, f_eq, params_in, blind_const=False, rng=None):
     """
     Test the capacity of the transformer model to resolve a given input
     :param envir:
@@ -32,6 +72,7 @@ def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=Fa
     :param f_eq:
     :param params_in:
     :param blind_const
+    :param rng:
     :return:
     """
 
@@ -75,7 +116,7 @@ def test_model_expression(envir, module_transfo, f_eq, params_in, blind_const=Fa
                                                max_len=2048,
                                                stochastic=nucleus_sample,
                                                nucl_p=nucleus_prob,
-                                               temperature=temp)
+                                               temperature=temp, rng_gen=rng)
             assert len(beam) == 1
             hypotheses = beam[0].hyp
             assert len(hypotheses) == beam_sz

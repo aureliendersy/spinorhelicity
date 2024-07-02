@@ -8,11 +8,11 @@ import streamlit as st
 from environment.utils import AttrDict, convert_sp_forms, reorder_expr
 from environment import build_env
 import environment
-from model import build_modules, MODULE_REGISTRAR
-from model.simplifier_methods import test_model_expression
-from model.contrastive_learner import build_modules_contrastive
+from model import MODULE_REGISTRAR
+from model.simplifier_methods import one_shot_simplify, load_modules, load_equation
 from add_ons.mathematica_utils import mma_to_sp_string, create_response_frame
 import sympy as sp
+import numpy as np
 from sympy import latex
 import gdown
 from pathlib import Path
@@ -145,17 +145,9 @@ def load_models(params_simplifier, params_contrastive):
     envir_simplifier = build_env(params_simplifier)
     envir_contrastive = build_env(params_contrastive)
 
-    # Build the Simplifier modules
-    modules_simplifier = build_modules(envir_simplifier, params_simplifier)
-    encoder_simplifier = modules_simplifier['encoder']
-    decoder_simplifier = modules_simplifier['decoder']
-    encoder_simplifier.eval()
-    decoder_simplifier.eval()
-
-    # Build the contrastive module
-    module_contrastive = build_modules_contrastive(envir_contrastive, params_contrastive)
-    encoder_contrastive = module_contrastive['encoder_c']
-    encoder_contrastive.eval()
+    # Build the Simplifier and contrastive modules
+    encoder_contrastive, encoder_simplifier, decoder_simplifier = load_modules(envir_contrastive, envir_simplifier,
+                                                                               params_contrastive, params_simplifier)
 
     return envir_simplifier, envir_contrastive, (encoder_simplifier, decoder_simplifier), encoder_contrastive
 
@@ -189,7 +181,12 @@ with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
 base_params_simplifier, base_params_contrastive = create_base_env(path_mod_simplifier, path_mod_contrastive, module_npt)
 env_s, env_c, modules_s, module_c = load_models(base_params_simplifier, base_params_contrastive)
 
-# Create multiple selection boxes (sidebar) for choosing the inference method
+# Create the random seeds
+rng_np = np.random.default_rng(42)
+rng_torch = torch.Generator(device='cuda' if not base_params_simplifier.cpu else 'cpu')
+rng_torch.manual_seed(42)
+
+# Create multiple selection boxes (sidebar) for choosing the inference method - Also choose how to deal with constants
 st.sidebar.write("Sampling Method")
 sample_methods = [False, False, False]
 labels_methods = ["Nucleus Sampling", "Beam Search", "Greedy Decoding"]
@@ -198,10 +195,10 @@ for i in range(3):
 st.sidebar.divider()
 
 # Choose the inference parameters (sidebar)
-beam_size = st.sidebar.slider('Beam Size', min_value=1, max_value=10, step=1, value=5)
+beam_size = st.sidebar.slider('Beam Size (Beam Search and Nucleus Sampling)', min_value=1, max_value=10, step=1, value=5)
 nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.01, value=0.95)
 temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.1, value=1.5)
-blind_constants = st.sidebar.checkbox("Blind Constants", value=False)
+
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
@@ -209,12 +206,15 @@ if "Spaa" in input_eq or "Spbb" in input_eq:
     input_eq = mma_to_sp_string(input_eq)
 
 # Put the equation in canonical ordering and display its tex version
-f = sp.parse_expr(input_eq, local_dict=env_s.func_dict)
-if base_params_simplifier.canonical_form:
-    f = reorder_expr(f)
+f = load_equation(env_s, input_eq, base_params_simplifier)
 f = f.cancel()
 st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env_s.func_dict))))
 st.divider()
+
+# Choose which simplification method to apply
+simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Iterative simplification"),
+                                     index=0)
+blind_constants = st.checkbox("Blind Constants", value=False)
 
 # Allow the user the option to simplify the equation
 if st.button("Click Here to Simplify") and any(sample_methods):
@@ -224,7 +224,8 @@ if st.button("Click Here to Simplify") and any(sample_methods):
         for j, sample_method in enumerate(sample_methods):
             if sample_method:
                 params_input = (beam_size, labels_methods[j], nucleus_p, temperature)
-                hyp_found = test_model_expression(env_s, modules_s, f, params_input, blind_const=blind_constants)
+                hyp_found = one_shot_simplify(env_s, modules_s, f, params_input, blind_const=blind_constants,
+                                              rng=rng_torch)
                 hyps_found.extend(hyp_found)
         # Display the list of generated candidate solutions
         st.write("Generated List of Unique Hypotheses")

@@ -1,45 +1,19 @@
 """
-Methods relevant for simplifying a large spinor helicity amplitude using both the contrastive model and the simplifier
+Methods relevant for simplifying a large spinor helicity amplitude using the contrastive model
 """
 
 from logging import getLogger
 import numpy as np
 import os, csv
 import sympy as sp
-from model.contrastive_learner import build_modules_contrastive
 from environment.utils import convert_sp_forms
-from model import build_modules
-from environment.utils import reorder_expr, to_cuda
+from environment.utils import to_cuda
 from model.simplifier_methods import blind_constants, extract_num_denom
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 import torch
 import torch.nn as nn
 
 logger = getLogger()
-
-
-def load_modules(envir_c, envir_s, params_c, params_s):
-    """
-    Given the simplifier and contrastive environments and parameters we construct and load the appropriate
-    transformer models
-    :param envir_c:
-    :param envir_s:
-    :param params_c:
-    :param params_s:
-    :return:
-    """
-
-    module_contrastive = build_modules_contrastive(envir_c, params_c)
-    encoder_c = module_contrastive['encoder_c']
-    encoder_c.eval()
-
-    modules_simplifier = build_modules(envir_s, params_s)
-    encoder_s = modules_simplifier['encoder']
-    decoder_s = modules_simplifier['decoder']
-    encoder_s.eval()
-    decoder_s.eval()
-
-    return encoder_c, encoder_s, decoder_s
 
 
 def check_for_overall_const(input_eq):
@@ -60,20 +34,6 @@ def check_for_overall_const(input_eq):
 
     return any([any([isinstance(termst, sp.Integer) and abs(termst) > 1 for termst in term.args]) for term in terms])
 
-
-def load_equation(envir, input_equation, params):
-    """
-    Given an initial input equation given in str form we isolate the numerator terms
-    :param envir:
-    :param input_equation:
-    :param params:
-    :return:
-    """
-    f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
-    if params.canonical_form:
-        f = reorder_expr(f)
-
-    return f
 
 
 def count_numerator_terms(expression):
@@ -623,14 +583,15 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, den
     return solution_generated + terms_left, terms_left_end, num_simplification
 
 
-def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99, power_decay=5, const_blind=False,
-                         dir_out=None):
+def total_simplification(envirs, params, input_equation, modules, rng_gen, init_cutoff=0.99, power_decay=5,
+                         const_blind=False, dir_out=None):
     """
     Given an input equation we parse through its terms as many times as possible while the
     model finds a simplified form
     :param envirs:
     :param params:
-    :param input_eq_str:
+    :param input_equation:
+    :param modules:
     :param rng_gen:
     :param init_cutoff:
     :param const_blind:
@@ -641,10 +602,6 @@ def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99
     # Load the environment and the parameters
     envir_c, envir_s = envirs
     params_c, params_s = params
-
-    # Load the transformer modules and the input equation
-    modules = load_modules(envir_c, envir_s, params_c, params_s)
-    input_equation = load_equation(envir_s, input_eq_str, params_s)
 
     # Initialize loop parameters
     reducing = True
@@ -701,8 +658,7 @@ def total_simplification(envirs, params, input_eq_str, rng_gen, init_cutoff=0.99
                       'Initial_equation_MMA']
 
         simple_mma = sp_to_mma(simple_form, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-        input_mma = sp_to_mma(load_equation(envir_s, input_eq_str, params_s), envir_s.npt_list, params_s.bracket_tokens,
-                              envir_s.func_dict)
+        input_mma = sp_to_mma(input_equation, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
         data_out = [[simple_form, len_new, len_init, num_simplification, simple_mma, input_mma]]
 
         with open(file_path_out, 'w', encoding='UTF8', newline='') as fout:
