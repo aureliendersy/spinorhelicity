@@ -5,10 +5,13 @@ Test desired model on a given input expression
 
 import torch
 import streamlit as st
-from environment.utils import AttrDict, convert_sp_forms, reorder_expr
+import logging
+from streamlit.logger import get_logger
+from environment.utils import AttrDict, convert_sp_forms
 from environment import build_env
 import environment
 from model import MODULE_REGISTRAR
+from model import contrastive_simplifier
 from model.simplifier_methods import all_one_shot_simplify, load_modules, load_equation
 from model.contrastive_simplifier import total_simplification
 from add_ons.mathematica_utils import mma_to_sp_string, create_response_frame
@@ -18,6 +21,19 @@ from sympy import latex
 import gdown
 from pathlib import Path
 from copy import deepcopy
+
+
+class StreamlitLogHandler(logging.Handler):
+    """
+    Define a custom logger
+    """
+    def __init__(self, widget_update_func):
+        super().__init__()
+        self.widget_update_func = widget_update_func
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.widget_update_func(msg)
 
 
 @st.cache_resource
@@ -153,6 +169,7 @@ def load_models(params_simplifier, params_contrastive):
     return envir_simplifier, envir_contrastive, (encoder_simplifier, decoder_simplifier), encoder_contrastive
 
 
+
 # Front End - Title and Disclaimer
 st.title("Spinor Helicity Simplification")
 st.caption('This app simplifies spinor-helicity amplitudes which are expressed as combinations of square'
@@ -205,7 +222,7 @@ temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5,
 st.sidebar.divider()
 st.sidebar.write("Iterative simplification parameters")
 init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_value=1.0, step=0.01, value=0.95)
-power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=5.0, step=0.5, value=0.0)
+power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.0)
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
@@ -249,6 +266,16 @@ if st.button("Click Here to Simplify") and any(sample_methods):
             st.write("Error: {}".format(e))
 
     elif simplification_method == "Iterative simplification":
+        # Initialize the loggers
+        streamlit_logger = get_logger(contrastive_simplifier.__name__)
+        streamlit_logger2 = get_logger(contrastive_simplifier.__name__+'2')
+        streamlit_logger.handlers.clear()
+        streamlit_logger2.handlers.clear()
+        handler = StreamlitLogHandler(st.empty().text)
+        handler2 = StreamlitLogHandler(st.empty().text)
+        streamlit_logger.addHandler(handler)
+        streamlit_logger2.addHandler(handler2)
+
         envs = (env_c, env_s)
         params = (base_params_contrastive, base_params_simplifier)
         modules = (module_c,) + modules_s

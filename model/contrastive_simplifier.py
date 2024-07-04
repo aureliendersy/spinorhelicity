@@ -4,7 +4,6 @@ Methods relevant for simplifying a large spinor helicity amplitude using the con
 
 from logging import getLogger
 import numpy as np
-
 import pandas as pd
 import sympy as sp
 from environment.utils import convert_sp_forms
@@ -16,6 +15,8 @@ import torch
 import torch.nn as nn
 
 logger = getLogger()
+streamlit_logger = getLogger(__name__)
+streamlit_logger2 = getLogger(__name__+'2')
 
 
 def check_for_overall_const(input_eq):
@@ -457,7 +458,7 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     return None
 
 
-def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf_method=None,
+def single_simplification_pass(input_equation, modules, envs, params_s, rng, log_dict, inf_method=None,
                                cutoff=0.9, const_blind=False, verbose=True):
     """
     Go over all the terms in the input equation and try to find relevant terms with which they can simplify
@@ -468,6 +469,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf
     :param params_s:
     :param cutoff:
     :param rng:
+    :param log_dict:
     :param inf_method:
     :param const_blind:
     :param verbose:
@@ -520,6 +522,8 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf
             if inf_method is None:
                 solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
                                                           const_blind=const_blind)
+
+            # If we specify the inference methods then we only try those
             else:
                 params_input = (params_s.beam_size, params_s.nucleus_p, params_s.temperature)
 
@@ -531,15 +535,32 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf
 
             # If we simplified then we update the terms to consider
             if solution_attempt is not None:
-                num_simplification += 1
+
+                # Update the number of terms left
                 terms_left = rest_t
+
+                # For logging purposes track the simplification
+                num_simplification += 1
                 num_terms_simple = count_numerator_terms(solution_attempt)
-                if verbose:
-                    str_search = 'short' if short_search else 'long'
-                    print('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
-                    logger.info('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
+                num_terms_complex = count_numerator_terms(simplifier_t)
                 terms_simplified_num += num_terms_simple
                 solution_generated = solution_generated + solution_attempt
+
+                # Update the logger
+                log_dict['Initial equation'].append(simplifier_t)
+                log_dict['Final equation'].append(solution_attempt)
+                log_dict['Initial size'].append(num_terms_complex)
+                log_dict['Final size'].append(num_terms_simple)
+                log_dict['Num simplifications'].append(1)
+                if verbose:
+                    str_search = 'short' if short_search else 'long'
+                    streamlit_logger2.info('Step {}: We simplified {} terms'
+                                          ' down to {}'.format(num_simplification, num_terms_complex, num_terms_simple))
+                    streamlit_logger.info('We have {} terms left'
+                                          ' in the numerator'.format(len(terms_left)+terms_simplified_num))
+                    logger.info('We simplified down to {} terms - {} search'.format(num_terms_simple, str_search) + '\n')
+
+                # Reset the search method and keep track of the current proposed solution
                 short_search = False
 
             # If we only searched for a long expression we allow to search the smaller one
@@ -560,7 +581,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, inf
     if verbose:
         logger.info('Finished our pass over the terms in the expression')
         logger.info('We now have {} terms left in the numerator'.format(terms_left_end))
-        print('We now have {} terms left in the numerator'.format(terms_left_end))
+        streamlit_logger.info('Intermediate pass done: We have {} terms left in the numerator'.format(terms_left_end))
 
     # Craft back the expression from the terms left over ( maybe not as fast as could be as we will call cancel later)
     # But for now good enough - also cancel can help reduce the length of num and denom
@@ -601,18 +622,21 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     num_simplification = 0
     rng_passes = 0
     cutoff = init_cutoff
+    simplification_log = {'Initial equation': [], 'Final equation': [], 'Initial size': [], 'Final size': [],
+                          'Num simplifications': []}
 
     if verbose:
+        streamlit_logger.info('Starting the simplification of {} terms !'.format(len_in))
         logger.info('\n' + 'Starting the simplification of {}'.format(input_equation))
-
 
     # Try to simplify as long as we hope for a simplification
     while reducing:
 
         # Do a simplification pass over all the terms in the expressions
         simple_form, len_new, num_simple = single_simplification_pass(input_equation, modules, envirs, params_s,
-                                                                      (rng_active, rng_gen), inf_method=inf_method,
-                                                                      cutoff=cutoff, const_blind=const_blind)
+                                                                      (rng_active, rng_gen), simplification_log,
+                                                                      inf_method=inf_method, cutoff=cutoff,
+                                                                      const_blind=const_blind)
 
         # If the expression decreased in size or we simplified it we iterate
         if len_in > len_new or num_simple > 0:
@@ -647,13 +671,11 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     if verbose:
         logger.info('Simplified form is {}'.format(simple_form))
         logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
+        streamlit_logger.info('Went from {} to {} terms in {} simplification steps'.format(len_init, len_new, num_simplification) + '\n')
 
-    header_out = ['Final_equation', 'Final_size', 'Initial_size', 'Num_simplifications', 'Final_equation_MMA',
-                  'Initial_equation_MMA']
+    header_out = ['Initial equation', 'Final equation', 'Initial size', 'Final size', 'Num simplifications']
 
-    simple_mma = sp_to_mma(simple_form, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-    input_mma = sp_to_mma(input_equation, envir_s.npt_list, params_s.bracket_tokens, envir_s.func_dict)
-    data_out = pd.DataFrame([[simple_form, len_new, len_init, num_simplification, simple_mma, input_mma]],
-                            columns=header_out)
-
+    data_out = pd.DataFrame([[input_equation, simple_form, len_init, len_new, num_simplification]], columns=header_out)
+    log_frame = pd.DataFrame(simplification_log)
+    data_out = pd.concat([data_out, log_frame], ignore_index=True)
     return simple_form, data_out
