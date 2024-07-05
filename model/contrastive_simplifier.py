@@ -616,6 +616,7 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
 
     # Initialize loop parameters
     reducing = True
+    init_eq = input_equation
     rng_active = False
     len_init = count_numerator_terms(input_equation)
     len_in = len_init
@@ -675,7 +676,7 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
 
     header_out = ['Initial equation', 'Final equation', 'Initial size', 'Final size', 'Num simplifications']
 
-    data_out = pd.DataFrame([[input_equation, simple_form, len_init, len_new, num_simplification]], columns=header_out)
+    data_out = pd.DataFrame([[init_eq, simple_form, len_init, len_new, num_simplification]], columns=header_out)
     log_frame = pd.DataFrame(simplification_log)
     data_out = pd.concat([data_out, log_frame], ignore_index=True)
     return simple_form, data_out

@@ -212,11 +212,12 @@ if __name__ == '__main__':
     modules = build_modules_contrastive(env_c, parameters_c)
 
     #cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
-    input_equation = load_equation(env_s, input_eq, parameters_s)
+    input_equation = load_equation(input_eq, env_s, parameters_s)
     modules = load_modules(env_c, env_s, parameters_c, parameters_s)
 
-    simplified_eq, out_frame = total_simplification(envs, params, input_equation, modules, (rng_np, rng_torch), const_blind=True,
-                                         init_cutoff=args.init_cutoff, power_decay=args.power_decay)
+    simplified_eq, out_frame = total_simplification(envs, params, input_equation, modules, (rng_np, rng_torch),
+                                                    const_blind=True, init_cutoff=args.init_cutoff,
+                                                    power_decay=args.power_decay)
     if args.dir_out is not None:
         file_path_out = os.path.join(args.dir_out, 'output_simplification.csv')
         out_frame.to_csv(file_path_out, index=False)

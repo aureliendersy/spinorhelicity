@@ -34,7 +34,7 @@ def load_modules(envir_c, envir_s, params_c, params_s):
     return encoder_c, encoder_s, decoder_s
 
 
-def load_equation(envir, input_equation, params):
+def load_equation(input_equation, envir, params):
     """
     Given an initial input equation given in str form we isolate the numerator terms
     :param envir:

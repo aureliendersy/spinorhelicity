@@ -70,7 +70,7 @@ def load_model(module_npt_name):
 
 
 @st.cache_data
-def create_base_env(path_model_simplifier, path_model_contrastive, module_npt_name):
+def create_base_parameters(path_model_simplifier, path_model_contrastive, module_npt_name):
     """
     Create a base environment for the both the simplifier and contrastive models
     :param path_model_simplifier:
@@ -151,9 +151,9 @@ def create_base_env(path_model_simplifier, path_model_contrastive, module_npt_na
 
 
 @st.cache_resource
-def load_models(params_simplifier, params_contrastive):
+def load_models_env(params_simplifier, params_contrastive):
     """
-    Create and load the Simplifier and Contrastive models
+    Create and load the Simplifier and Contrastive models along with the necessary environment
     :param params_simplifier:
     :param params_contrastive:
     :return:
@@ -167,7 +167,6 @@ def load_models(params_simplifier, params_contrastive):
                                                                                params_contrastive, params_simplifier)
 
     return envir_simplifier, envir_contrastive, (encoder_simplifier, decoder_simplifier), encoder_contrastive
-
 
 
 # Front End - Title and Disclaimer
@@ -188,7 +187,7 @@ if 'module_npt' not in st.session_state:
 if st.session_state['module_npt'] != module_npt:
     # Clear the resource cache if we change the number of n-pts
     st.cache_resource.clear()
-    create_base_env.clear()
+    create_base_parameters.clear()
     st.session_state['module_npt'] = module_npt
 
 # Download the models if required
@@ -196,8 +195,9 @@ with st.spinner("Downloading model... this may take awhile! \n Don't stop it!"):
     path_mod_simplifier, path_mod_contrastive = load_model(module_npt)
 
 # Create the environments and load the models
-base_params_simplifier, base_params_contrastive = create_base_env(path_mod_simplifier, path_mod_contrastive, module_npt)
-env_s, env_c, modules_s, module_c = load_models(base_params_simplifier, base_params_contrastive)
+base_params_simplifier, base_params_contrastive = create_base_parameters(path_mod_simplifier, path_mod_contrastive,
+                                                                         module_npt)
+env_s, env_c, modules_s, module_c = load_models_env(base_params_simplifier, base_params_contrastive)
 
 # Create the random seeds
 rng_np = np.random.default_rng(42)
@@ -230,7 +230,7 @@ if "Spaa" in input_eq or "Spbb" in input_eq:
     input_eq = mma_to_sp_string(input_eq)
 
 # Put the equation in canonical ordering and display its tex version
-f = load_equation(env_s, input_eq, base_params_simplifier)
+f = load_equation(input_eq, env_s, base_params_simplifier)
 f = f.cancel()
 st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env_s.func_dict))))
 st.divider()
@@ -286,5 +286,3 @@ if st.button("Click Here to Simplify") and any(sample_methods):
         st.download_button(label="Download Simplification Summary", data=out_frame.to_csv().encode('utf-8'),
                            file_name='hypothesis.csv', mime='text/csv')
 
-
-#"Link: https://spinorhelicity-nnwpdnyaaulfzizcmbfhjs.streamlit.app/"
