@@ -644,8 +644,12 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
             num_simplification += num_simple
             input_equation = simple_form
             len_in = len_new
-            rng_active = False
-            rng_passes = 0
+
+            # Keep rng only if active and not decreasing
+            # Check that we are not just cycling through terms with rng active
+            rng_active = False if len_in > len_new else rng_active
+            rng_passes = rng_passes + 1 if rng_active else 0
+            reducing = rng_passes < 5
 
         # If the expression is of size 1 it is maximally simplified
         elif len_new == 1:

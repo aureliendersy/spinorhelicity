@@ -265,8 +265,14 @@ def retain_valid_hypothesis(hyps_list, term_init, rng_active):
             _, const_list_new = blind_constants(hyp)
             num_terms_new = len(const_list_new)
             new_const_mag = abs(const_list_new).sum()
-            if num_terms_new <= min_terms and ((new_const_mag <= min_const_mag and rng_active) or
-                                               new_const_mag < min_const_mag):
+
+            # Check if the valid solution is actually implementing a simpler version
+            reduced_sol = num_terms_new < min_terms
+            equiv_sol = num_terms_new == min_terms
+            reduced_const = new_const_mag < min_const_mag
+            equiv_const = new_const_mag == min_const_mag
+
+            if reduced_sol or (equiv_sol and (reduced_const or (equiv_const and rng_active))):
                 min_terms = num_terms_new
                 min_const_mag = new_const_mag
                 solution_returned = hyp

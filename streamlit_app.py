@@ -214,9 +214,9 @@ inference_methods = [label for label, sample in zip(labels_methods, sample_metho
 st.sidebar.divider()
 
 # Choose the inference parameters (sidebar)
-beam_size = st.sidebar.slider('Beam Size (Beam Search and Nucleus Sampling)', min_value=1, max_value=10, step=1, value=5)
-nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.01, value=0.95)
-temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.1, value=1.5)
+beam_size = st.sidebar.slider('Beam Size (Beam Search and Nucleus Sampling)', min_value=1, max_value=20, step=1, value=5)
+nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.005, value=0.925)
+temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.05, value=1.25)
 
 # Parameters for the iterative simplification
 st.sidebar.divider()
