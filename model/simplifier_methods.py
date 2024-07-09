@@ -280,3 +280,38 @@ def retain_valid_hypothesis(hyps_list, term_init, rng_active):
             pass
 
     return solution_returned
+
+
+def fast_one_shot_simplify(inference_methods, envir, module_transfo, f_eq, params_in, rng_active, blind_const=False,
+                           rng=None):
+    """
+    Fast one shot simplify - return a solution as soon as we find it
+    :param inference_methods:
+    :param envir:
+    :param module_transfo:
+    :param f_eq:
+    :param params_in:
+    :param rng_active:
+    :param blind_const:
+    :param rng:
+    :return:
+    """
+
+    # Preferred order for finding a solution
+    inference_order = ["Greedy Decoding", "Nucleus Sampling", "Beam Search"]
+
+    # Prepare the parameters
+    beam_size, nucleus_p, temperature = params_in
+
+    solution_attempt = None
+    for inference in inference_order:
+        if inference not in inference_methods:
+            continue
+        else:
+            params_input = (beam_size, inference, nucleus_p, temperature)
+            hyps_found = one_shot_simplify(envir, module_transfo, f_eq, params_input, blind_const=blind_const, rng=rng)
+            solution_attempt = retain_valid_hypothesis(hyps_found, f_eq, rng_active)
+            if solution_attempt is not None:
+                return solution_attempt
+
+    return solution_attempt

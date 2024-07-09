@@ -125,10 +125,10 @@ if __name__ == '__main__':
 
         # environment parameters
         'env_name': 'char_env',
-        'npt_list': [5],
+        'npt_list': [4],
         'max_scale': 2,
         'max_terms': 1,
-        'max_scrambles': 5,
+        'max_scrambles': 3,
         'min_scrambles': 1,
         'save_info_scr': False,
         'save_info_scaling': False,
@@ -141,16 +141,17 @@ if __name__ == '__main__':
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
-        'all_momenta': True,
+        'all_momenta': False,
 
         # model parameters
         'emb_dim': 512,
         'n_enc_layers': 2,
         'n_dec_layers': 2,
         'n_heads': 8,
+        'norm_ffn': 'None',
         'dropout': 0,
         'head_layers': 2,
-        'n_max_positions': 384,
+        'n_max_positions': 256,
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
@@ -161,7 +162,7 @@ if __name__ == '__main__':
 
         # SLURM/GPU param
         'cpu': True,
-        'numerical_check': 1,
+        'numerical_check': 2,
         'mma_path': args.mathematica_path
 
     }
@@ -173,7 +174,7 @@ if __name__ == '__main__':
     parameters_s.tasks = 'spin_hel'
     parameters_s.max_terms = 3
     parameters_s.max_scrambles = 3
-    parameters_s.reduced_voc = False
+    parameters_s.reduced_voc = True
     parameters_s.save_info_scr = False
     parameters_s.save_info_scaling = False
 
@@ -208,8 +209,6 @@ if __name__ == '__main__':
     rng_np = np.random.default_rng(323)
     rng_torch = torch.Generator(device='cuda' if not parameters_c.cpu else 'cpu')
     rng_torch.manual_seed(323)
-
-    modules = build_modules_contrastive(env_c, parameters_c)
 
     #cosin_sim, ref_terms = test_expression_factors(env_c, modules, input_eq, parameters_c, factor_mask=True)
     input_equation = load_equation(input_eq, env_s, parameters_s)

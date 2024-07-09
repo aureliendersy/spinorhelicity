@@ -11,7 +11,9 @@ dir_out = '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Tes
 
 #input_eq = 'ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(4,5)*sb(4,5)/ab(2, 3)'
 #input_eq = 'ab(1,2)*sb(2,3)-ab(1,4)*sb(3,4)-ab(1,5)*sb(3,5)+ab(1,2)*ab(2,4)*sb(2,4)/ab(2, 3)'
-input_eq = "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))"
+#input_eq = "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))"
+
+input_eq = "(ab(1, 2)**2*ab(3, 4)**2*sb(1, 2)**4*sb(3, 4)**2 + 2*ab(1, 2)**2*ab(3, 4)**2*sb(1, 2)**3*sb(1, 4)*sb(2, 3)*sb(3, 4) + ab(1, 2)**2*ab(3, 4)**2*sb(1, 2)**2*sb(1, 4)**2*sb(2, 3)**2 - 2*ab(1, 2)*ab(1, 4)*ab(2, 3)*ab(3, 4)*sb(1, 2)**4*sb(3, 4)**2 - 4*ab(1, 2)*ab(1, 4)*ab(2, 3)*ab(3, 4)*sb(1, 2)**3*sb(1, 4)*sb(2, 3)*sb(3, 4) - 2*ab(1, 2)*ab(1, 4)*ab(2, 3)*ab(3, 4)*sb(1, 2)**2*sb(1, 4)**2*sb(2, 3)**2 + 2*ab(1, 2)*ab(1, 4)*ab(3, 4)**2*sb(1, 2)**3*sb(1, 4)*sb(3, 4)**2 + 4*ab(1, 2)*ab(1, 4)*ab(3, 4)**2*sb(1, 2)**2*sb(1, 4)**2*sb(2, 3)*sb(3, 4) + 2*ab(1, 2)*ab(1, 4)*ab(3, 4)**2*sb(1, 2)*sb(1, 4)**3*sb(2, 3)**2 + ab(1, 4)**2*ab(2, 3)**2*sb(1, 2)**4*sb(3, 4)**2 + 2*ab(1, 4)**2*ab(2, 3)**2*sb(1, 2)**3*sb(1, 4)*sb(2, 3)*sb(3, 4) + ab(1, 4)**2*ab(2, 3)**2*sb(1, 2)**2*sb(1, 4)**2*sb(2, 3)**2 - 2*ab(1, 4)**2*ab(2, 3)*ab(3, 4)*sb(1, 2)**3*sb(1, 4)*sb(3, 4)**2 - 4*ab(1, 4)**2*ab(2, 3)*ab(3, 4)*sb(1, 2)**2*sb(1, 4)**2*sb(2, 3)*sb(3, 4) - 2*ab(1, 4)**2*ab(2, 3)*ab(3, 4)*sb(1, 2)*sb(1, 4)**3*sb(2, 3)**2 + ab(1, 4)**2*ab(3, 4)**2*sb(1, 2)**2*sb(1, 4)**2*sb(3, 4)**2 + 2*ab(1, 4)**2*ab(3, 4)**2*sb(1, 2)*sb(1, 4)**3*sb(2, 3)*sb(3, 4) + ab(1, 4)**2*ab(3, 4)**2*sb(1, 4)**4*sb(2, 3)**2)/(ab(1, 3)*ab(2, 4)*ab(3, 4)**2*sb(1, 2)**2*sb(1, 3))"
 
 #input_eq = '(-ab(1, 2)**3*ab(1, 3)*ab(3, 4)*ab(3, 5)*sb(1, 5)*sb(2, 3)**2 - ab(1, 2)**3*ab(1, 3)*ab(3, 4)*ab(4, 5)*sb(1, 4)*sb(2, 3)*sb(2, 5) - ab(1, 2)**3*ab(1, 4)*ab(3, 4)*ab(4, 5)*sb(1, 2)*sb(2, 4)*sb(4, 5) - ab(1, 2)**3*ab(1, 5)*ab(2, 3)*ab(4, 5)*sb(1, 2)*sb(2, 5)**2)/(ab(1, 3)*ab(1, 4)*ab(1, 5)**2*ab(2, 3)*ab(3, 4)*ab(4, 5)*sb(1, 2)**2*sb(1, 5))'
 
@@ -33,12 +35,12 @@ input_eq = "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)
 # ############## Input arguments for the evaluation
 beam_size = 10
 nucleus_sampling = True
-nucleus_p = 0.95
-temperature = 2
+nucleus_p = 0.925
+temperature = 1.25
 
 # Input arguments for the contrastive grouping
-init_cutoff = 0.90
-power_decay = 0.5
+init_cutoff = 0.95
+power_decay = 0.25
 
 # #############  Library paths
 spinors_lib_path = 'environment/Spinors-1.0'
@@ -46,8 +48,8 @@ mathematica_path = None
 
 # #############  Models: Can specify the path directly or else download it
 #model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/model/trained_models/simplifier_model.pth'
-model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Run2/Simplifier_Models/5pt/n5_i1_3_l1000_10Mex.pth'
+model_path_simplifier = '/Users/aurelien/PycharmProjects/spinorhelicity/model/4-pt.pth'
 download_path_simplifier = 'https://drive.google.com/uc?export=download&id=1iyTEhhbvBw1W3cFls9jhnQzFiDtAhIMS'
 
-model_path_contrastive = None
+model_path_contrastive = '/Users/aurelien/PycharmProjects/spinorhelicity/model/4-pt-contrastive.pth'
 download_path_contrastive = 'https://drive.google.com/uc?export=download&id=1eopg7hqbIU56Uf3o8LzKs6w2bPXQx7aE'

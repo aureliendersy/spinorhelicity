@@ -209,7 +209,7 @@ st.sidebar.write("Sampling Method")
 sample_methods = [False, False, False]
 labels_methods = ["Nucleus Sampling", "Beam Search", "Greedy Decoding"]
 for i in range(3):
-    sample_methods[i] = st.sidebar.checkbox(labels_methods[i], value=i == 0)
+    sample_methods[i] = st.sidebar.checkbox(labels_methods[i], value=i != 1)
 inference_methods = [label for label, sample in zip(labels_methods, sample_methods) if sample]
 st.sidebar.divider()
 
@@ -238,7 +238,13 @@ st.divider()
 # Choose which simplification method to apply
 simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Iterative simplification"),
                                      index=0)
-blind_constants = st.checkbox("Blind Constants", value=True)
+checkboxes = st.columns(2)
+with checkboxes[0]:
+    blind_constants = st.checkbox("Blind Constants", value=True)
+
+if simplification_method == "Iterative simplification":
+    with checkboxes[1]:
+        fast_inf = st.checkbox("Fast Inference", value=True)
 
 # Allow the user the option to simplify the equation
 if st.button("Click Here to Simplify") and any(sample_methods):
@@ -281,7 +287,8 @@ if st.button("Click Here to Simplify") and any(sample_methods):
         modules = (module_c,) + modules_s
         simplified_eq, out_frame = total_simplification(envs, params, f, modules, (rng_np, rng_torch),
                                                         inf_method=inference_methods, const_blind=blind_constants,
-                                                        init_cutoff=init_cutoff, power_decay=power_decay, verbose=True)
+                                                        init_cutoff=init_cutoff, power_decay=power_decay,
+                                                        fast_inf=fast_inf, verbose=True)
         st.write(f"Simplified form: ${latex(simplified_eq)}$")
         st.download_button(label="Download Simplification Summary", data=out_frame.to_csv().encode('utf-8'),
                            file_name='hypothesis.csv', mime='text/csv')

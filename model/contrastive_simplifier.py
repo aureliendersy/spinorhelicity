@@ -8,7 +8,7 @@ import pandas as pd
 import sympy as sp
 from environment.utils import convert_sp_forms
 from environment.utils import to_cuda
-from model.simplifier_methods import (blind_constants, extract_num_denom, all_one_shot_simplify,
+from model.simplifier_methods import (blind_constants, extract_num_denom, all_one_shot_simplify, fast_one_shot_simplify,
                                       retain_valid_hypothesis, count_numerator_terms)
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma
 import torch
@@ -459,7 +459,7 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
 
 
 def single_simplification_pass(input_equation, modules, envs, params_s, rng, log_dict, inf_method=None,
-                               cutoff=0.9, const_blind=False, verbose=True):
+                               cutoff=0.9, const_blind=False, fast_inf=False, verbose=True):
     """
     Go over all the terms in the input equation and try to find relevant terms with which they can simplify
     Once all the terms have been considered we stop the simplification search
@@ -472,6 +472,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
     :param log_dict:
     :param inf_method:
     :param const_blind:
+    :param fast_inf:
     :param verbose:
     :return:
     """
@@ -529,9 +530,18 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
 
                 # Simplify initial term and count its length
                 simplifier_t = simplifier_t.cancel()
-                hyps_found = all_one_shot_simplify(inf_method, env_s, (encoder_s, decoder_s), simplifier_t,
-                                                   params_input, blind_const=blind_constants, rng=rng[1][1])
-                solution_attempt = retain_valid_hypothesis(hyps_found, simplifier_t, rng[0])
+
+                # Do a slow inference (look through all methods and pick the best solution)
+                if not fast_inf:
+                    hyps_found = all_one_shot_simplify(inf_method, env_s, (encoder_s, decoder_s), simplifier_t,
+                                                       params_input, blind_const=blind_constants, rng=rng[1][1])
+                    solution_attempt = retain_valid_hypothesis(hyps_found, simplifier_t, rng[0])
+
+                # Do a fast inference (return the first valid solution without doing all inference methods)
+                else:
+                    solution_attempt = fast_one_shot_simplify(inf_method, env_s, (encoder_s, decoder_s), simplifier_t,
+                                                              params_input, rng[0], blind_const=blind_constants,
+                                                              rng=rng[1][1])
 
             # If we simplified then we update the terms to consider
             if solution_attempt is not None:
@@ -593,7 +603,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
 
 
 def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_method=None, const_blind=False,
-                         init_cutoff=0.99, power_decay=5, verbose=True):
+                         init_cutoff=0.99, power_decay=0.5, fast_inf=False, verbose=True):
     """
     Given an input equation we parse through its terms as many times as possible while the
     model finds a simplified form
@@ -606,7 +616,7 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     :param init_cutoff:
     :param const_blind:
     :param power_decay:
-    :param dir_out:
+    :param fast_inf:
     :param verbose:
     :return:
     """
@@ -637,7 +647,8 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
         simple_form, len_new, num_simple = single_simplification_pass(input_equation, modules, envirs, params_s,
                                                                       (rng_active, rng_gen), simplification_log,
                                                                       inf_method=inf_method, cutoff=cutoff,
-                                                                      const_blind=const_blind)
+                                                                      const_blind=const_blind, fast_inf=fast_inf,
+                                                                      verbose=verbose)
 
         # If the expression decreased in size or we simplified it we iterate
         if len_in > len_new or num_simple > 0:
