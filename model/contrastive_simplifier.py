@@ -402,7 +402,6 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     """
 
     # Stats for the initial term
-    terms_to_simplify = terms_to_simplify.cancel()
     num_terms_init = count_numerator_terms(terms_to_simplify)
 
     # If we want to be blind to constants
@@ -458,7 +457,7 @@ def attempt_simplification(terms_to_simplify, encoder_s, decoder_s, envir_s, par
     return None
 
 
-def single_simplification_pass(input_equation, modules, envs, params_s, rng, log_dict, inf_method=None,
+def single_simplification_pass(input_equation, modules, envs, params_s, rng, log_dict, cache, inf_method=None,
                                cutoff=0.9, const_blind=False, fast_inf=False, verbose=True):
     """
     Go over all the terms in the input equation and try to find relevant terms with which they can simplify
@@ -470,6 +469,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
     :param cutoff:
     :param rng:
     :param log_dict:
+    :param cache:
     :param inf_method:
     :param const_blind:
     :param fast_inf:
@@ -517,19 +517,19 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
         # If we expect a simplification we try it out else we consider the next term
         if simplifier_t is not None:
 
+            # Simplify initial term and count its length
+            simplifier_t = simplifier_t.cancel()
             num_t_attempt = len(sim_term) - len(rest_t)
 
-            # Attempt the simplification with greedy + beam + nucleus
-            if inf_method is None:
+            # Attempt the simplification with greedy + beam + nucleus sequentially
+            # Try to simplify only if expression not in failed cache
+            if inf_method is None and simplifier_t not in cache:
                 solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
                                                           const_blind=const_blind)
 
             # If we specify the inference methods then we only try those
-            else:
+            elif simplifier_t not in cache:
                 params_input = (params_s.beam_size, params_s.nucleus_p, params_s.temperature)
-
-                # Simplify initial term and count its length
-                simplifier_t = simplifier_t.cancel()
 
                 # Do a slow inference (look through all methods and pick the best solution)
                 if not fast_inf:
@@ -542,6 +542,8 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
                     solution_attempt = fast_one_shot_simplify(inf_method, env_s, (encoder_s, decoder_s), simplifier_t,
                                                               params_input, rng[0], blind_const=blind_constants,
                                                               rng=rng[1][1])
+            else:
+                solution_attempt = None
 
             # If we simplified then we update the terms to consider
             if solution_attempt is not None:
@@ -577,11 +579,20 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
             elif not short_search and num_t_attempt > 4:
                 short_search = True
 
+                # Update the failed caches
+                if simplifier_t not in cache:
+                    cache.append(simplifier_t)
+
             # If no simplification and already short search we consider the next term
             else:
                 index_term += 1
                 short_search = False
 
+                # Update the failed caches
+                if simplifier_t not in cache:
+                    cache.append(simplifier_t)
+
+        # When we expect no simplification we move to the next term
         else:
             index_term += 1
             short_search = False
@@ -625,14 +636,19 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     params_c, params_s = params
 
     # Initialize loop parameters
-    reducing = True
-    init_eq = input_equation
-    rng_active = False
-    len_init = count_numerator_terms(input_equation)
-    len_in = len_init
+    reducing = True  # Can we still reduce the equation
+    rng_active = False  # Do we allow for random shuffling of the expression
     num_simplification = 0
     rng_passes = 0
     cutoff = init_cutoff
+    cache_invalid = []
+
+    # Load the equation and record the number of terms in the numerator
+    init_eq = input_equation
+    len_init = count_numerator_terms(input_equation)
+    len_in = len_init
+
+    # Initialize a logger for all simplification steps taken
     simplification_log = {'Initial equation': [], 'Final equation': [], 'Initial size': [], 'Final size': [],
                           'Num simplifications': []}
 
@@ -646,6 +662,7 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
         # Do a simplification pass over all the terms in the expressions
         simple_form, len_new, num_simple = single_simplification_pass(input_equation, modules, envirs, params_s,
                                                                       (rng_active, rng_gen), simplification_log,
+                                                                      cache_invalid,
                                                                       inf_method=inf_method, cutoff=cutoff,
                                                                       const_blind=const_blind, fast_inf=fast_inf,
                                                                       verbose=verbose)
@@ -682,6 +699,7 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
         # At each pass we lower the similarity cutoff
         cutoff = cutoff*(init_cutoff**power_decay)
 
+    # Return the final expression in a minimal form
     simple_form = sp.cancel(simple_form)
 
     if verbose:
@@ -689,9 +707,10 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
         logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
         streamlit_logger.info('Went from {} to {} terms in {} simplification steps'.format(len_init, len_new, num_simplification) + '\n')
 
+    # Prepare the output dataframe that records each simplification step
     header_out = ['Initial equation', 'Final equation', 'Initial size', 'Final size', 'Num simplifications']
-
     data_out = pd.DataFrame([[init_eq, simple_form, len_init, len_new, num_simplification]], columns=header_out)
     log_frame = pd.DataFrame(simplification_log)
     data_out = pd.concat([data_out, log_frame], ignore_index=True)
+
     return simple_form, data_out

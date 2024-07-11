@@ -5,8 +5,7 @@ Set of routines used to make the connection with the mathematica Kernel
 import sympy as sp
 import numpy as np
 from wolframclient.evaluation import WolframLanguageSession
-from wolframclient.language import wl, wlexpr
-from wolframclient.serializers import export
+from wolframclient.language import wlexpr
 from logging import getLogger
 from diophantine import solve as diophantine_solve
 from sympy import latex
@@ -22,17 +21,18 @@ ZERO_ERROR_POW = 9
 def start_wolfram_session(kernel_path=None, sm_package=True, lib_path=None):
     """Start a Wolfram session and return it"""
 
+    # Point towards the Mathematica Kernel
     if kernel_path is None:
         session = WolframLanguageSession()
     else:
         session = WolframLanguageSession(kernel=kernel_path)
     session.start()
 
+    # If we load the S@M Package we also point to it
     if sm_package:
         if lib_path is not None:
             session.evaluate(wlexpr('$SpinorsPath = "{}"'.format(lib_path)))
             session.evaluate(wlexpr('Get[ToFileName[{$SpinorsPath}, "Spinors.m"]]'))
-            # poly_path = session.evaluate(wl.SetDirectory(lib_path))
         else:
             pass
     return session
@@ -46,8 +46,8 @@ def end_wolfram_session(session):
 def declare_spinors(session, npt, verbose=True):
     """
     Use the Wolfram session to declare a list of spinor to be used by the S@M package
-    :param session:
-    :param npt:
+    :param session: mathematica session
+    :param npt: number of external particles
     :param verbose:
     :return:
     """
@@ -55,6 +55,7 @@ def declare_spinors(session, npt, verbose=True):
         logger.info("Declaring spinors for {}-pt amplitudes".format(npt))
 
     spinor_list = ''
+    # Declare a list of appropriate momenta labels
     for i in range(1, npt+1):
         spinor_list += 'a{}{},'.format(npt, i)
     spinor_list = spinor_list[:-1]
@@ -68,14 +69,15 @@ def generate_random_momenta(session, npt, verbose=True):
     """
     Generate a set of on-shell momenta that sums up to zero.
     Will be used for a numerical evaluation
-    :param session:
-    :param npt:
+    :param session: mathematica session
+    :param npt: number of external particles
     :param verbose:
     :return:
     """
-    # Start by declaring the spinors if it has not been done already
+    # Start by declaring the spinors
     spinor_list = declare_spinors(session, npt, verbose=verbose)
 
+    # Generate a set of valid momenta (light-like and summing to 0)
     session.evaluate(wlexpr('GenMomenta[{{{}}}]'.format(spinor_list)))
 
     if verbose:
@@ -88,10 +90,10 @@ def generate_random_momenta(session, npt, verbose=True):
 def initialize_numerical_check(npt_max, kernel_path=None, sm_package=True, lib_path=None, verbose=True):
     """
     Initialize the wolfram environment suitable for conducting a numerical check
-    :param npt_max:
-    :param kernel_path:
-    :param sm_package:
-    :param lib_path:
+    :param npt_max: maximum number of external particles
+    :param kernel_path: path to the mathematica kernel
+    :param sm_package: Whether we use the S@M library
+    :param lib_path: Path to the S@M library
     :param verbose:
     :return:
     """
@@ -111,10 +113,10 @@ def initialize_solver_session(kernel_path=None):
 def solve_diophantine_systems(n_points, coefficients, num_sol, session):
     """
     If we want to get different solutions to the same diophantine equation
-    :param n_points:
-    :param coefficients:
-    :param num_sol:
-    :param session:
+    :param n_points: number of external particles
+    :param coefficients: array of coefficients (position 0 is mass dimension and the rest is little group scaling)
+    :param num_sol: the number of different solutions that we want to recover
+    :param session: mathematica session
     :return:
     """
 
@@ -124,13 +126,18 @@ def solve_diophantine_systems(n_points, coefficients, num_sol, session):
     eqvar = ["a{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)] \
             + ["b{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)]
 
-    if coefficients[0] < 10:
+    # For small enough mass dimensions we sample random solutions
+    if abs(coefficients[0]) < 10:
         solutions = [solve_diophantine_system_mma(coefficients, session, eqvar) for i in range(num_sol)]
 
-    if coefficients[0] >= 10:
+    # If the mass dimension is too large then return the first solution
+    # To get additional solutions we have to explicitly forbid them
+    if abs(coefficients[0]) >= 10:
         solutions = []
         for i in range(num_sol):
             solutions.append(solve_diophantine_system_mma(coefficients, session, eqvar, solutions))
+
+    # If we did not find the appropriate number of solutions that we return None
     if None in solutions:
         return None
     else:
@@ -139,10 +146,11 @@ def solve_diophantine_systems(n_points, coefficients, num_sol, session):
 
 def solve_diophantine_system(n_points, coefficients, session):
     """
-    Wrapper for choosing whether to solve the equation in Mathematica or python
-    :param n_points:
-    :param coefficients:
-    :param session:
+    To solve a single diophantine equation, potentially allowing for non-negative solutions
+    Only correct for the scaling of numerator like terms
+    :param n_points: number of external particles
+    :param coefficients: array of coefficients (position 0 is mass dimension and the rest is little group scaling)
+    :param session: mathematica session
     :return:
     """
 
@@ -152,12 +160,14 @@ def solve_diophantine_system(n_points, coefficients, session):
     eqvar = ["a{}{}".format(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]\
             + ["b{}{}".format(i, j) for i in range(1, n_points) for j in range(i + 1, n_points + 1)]
 
+    # If we have to solve a trivial system
     if all(coeffs == 0 for coeffs in coefficients):
         return [0 for i in range(len(eqvar))]
 
     if coefficients[0] == 0 and any(coeff > 0 for coeff in coefficients[1:]):
         return None
 
+    # Can ask to use the python solution by default
     if session == 'NotRequired':
         return solve_diophantine_system_python(coefficients, eqvar)
     else:
@@ -173,15 +183,22 @@ def solve_diophantine_system(n_points, coefficients, session):
 def solve_diophantine_system_python(coefficients, eqvar):
     """
     Use the diophantine library to find the solution with the least square coefficients
-    :param coefficients:
-    :param eqvar:
+    :param coefficients: array of coefficients (position 0 is mass dimension and the rest is little group scaling)
+    :param eqvar: list of variables (coefficients in front of square and angle brackets)
     :return:
     """
 
+    # Each bracket has a mass dimension of 1
     mass_dim = [1 for i in range(len(eqvar))]
+
+    # The little group scaling is +-1 depending on the nature of the bracket (square or angle)
     lg_eqs = [list(np.array([1 if 'a' in vara and str(i+1) in vara else 0 for vara in eqvar]) + np.array([-1 if 'b' in varb and str(i+1) in varb else 0 for varb in eqvar])) for i in range(len(coefficients[1:]))]
+
+    # Construct the appropriate matrices defining the diophantine equation
     a_matrix = sp.Matrix([mass_dim] + lg_eqs)
     b_matrix = sp.Matrix(coefficients)
+
+    # Return a random small solution to the diophantine equation
     sol_random = random.choice(diophantine_solve(a_matrix, b_matrix))
 
     return [sol_random[i, 0] for i in range(len(eqvar))]
@@ -191,10 +208,10 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
     """
     Call the Mathematica Kernel to solve the equation
     Coefficients are of the form (mass dimension, Little group scaling coefficients)
-    :param coefficients:
-    :param session:
-    :param eqvar:
-    :param prev_sol:
+    :param coefficients: array of coefficients (position 0 is mass dimension and the rest is little group scaling)
+    :param session: mathematica session
+    :param eqvar: list of variables (coefficients in front of square and angle brackets)
+    :param prev_sol: solution vectors to the diophantine equation
     :return:
     """
 

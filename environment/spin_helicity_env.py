@@ -259,7 +259,8 @@ class SpinHelExpr:
             scale_factor = generate_random_fraction_unbounded(0.75, self.n_point, 2*self.n_point, rng,
                                                               canonical_form=canonical, zero_allowed=False)
         else:
-            # Get the scaling necessary to correct it
+            # Get the scaling that we need to correct for
+            # Try to match the scaling at the numerator and denominator level (irrelevant if numerator only scrambling)
             num_scales, denom_scales = get_expression_detail_lg_scaling(add_expr_in, [ab, sb], self.n_point)
             bk_scales, _ = get_expression_detail_lg_scaling(bk_base, [ab, sb], self.n_point)
             num_scales = np.array(num_scales) - np.array(bk_scales)

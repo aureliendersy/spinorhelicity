@@ -25,12 +25,13 @@ from copy import deepcopy
 
 class StreamlitLogHandler(logging.Handler):
     """
-    Define a custom logger
+    Define a custom logger for the app. The logging handler displays the logs to the appropriate widget
     """
     def __init__(self, widget_update_func):
         super().__init__()
         self.widget_update_func = widget_update_func
 
+    # For each new message we update the widget
     def emit(self, record):
         msg = self.format(record)
         self.widget_update_func(msg)
@@ -40,9 +41,11 @@ class StreamlitLogHandler(logging.Handler):
 def load_model(module_npt_name):
     """
     If we cannot find the ML models we download them from GDrive
-    :param module_npt_name:
+    :param module_npt_name: Defines the amplitude we consider e.g 4-pt
     :return:
     """
+
+    # If we need to download the model we will save it locally
     save_dest = Path('model')
     save_dest.mkdir(exist_ok=True)
 
@@ -75,7 +78,7 @@ def create_base_parameters(path_model_simplifier, path_model_contrastive, module
     Create a base environment for the both the simplifier and contrastive models
     :param path_model_simplifier:
     :param path_model_contrastive:
-    :param module_npt_name:
+    :param module_npt_name: Defines the amplitude we consider e.g 4-pt
     :return:
     """
     parameters_simplifier = {
@@ -154,8 +157,8 @@ def create_base_parameters(path_model_simplifier, path_model_contrastive, module
 def load_models_env(params_simplifier, params_contrastive):
     """
     Create and load the Simplifier and Contrastive models along with the necessary environment
-    :param params_simplifier:
-    :param params_contrastive:
+    :param params_simplifier: Formatted parameter dictionary defining the simplifier model and environment
+    :param params_contrastive: Formatted parameter dictionary defining the contrastive model and environment
     :return:
     """
     # Build the environments
@@ -204,10 +207,12 @@ rng_np = np.random.default_rng(42)
 rng_torch = torch.Generator(device='cuda' if not base_params_simplifier.cpu else 'cpu')
 rng_torch.manual_seed(42)
 
-# Create multiple selection boxes (sidebar) for choosing the inference method - Also choose how to deal with constants
+# Create multiple selection boxes (sidebar) for choosing the inference method
 st.sidebar.write("Sampling Method")
 sample_methods = [False, False, False]
 labels_methods = ["Nucleus Sampling", "Beam Search", "Greedy Decoding"]
+
+# By default we select nucleus sampling and greedy decoding
 for i in range(3):
     sample_methods[i] = st.sidebar.checkbox(labels_methods[i], value=i != 1)
 inference_methods = [label for label, sample in zip(labels_methods, sample_methods) if sample]
@@ -238,10 +243,13 @@ st.divider()
 # Choose which simplification method to apply
 simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Iterative simplification"),
                                      index=0)
+
+# By default we decide to be blind to constants
 checkboxes = st.columns(2)
 with checkboxes[0]:
     blind_constants = st.checkbox("Blind Constants", value=True)
 
+# For the iterative method by default we do a fast inference (1st solution found is returned)
 if simplification_method == "Iterative simplification":
     with checkboxes[1]:
         fast_inf = st.checkbox("Fast Inference", value=True)
@@ -272,7 +280,7 @@ if st.button("Click Here to Simplify") and any(sample_methods):
             st.write("Error: {}".format(e))
 
     elif simplification_method == "Iterative simplification":
-        # Initialize the loggers
+        # Initialize the two different loggers and associated empty text boxes
         streamlit_logger = get_logger(contrastive_simplifier.__name__)
         streamlit_logger2 = get_logger(contrastive_simplifier.__name__+'2')
         streamlit_logger.handlers.clear()
@@ -282,6 +290,7 @@ if st.button("Click Here to Simplify") and any(sample_methods):
         streamlit_logger.addHandler(handler)
         streamlit_logger2.addHandler(handler2)
 
+        # Perform the iterative simplification and recover the solution path
         envs = (env_c, env_s)
         params = (base_params_contrastive, base_params_simplifier)
         modules = (module_c,) + modules_s
@@ -290,6 +299,8 @@ if st.button("Click Here to Simplify") and any(sample_methods):
                                                         init_cutoff=init_cutoff, power_decay=power_decay,
                                                         fast_inf=fast_inf, verbose=True)
         st.write(f"Simplified form: ${latex(simplified_eq)}$")
+
+        # Allow for the option to download the simplification summary
         st.download_button(label="Download Simplification Summary", data=out_frame.to_csv().encode('utf-8'),
                            file_name='hypothesis.csv', mime='text/csv')
 
