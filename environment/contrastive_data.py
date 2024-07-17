@@ -12,7 +12,7 @@ import sympy as sp
 import torch
 from environment.char_env import EnvDataset, CharEnv
 from logging import getLogger
-from environment.utils import convert_sp_forms, get_scaling_expr_detail, get_numerator_lg_scaling
+from environment.utils import convert_sp_forms, get_numerator_lg_scaling
 from copy import deepcopy
 
 
@@ -46,25 +46,6 @@ def convert_single_numerator_prefix(prefix_form):
             ret_prefix.extend([token])
 
     return ret_prefix, True
-
-
-def get_scaling_list(prefix_expr, envir):
-    """
-    For a given prefix expression we get the scaling list
-    :param prefix_expr:
-    :param envir:
-    :return:
-    """
-    raise ValueError
-    scaling_list = []
-    rest = prefix_expr
-
-    # Try to parse the expression and whatever is left will be containing the scaling of the expression
-    while len(rest) > 0:
-        integ, rest = envir._prefix_to_infix(rest)
-        scaling_list.append(int(sp.parse_expr(integ)))
-
-    return scaling_list
 
 
 def get_scaling_id(scale_lst):
@@ -196,7 +177,8 @@ def convert_spinor_data(filepath, ids_tokens, env, check_ids=False):
 def create_batched_split(env, params, pathin, size_set):
     """
     Given a path to a file we create a train, valid and test set
-    We also create a unique valid set that is not part of the train set by selecting examples that have similar scaling
+    The validation and test sets are not part of the train set and created by selecting examples
+     that have similar little group scaling
     :param env:
     :param params:
     :param pathin:

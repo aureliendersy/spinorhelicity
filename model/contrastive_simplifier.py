@@ -6,6 +6,8 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 import sympy as sp
+import time
+
 from environment.utils import convert_sp_forms
 from environment.utils import to_cuda
 from model.simplifier_methods import (blind_constants, extract_num_denom, all_one_shot_simplify, fast_one_shot_simplify,
@@ -94,8 +96,12 @@ def normalize_term(term_in):
     if isinstance(term_in, sp.Integer):
         return term_in/abs(term_in)
 
+    # If we get a bracket functional
+    if isinstance(term_in, sp.Function):
+        return term_in
+
     if not isinstance(term_in, sp.Mul):
-        raise ValueError('Expected a multiplicative term to normalize')
+        raise ValueError('Expected a multiplicative term to normalize for {}'.format(term_in))
 
     const_vect = [term_mult for term_mult in term_in.args if isinstance(term_mult, sp.Integer)]
 
@@ -528,7 +534,8 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
                                                           const_blind=const_blind)
 
             # If we specify the inference methods then we only try those
-            elif simplifier_t not in cache:
+            # Don't look at the cache if we are doing random shuffling
+            elif simplifier_t not in cache or rng_active:
                 params_input = (params_s.beam_size, params_s.nucleus_p, params_s.temperature)
 
                 # Do a slow inference (look through all methods and pick the best solution)
@@ -546,7 +553,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
                 solution_attempt = None
 
             # If we simplified then we update the terms to consider
-            if solution_attempt is not None:
+            if solution_attempt is not None and solution_attempt != 'Equiv':
 
                 # Update the number of terms left
                 terms_left = rest_t
@@ -580,7 +587,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
                 short_search = True
 
                 # Update the failed caches
-                if simplifier_t not in cache:
+                if simplifier_t not in cache and solution_attempt != 'Equiv':
                     cache.append(simplifier_t)
 
             # If no simplification and already short search we consider the next term
@@ -589,7 +596,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
                 short_search = False
 
                 # Update the failed caches
-                if simplifier_t not in cache:
+                if simplifier_t not in cache and solution_attempt != 'Equiv':
                     cache.append(simplifier_t)
 
         # When we expect no simplification we move to the next term
@@ -631,6 +638,10 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     :param verbose:
     :return:
     """
+
+    # Start the timer
+    start_time = time.time()
+
     # Load the environment and the parameters
     envir_c, envir_s = envirs
     params_c, params_s = params
@@ -677,6 +688,8 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
             # Check that we are not just cycling through terms with rng active
             rng_active = False if len_in > len_new else rng_active
             rng_passes = rng_passes + 1 if rng_active else 0
+            if rng_active:
+                streamlit_logger.info('{} terms: start shuffling pass {}/5'.format(len_new, rng_passes))
             reducing = rng_passes < 5
 
         # If the expression is of size 1 it is maximally simplified
@@ -693,6 +706,8 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
                 logger.info('No obvious simplification anymore - Using random shuffling to increase diversity')
                 logger.info('Start from expression {}'.format(sp.cancel(simple_form)))
                 logger.info('Start rng pass number {}'.format(rng_passes))
+                streamlit_logger.info('No obvious simplification at {} terms:'
+                                      ' start shuffling pass {}/5'.format(len_new, rng_passes))
             rng_active = True
             reducing = rng_passes < 5
 
@@ -705,7 +720,9 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     if verbose:
         logger.info('Simplified form is {}'.format(simple_form))
         logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
-        streamlit_logger.info('Went from {} to {} terms in {} simplification steps'.format(len_init, len_new, num_simplification) + '\n')
+        exec_time = time.time() - start_time
+        streamlit_logger.info('Went from {} to {} terms in {} simplification'
+                              ' steps and {:.1f} seconds'.format(len_init, len_new, num_simplification, exec_time) + '\n')
 
     # Prepare the output dataframe that records each simplification step
     header_out = ['Initial equation', 'Final equation', 'Initial size', 'Final size', 'Num simplifications']

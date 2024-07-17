@@ -248,6 +248,7 @@ def retain_valid_hypothesis(hyps_list, term_init, rng_active):
     Go through a list of generated hypotheses and retain the shortest one (or the one with the smallest constants)
     :param hyps_list:
     :param term_init:
+    :param rng_active:
     :return:
     """
     solution_returned = None
@@ -276,6 +277,10 @@ def retain_valid_hypothesis(hyps_list, term_init, rng_active):
                 min_terms = num_terms_new
                 min_const_mag = new_const_mag
                 solution_returned = hyp
+
+            # Track if the best solution is equivalent in complexity
+            if equiv_sol and equiv_const and solution_returned is None:
+                solution_returned = 'Equiv'
         else:
             pass
 
@@ -303,7 +308,7 @@ def fast_one_shot_simplify(inference_methods, envir, module_transfo, f_eq, param
     # Prepare the parameters
     beam_size, nucleus_p, temperature = params_in
 
-    solution_attempt = None
+    solution_attempt_temp = None
     for inference in inference_order:
         if inference not in inference_methods:
             continue
@@ -311,7 +316,9 @@ def fast_one_shot_simplify(inference_methods, envir, module_transfo, f_eq, param
             params_input = (beam_size, inference, nucleus_p, temperature)
             hyps_found = one_shot_simplify(envir, module_transfo, f_eq, params_input, blind_const=blind_const, rng=rng)
             solution_attempt = retain_valid_hypothesis(hyps_found, f_eq, rng_active)
-            if solution_attempt is not None:
+            if solution_attempt is not None and solution_attempt != 'Equiv':
                 return solution_attempt
+            elif solution_attempt == 'Equiv':
+                solution_attempt_temp = 'Equiv'
 
-    return solution_attempt
+    return solution_attempt_temp

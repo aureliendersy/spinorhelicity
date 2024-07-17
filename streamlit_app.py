@@ -237,7 +237,12 @@ if "Spaa" in input_eq or "Spbb" in input_eq:
 # Put the equation in canonical ordering and display its tex version
 f = load_equation(input_eq, env_s, base_params_simplifier)
 f = f.cancel()
-st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env_s.func_dict))))
+
+# Don't display the equation if it is too long (choice of length is arbitrary)
+if len(str(f)) < 5000:
+    st.latex(r'''{}'''.format(latex(convert_sp_forms(f, env_s.func_dict))))
+else:
+    st.text("Equation too long to display")
 st.divider()
 
 # Choose which simplification method to apply

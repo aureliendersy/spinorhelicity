@@ -215,13 +215,14 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
     :return:
     """
 
+    # Construct the equation system in  Mathematica language
     eqvarstr = '{' + ','.join(eqvar) + '}'
     mass_dim_eq = '+'.join(eqvar) + '==' + str(coefficients[0])
     lg_eqs = ['+'.join([vara for vara in eqvar if 'a' in vara and str(i+1) in vara]) + '-' + '-'.join([varb for varb in eqvar if 'b' in varb and str(i+1) in varb]) + '==' + str(coeff) for i, coeff in enumerate(coefficients[1:])]
 
     systemstr = '{' + ','.join([mass_dim_eq] + lg_eqs) + '}'
 
-    if coefficients[0] < 10:
+    if abs(coefficients[0]) < 10:
         # For a truly random solution of the equation. Not too expensive if we don't have a lot of brackets
         commandstr = 'Check[RandomChoice[Solve[{}, {}, NonNegativeIntegers]][[;; , -1]],"No"]//Quiet'.format(systemstr, eqvarstr)
 
@@ -234,6 +235,7 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
             systemstr = systemstr[:-1] + ',' + add_str + '}'
         commandstr = 'Check[FindInstance[{}, {}, NonNegativeIntegers, RandomSeeding -> Automatic][[1, ;; , -1]],"No"]//Quiet'.format(systemstr, eqvarstr)
 
+    # Run the Mathematica command via the Mathematica session
     if session is None:
         session = initialize_solver_session()
         resultsystem = session.evaluate(wlexpr(commandstr))
@@ -241,6 +243,7 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
     else:
         resultsystem = session.evaluate(wlexpr(commandstr))
 
+    # If we find no solution
     if resultsystem == "No":
         return None
 
@@ -250,10 +253,10 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
 def sp_to_mma(sp_expr, npts_list, bracket_tokens=False, func_dict=None):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
-    :param sp_expr:
-    :param npts_list:
-    :param bracket_tokens:
-    :param func_dict:
+    :param sp_expr: amplitude expression in sympy format
+    :param npts_list: number of external particles
+    :param bracket_tokens: Bool for whether we are using composite tokens
+    :param func_dict: Dictionary of ab and sb functionals
     :return:
     """
     if len(npts_list) == 1:
@@ -274,14 +277,15 @@ def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
     Assumes that each bracket is a single token
-    :param sp_expr:
-    :param func_dict:
-    :param npt_def:
+    :param sp_expr: amplitude expression in sympy format
+    :param func_dict: Dictionary of ab and sb functionals
+    :param npt_def: number of external particles
     :return:
     """
-
+    # List of bracket tokens in the expression
     brackets = list(sp_expr.free_symbols)
 
+    # If we don't have a definite number of external particles
     if npt_def is None:
         momentum_set = set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets])
         n_dep = len(momentum_set)
@@ -293,6 +297,7 @@ def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
     else:
         npt = npt_def
 
+    # Generate the appropriate momenta labels
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
     dict_replace = {}
