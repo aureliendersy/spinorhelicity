@@ -716,11 +716,10 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
 
     # Return the final expression in a minimal form
     simple_form = sp.cancel(simple_form)
-
+    exec_time = time.time() - start_time
     if verbose:
         logger.info('Simplified form is {}'.format(simple_form))
         logger.info('Went from {} to {} terms with {} simplifications'.format(len_init, len_new, num_simplification) + '\n')
-        exec_time = time.time() - start_time
         streamlit_logger.info('Went from {} to {} terms in {} simplification'
                               ' steps and {:.1f} seconds'.format(len_init, len_new, num_simplification, exec_time) + '\n')
 
@@ -729,5 +728,6 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     data_out = pd.DataFrame([[init_eq, simple_form, len_init, len_new, num_simplification]], columns=header_out)
     log_frame = pd.DataFrame(simplification_log)
     data_out = pd.concat([data_out, log_frame], ignore_index=True)
+    data_out['Time Taken'] = exec_time
 
     return simple_form, data_out
