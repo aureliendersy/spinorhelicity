@@ -272,13 +272,14 @@ if st.button("Click Here to Simplify") and any(sample_methods):
                                                blind_const=blind_constants, rng=rng_torch)
 
             # Display the list of generated candidate solutions
+            hyps_sorted = sorted(hyps_found, key=lambda x: (not x[0], x[-1]))
             st.write("Generated List of Unique Hypotheses")
-            for i, (match, hyp, diff) in enumerate(hyps_found):
+            for i, (match, hyp, diff) in enumerate(hyps_sorted):
                 str_match = "(Valid)" if match else "(Invalid)"
                 st.write(f"Hypothesis {i+1} {str_match}: ${latex(hyp)}$")
 
             # Create a download option for the generated responses
-            response_frame = create_response_frame(hyps_found, env_s)
+            response_frame = create_response_frame(hyps_sorted, env_s)
             st.download_button(label="Download Data", data=response_frame.to_csv().encode('utf-8'),
                                file_name='hypothesis.csv', mime='text/csv')
         except AssertionError as e:
