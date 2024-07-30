@@ -378,6 +378,7 @@ def revert_sp_form(sp_expr):
 
     return sp_expr.subs(replace_dict)
 
+
 def generate_random_bk(bk_fct, n_points, rng, canonical=False):
     """Provided with the bracket type, generate a bracket with random momenta"""
     pi = rng.randint(1, n_points + 1)
@@ -528,9 +529,6 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
         scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + sign * power
 
     elif isinstance(term, sp.Mul):
-
-        if term.args[0] == - 1:
-            term = term * -1
 
         for arg in term.args:
             if isinstance(arg, sp.Pow):

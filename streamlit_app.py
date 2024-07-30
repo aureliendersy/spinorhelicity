@@ -37,7 +37,7 @@ class StreamlitLogHandler(logging.Handler):
         self.widget_update_func(msg)
 
 
-@st.cache_resource
+@st.cache_data
 def load_model(module_npt_name):
     """
     If we cannot find the ML models we download them from GDrive
