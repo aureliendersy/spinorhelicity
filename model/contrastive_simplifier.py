@@ -529,7 +529,7 @@ def single_simplification_pass(input_equation, modules, envs, params_s, rng, log
 
             # Attempt the simplification with greedy + beam + nucleus sequentially
             # Try to simplify only if expression not in failed cache
-            if inf_method is None and simplifier_t not in cache:
+            if inf_method is None:
                 solution_attempt = attempt_simplification(simplifier_t, encoder_s, decoder_s, env_s, params_s, rng,
                                                           const_blind=const_blind)
 

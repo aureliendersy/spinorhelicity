@@ -184,7 +184,12 @@ def count_numerator_terms(expression):
     elif len(numerator.atoms(sp.Add)) == 0:
         num_terms = 1
     else:
-        raise ValueError('Could not determine the number of terms in the numerator')
+        expand_num = sp.expand(numerator)
+        if isinstance(expand_num, sp.Add):
+            num_terms = len(expand_num.args)
+        else:
+            return None
+
     return num_terms
 
 
