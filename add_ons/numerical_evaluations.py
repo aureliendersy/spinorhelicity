@@ -213,6 +213,6 @@ def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
         else:
             rel_diff += float(diff/abs(tgt_num))
 
-    # Check if the relative difference is below the numerical tolerance 
+    # Check if the relative difference is below the numerical tolerance
     valid = rel_diff < 10 ** (-ZERO_ERROR_POW_LOCAL)
     return valid, rel_diff

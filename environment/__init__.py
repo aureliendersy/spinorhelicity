@@ -11,7 +11,7 @@ from environment.char_env import CharEnv
 
 logger = getLogger()
 
-
+# We register the Environment
 ENVS = {
     'char_env': CharEnv,
 }

@@ -29,5 +29,5 @@ python split_data.py data.prefix.counts 5000
    ```
 6) To restrict the number of tokens that compose the input (and output amplitudes) we use
    ```shell
-    python reduce_data_length data.prefix.counts.train 1000
+    python reduce_data_length.py data.prefix.counts.train 1000
    ```

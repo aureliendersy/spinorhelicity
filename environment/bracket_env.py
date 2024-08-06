@@ -8,7 +8,7 @@ from sympy import Function, latex
 class ab(Function):
     """Angle Bracket class"""
     def _latex(self, printer, exp=1):
-        """Overwriting the latex outputs to get something nicer"""
+        """Overwriting the latex outputs to get the appropriate latex string"""
         a, b = [printer._print(i) for i in self.args]
         a = a.replace('p_{', "").replace('}', "")
         b = b.replace('p_{', "").replace('}', "")
@@ -21,7 +21,7 @@ class ab(Function):
 class sb(Function):
     """Square Bracket class"""
     def _latex(self, printer, exp=1):
-        """Overwriting the latex outputs to get something nicer"""
+        """Overwriting the latex outputs to get the appropriate latex string"""
         a, b = [printer._print(i) for i in self.args]
         a = a.replace('p_{', "").replace('}', "")
         b = b.replace('p_{', "").replace('}', "")

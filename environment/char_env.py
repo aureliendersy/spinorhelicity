@@ -8,7 +8,7 @@ Calls on the generator from the helicity environment to generate original sympy 
 from logging import getLogger
 import os
 import io
-import sys, time
+import sys
 from collections import OrderedDict
 import numpy as np
 import torch
@@ -472,19 +472,15 @@ class CharEnv(object):
                                                                          all_momenta=self.all_momenta)
             if simple_expr is None:
                 return None
-            # print("--- %s seconds for generating the amplitude---" % (time.time() - start_time))
 
-            # start_time = time.time()
             # Convert to env and scramble
             simple_expr_env = SpinHelExpr(str(simple_expr), n_pt_gen)
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
                                                      canonical=self.canonical_form, session=self.session,
                                                      numerator_only=self.numerator_only,
                                                      min_scrambles=self.min_scrambles)
-            # print("--- %s seconds for scrambling the amplitude---" % (time.time() - start_time))
-            # start_time = time.time()
+
             simple_expr_env.cancel()
-            # print("--- %s seconds for cancel the fractional form---" % (time.time() - start_time))
 
             # If the scrambled expression drops a momentum then we discard it from the training set
             # We do this if we could have an ambiguity as to the type of n point expression

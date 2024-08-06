@@ -174,15 +174,12 @@ def load_models_env(params_simplifier, params_contrastive):
 
 # Front End - Title and Disclaimer
 st.title("Spinor Helicity Simplification")
-st.caption('This app simplifies spinor-helicity amplitudes which are expressed as combinations of square'
-           ' and angle brackets. The simplification is done using transformer models trained on amplitude'
-           ' data with 4,5 or 6 massless external particles. The models are trained on expressions that simplify to'
-           ' simple linear combinations of rational functions without any spurious poles. We do not explicitly train on'
-           ' expressions with arbitrary constants but offer an option to blind constants and attempt a simplification'
-           ' regardless. The left sidebar tunes the parameters relevant for the simplification and contrastive models.'
-           ' Simplifications are done either in a one-shot mode or iteratively. Expressions < 10 terms can be handled'
-           ' in the one-shot mode, for longer expressions use to the iterative mode.'
-           ' Please refer to {} for more details.')
+st.caption("This app simplifies spinor-helicity expressions.  Enter the input in the syntax of Fortran"
+           " (ab(1,2)**2\*sb(1,2)), Mathematica (ab[1,2]^2\*sb[1,2]), or S@M (Spaa[1,2]^2\*Spbb[1,2])."
+           " All terms should have uniform scaling in mass dimension and little group,"
+           " with purely monomial denominators.  Specify the number of external particles and the mode of"
+           " simplification, with additional tunable parameters on the sidebar.  Typically, shorter expressions"
+           " can be handled in one-shot mode, while longer ones require iterative mode. See \cite{} for details.")
 
 # Select the N-pt of the amplitude considered and update the session (for cache purposes)
 module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
@@ -233,9 +230,6 @@ init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_
 power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.0)
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
-st.caption("Enter the amplitude either in Fortan syntax eg ab(1,2)**2\*sb(1,2)"
-           " or in Mathematica syntax eg ab[1,2]^2\*sb[1,2] or Spaa[1,2]^2\*Spbb[1,2]."
-           " The amplitude should have uniform scaling under the little group and no spurious poles.")
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
 if "Spaa" in input_eq or "Spbb" in input_eq:
     input_eq = mma_to_sp_string_sm(input_eq)
