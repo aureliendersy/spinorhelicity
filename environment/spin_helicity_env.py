@@ -76,7 +76,7 @@ class SpinHelExpr:
         self.sp_expr = self.sp_expr.subs(self.func_dict[bk](pi, pj)*self.func_dict[bk](pk, pl), ret_expr)
         self.str_expr = str(self.sp_expr)
 
-    def schouten_single(self, bk_in, pk, pl, canonical=False, numerator_only=False):
+    def schouten_single(self, bk_in, pk, pl, numerator_only=False):
         """ Apply the Schouten to a selected pair of two variables
         e.g apply it to <1,2> where the pattern has to be explicitly present in the expression"""
 
@@ -89,8 +89,7 @@ class SpinHelExpr:
                    self.func_dict[bk_type](pi, pk)*self.func_dict[bk_type](pj, pl)/self.func_dict[bk_type](pk, pl)
 
         # Reorder in canonical form if required
-        if canonical:
-            ret_expr = reorder_expr(ret_expr)
+        ret_expr = reorder_expr(ret_expr)
 
         # Only do the replacement on the numerators if desired
         if numerator_only:
@@ -116,7 +115,7 @@ class SpinHelExpr:
         self.sp_expr = self.sp_expr.subs(replace_expr, ret_expr)
         self.str_expr = str(self.sp_expr)
 
-    def momentum_single(self, bk_in, pout1, pout2, canonical=False, numerator_only=False):
+    def momentum_single(self, bk_in, pout1, pout2, numerator_only=False):
         """Implement momentum conservation on the given pattern
         For example we use <1,2> = - <1,4>[4,3]/[2,3] if we have 4 labels at most
         Can have pi==pk which instead implies <1,2> = - <1,3>[3,1]/[2,1] - <1,4>[4,1]/[2,1]"""
@@ -145,8 +144,7 @@ class SpinHelExpr:
         ret_expr = sign * ret_expr
 
         # Reorder the momenta if we keep canonical ordering
-        if canonical:
-            ret_expr = reorder_expr(ret_expr)
+        ret_expr = reorder_expr(ret_expr)
 
         # Only do the replacement on the numerators if desired
         if numerator_only:
@@ -157,7 +155,7 @@ class SpinHelExpr:
             self.sp_expr = self.sp_expr.subs(bk_in, ret_expr)
         self.str_expr = str(self.sp_expr)
 
-    def momentum_sq(self, bk_in, plist_lsh_add, canonical=False, numerator_only=False):
+    def momentum_sq(self, bk_in, plist_lsh_add, numerator_only=False):
         """Implement momentum conservation squared on the given pattern
         We feed in the desired bracket, along with the additional momenta that are to be multiplied
         So e.g (5pt) if <12> is the input and 3 is also given then the identity is
@@ -188,8 +186,7 @@ class SpinHelExpr:
                 if l2 > l1 and (l1 not in bk_args or l2 not in bk_args):
                     ret_expr -= (self.func_dict['ab'](l1, l2)*self.func_dict['sb'](l1, l2))/denom_bk
 
-        if canonical:
-            ret_expr = reorder_expr(ret_expr)
+        ret_expr = reorder_expr(ret_expr)
 
         if numerator_only:
             num, denom = sp.fraction(self.sp_expr)
@@ -200,7 +197,7 @@ class SpinHelExpr:
 
         self.str_expr = str(self.sp_expr)
 
-    def identity_mul(self, rng, new_bk, order, canonical=False, numerator_only=False):
+    def identity_mul(self, rng, new_bk, order, numerator_only=False):
         """Multiply a given random part of the sympy expression by inserting the identity in
         a non-trivial way. """
 
@@ -218,8 +215,8 @@ class SpinHelExpr:
 
         # Choose the corresponding identity (we might be adding a new bracket)
         bk_expr_env = SpinHelExpr(str(new_bk), self.n_point)
-        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
-                                               numerator_only=numerator_only, out_info=True)
+        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, reduced=True, numerator_only=numerator_only,
+                                               out_info=True)
         bk_expr_env.cancel()
 
         # Choose whether to add the new bracket as <>/ID or ID/<>
@@ -234,7 +231,7 @@ class SpinHelExpr:
         self.str_expr = str(self.sp_expr)
         return info_add
 
-    def zero_add(self, rng, bk_base, sign, session, canonical=False, numerator_only=False):
+    def zero_add(self, rng, bk_base, sign, session, numerator_only=False):
         """ Add zero randomly to an expression"""
 
         # Choose a random term in the expression that contains additive factors
@@ -251,13 +248,13 @@ class SpinHelExpr:
 
         # Generate a zero identity for the given bracket
         bk_expr_env = SpinHelExpr(str(bk_base), self.n_point)
-        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, canonical=canonical, reduced=True,
-                                               numerator_only=numerator_only, out_info=True)
+        info_add = bk_expr_env.random_scramble(rng, max_scrambles=1, reduced=True, numerator_only=numerator_only,
+                                               out_info=True)
         bk_expr_env.cancel()
 
         if add_expr_in == 0:
             scale_factor = generate_random_fraction_unbounded(0.75, self.n_point, 2*self.n_point, rng,
-                                                              canonical_form=canonical, zero_allowed=False)
+                                                              zero_allowed=False)
         else:
             # Get the scaling that we need to correct for
             # Try to match the scaling at the numerator and denominator level (irrelevant if numerator only scrambling)
@@ -317,7 +314,7 @@ class SpinHelExpr:
 
         return rdm_fct
 
-    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False, canonical=False,
+    def random_scramble(self, rng=None, max_scrambles=5, verbose=False, out_info=False,
                         reduced=False, session=None, numerator_only=False, min_scrambles=1):
         """ Choose a random number of scrambling moves """
         if rng is None:
@@ -325,15 +322,14 @@ class SpinHelExpr:
         scr_num = rng.randint(min_scrambles, max_scrambles + 1)
         if out_info:
             info_s = self.scramble(scr_num, session, rng, verbose=verbose, out_info=True, reduced=reduced,
-                                   numerator_only=numerator_only, canonical=canonical)
+                                   numerator_only=numerator_only)
             return info_s
         else:
 
-            self.scramble(scr_num, session, rng, verbose=verbose, reduced=reduced, numerator_only=numerator_only,
-                          canonical=canonical)
+            self.scramble(scr_num, session, rng, verbose=verbose, reduced=reduced, numerator_only=numerator_only)
 
     def scramble(self, num_scrambles, session, rng=None, verbose=False, out_info=False, reduced=False,
-                 numerator_only=False, canonical=False):
+                 numerator_only=False):
         """Perform a scrambling procedure where the expressions are kept in canonical form at all times"""
         info_s = []
         if rng is None:
@@ -374,7 +370,7 @@ class SpinHelExpr:
                 info_s.append(['S', str(rdm_bracket), str(arg3), str(arg4)])
                 if verbose:
                     print('Using Schouten on {} with args({},{})'.format(str(rdm_bracket), arg3, arg4))
-                self.schouten_single(rdm_bracket, arg3, arg4, canonical=canonical, numerator_only=numerator_only)
+                self.schouten_single(rdm_bracket, arg3, arg4, numerator_only=numerator_only)
                 # print("--- %s seconds for Schouten ---" % (time.time() - start_time))
 
             # Apply the momentum conservation where we randomly select the other momenta (avoid null brackets)
@@ -392,7 +388,7 @@ class SpinHelExpr:
                 info_s.append([str_label, str(rdm_bracket), str(out2_arg)])
                 if verbose:
                     print('Using {} conservation + on {} with arg{}'.format(str_label, str(rdm_bracket), out2_arg))
-                self.momentum_single(rdm_bracket, out_arg, out2_arg, canonical=canonical, numerator_only=numerator_only)
+                self.momentum_single(rdm_bracket, out_arg, out2_arg, numerator_only=numerator_only)
                 # print("--- %s seconds for Momentum ---" % (time.time() - start_time))
 
             # Apply momentum conservation squared
@@ -406,29 +402,27 @@ class SpinHelExpr:
                 info_s.append(['M', str(rdm_bracket)] + [str(el) for el in mom_add])
                 if verbose:
                     print('Using Momentum conservation on {} with arg(s) {}'.format(str(rdm_bracket), mom_add))
-                self.momentum_sq(rdm_bracket, mom_add, canonical=canonical, numerator_only=numerator_only)
+                self.momentum_sq(rdm_bracket, mom_add, numerator_only=numerator_only)
 
             elif act_num == 4:
                 # Choose the new random bracket to add
                 bk_type = ab if rng.randint(0, 2) == 0 else sb
-                new_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=canonical)
+                new_bk = generate_random_bk(bk_type, self.n_point, rng)
                 order_bk = rng.randint(0, 2)
                 tok = 'ID-' if order_bk == 0 or numerator_only else 'ID+'
-                tok_add = self.identity_mul(rng, new_bk, order_bk, canonical=canonical, numerator_only=numerator_only)
+                tok_add = self.identity_mul(rng, new_bk, order_bk, numerator_only=numerator_only)
                 info_s.append([tok, str(new_bk)])
                 info_s.append(tok_add[0])
                 if verbose:
                     print('Using Identity Multiplication')
-                # print("--- %s seconds for Multiplication ---" % (time.time() - start_time))
 
             elif act_num == 5:
                 # Choose the new random bracket to use as a base
                 bk_type = ab if rng.randint(0, 2) == 0 else sb
-                base_bk = generate_random_bk(bk_type, self.n_point, rng, canonical=canonical)
+                base_bk = generate_random_bk(bk_type, self.n_point, rng)
                 sign_bk = rng.randint(0, 2)
                 tok = 'Z-' if sign_bk == 0 else 'Z+'
-                success, tok_add = self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), session, canonical=canonical,
-                                                 numerator_only=numerator_only)
+                success, tok_add = self.zero_add(rng, base_bk, int(2*(sign_bk - 0.5)), session, numerator_only=numerator_only)
                 if success:
                     info_s.append([tok, str(base_bk)])
                     info_s.append(tok_add[0])
@@ -438,166 +432,10 @@ class SpinHelExpr:
                     i = i - 1
                     if verbose:
                         print('Failed Zero Addition')
-                # print("--- %s seconds for Addition ---" % (time.time() - start_time))
 
             if numerator_only:
-                # start_time = time.time()
                 self.cancel()
                 if isinstance(sp.fraction(self.sp_expr)[1], sp.Add):
                     print("Denominator has add term")
-                # print("--- %s seconds for Cancel ---" % (time.time() - start_time))
         if out_info:
             return info_s
-
-
-if __name__ == '__main__':
-    # print("Start test 1 ")
-    # test1 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected1 = SpinHelExpr("ab(2,1)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # test1.antisymm('ab', 1, 2)
-    # test1.together()
-    # expected1.together()
-    # print('Test 1 {}'.format('passed' if expected1.sp_expr == test1.sp_expr else 'failed'))
-    # print(test1)
-    # print("\n")
-    #
-    # print("Start test 2 ")
-    # test2 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected2 = SpinHelExpr("ab(1,2)*(ab(3,1)*ab(4, 2)+ab(1,4)*ab(3,2))/(sb(2,3)*sb(4,3))")
-    # test2.schouten_single(ab(3, 4), 1, 2)
-    # test2.together()
-    # expected2.together()
-    # print('Test 2 {}'.format('passed' if expected2.sp_expr == test2.sp_expr else 'failed'))
-    # print(test2)
-    # print("\n")
-    #
-    # print("Start test 3 ")
-    # test3 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected3 = SpinHelExpr("-ab(1,2)**2*ab(3,2)*sb(2,1)/(sb(2,3)*sb(4,3)*sb(4,1))")
-    # test3.momentum_single(ab(3, 4), 3, 1)
-    # test3.together()
-    # expected3.together()
-    # print('Test 3 {}'.format('passed' if expected3.sp_expr == test3.sp_expr else 'failed'))
-    # print(test3)
-    # print("\n")
-    #
-    # print("Start test 4 ")
-    # test4 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected4 = SpinHelExpr("ab(1,2)**2*ab(4,2)*sb(2,1)/(sb(2,3)*sb(4,3)*sb(3,1))")
-    # test4.momentum_single(ab(3, 4), 4, 1)
-    # test4.together()
-    # expected4.together()
-    # print('Test 4 {}'.format('passed' if expected4.sp_expr == test4.sp_expr else 'failed'))
-    # print(test4)
-    # print("\n")
-    #
-    # print("Start test 5 ")
-    # test5 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected5 = SpinHelExpr("-ab(1,2)**3*ab(3,4)/(ab(1,4)*sb(4,3)**2)")
-    # test5.momentum_single(sb(2, 3), 3, 1)
-    # test5.together()
-    # expected5.together()
-    # print('Test 5 {}'.format('passed' if expected5.sp_expr == test5.sp_expr else 'failed'))
-    # print(test5)
-    # print("\n")
-    #
-    # print("Start test 6 ")
-    # test6 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected6 = SpinHelExpr("ab(1,2)**2*ab(3,4)*ab(1,3)/(ab(1,4)*sb(4,3)*sb(4,2))")
-    # test6.momentum_single(sb(2, 3), 2, 1)
-    # test6.together()
-    # expected6.together()
-    # print('Test 6 {}'.format('passed' if expected6.sp_expr == test6.sp_expr else 'failed'))
-    # print(test6)
-    # print("\n")
-    #
-    # print("Start test 7 ")
-    # test7 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected7 = SpinHelExpr("ab(1,2)**2*(-ab(3,1)*sb(1,3)-ab(3,2)*sb(2,3))/(sb(2,3)*sb(4,3)**2)")
-    # test7.momentum_single(ab(3, 4), 3, 3)
-    # test7.together()
-    # expected7.together()
-    # print('Test 7 {}'.format('passed' if expected7.sp_expr == test7.sp_expr else 'failed'))
-    # print(test7)
-    # print("\n")
-    #
-    # print("Start test 8 ")
-    # test8 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected8 = SpinHelExpr("ab(1,2)**2*(ab(1,3)*sb(1,3)+ab(2,3)*sb(2,3))/(sb(2,3)*sb(3,4)**2)")
-    # test8.sp_expr = reorder_expr(test8.sp_expr)
-    # test8.str_expr = str(test8.sp_expr)
-    # test8.momentum_single(ab(3, 4), 3, 3, canonical=True)
-    # test8.expand()
-    # test8.together()
-    # expected8.together()
-    # print('Test 8 {}'.format('passed' if expected8.sp_expr == test8.sp_expr else 'failed'))
-    # print(test8)
-    # print("\n")
-    #
-    # print("Start test 9 ")
-    # test9 = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(4,3))")
-    # expected9 = SpinHelExpr("ab(1,2)**2*(ab(1,2)*sb(1,2)/sb(3,4))/(-sb(2,3)*sb(3,4))")
-    # test9.sp_expr = reorder_expr(test9.sp_expr)
-    # test9.str_expr = str(test9.sp_expr)
-    # test9.momentum_sq(ab(3, 4), [], canonical=True)
-    # test9.expand()
-    # test9.together()
-    # expected9.together()
-    # print('Test 9 {}'.format('passed' if expected9.sp_expr == test9.sp_expr else 'failed'))
-    # print(test9)
-    # print("\n")
-    #
-    # print("Start test 10 ")
-    # test10 = SpinHelExpr("ab(1,2)**2*ab(3,4)*ab(1,5)/(sb(2,3)*sb(4,3))")
-    # expected10 = SpinHelExpr("ab(1,2)**2*ab(1,5)*(ab(1,2)*sb(1,2)/sb(3,4) + ab(1,5)*sb(1,5)/sb(3,4) + ab(2,5)*sb(2,5)/sb(3,4))/(-sb(2,3)*sb(3,4))")
-    # test10.sp_expr = reorder_expr(test10.sp_expr)
-    # test10.str_expr = str(test10.sp_expr)
-    # test10.momentum_sq(ab(3, 4), [], canonical=True)
-    # test10.expand()
-    # test10.together()
-    # expected10.expand()
-    # expected10.together()
-    # print('Test 10 {}'.format('passed' if expected10.sp_expr == test10.sp_expr else 'failed'))
-    # print(test10)
-    # print("\n")
-    #
-    # print("Start test 11 ")
-    # test11 = SpinHelExpr("ab(1,2)**2*ab(3,4)*ab(1,5)/(sb(2,3)*sb(4,3))")
-    # expected11 = SpinHelExpr("ab(1,2)**2*ab(1,5)*(-ab(1,3)*sb(1,3)/sb(3,4) - ab(1,4)*sb(1,4)/sb(3,4) + ab(2,5)*sb(2,5)/sb(3,4))/(-sb(2,3)*sb(3,4))")
-    # test11.sp_expr = reorder_expr(test11.sp_expr)
-    # test11.str_expr = str(test11.sp_expr)
-    # test11.momentum_sq(ab(3, 4), [1], canonical=True)
-    # test11.expand()
-    # test11.together()
-    # expected11.expand()
-    # expected11.together()
-    # print('Test 11 {}'.format('passed' if expected11.sp_expr == test11.sp_expr else 'failed'))
-    # print(test11)
-    # print("\n")
-    #
-    # print("Start scramble test 1a ")
-    # test1a = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(3,4))")
-    # test1a.scramble(2, 'NotRequired', numerator_only=True, verbose=True, reduced=False)
-    # test1a.together()
-    # print(test1a)
-    # print("\n")
-    #
-    # print("Start scramble test 2a ")
-    # test1a = SpinHelExpr("ab(1,2)**2*ab(3,4)/(sb(2,3)*sb(3,4))")
-    # test1a.scramble(2, 'NotRequired', numerator_only=True, verbose=True, reduced=False, canonical=True)
-    # test1a.together()
-    # print(test1a)
-    # print("\n")
-
-    print('Start from amplitude')
-    testamp = SpinHelExpr("ab(1,2)**3/(ab(2,3)*ab(3,4)*ab(4,5)*ab(5,1))")
-    print(testamp)
-    print(latex(testamp))
-    #from add_ons.mathematica_utils import initialize_numerical_check
-    #session_temp = initialize_numerical_check(5)
-    testamp.scramble(1, 'NotRequired', numerator_only=True, verbose=True, reduced=False, canonical=True)
-    testamp.together()
-    print(testamp)
-    print(latex(testamp))
-    print(testamp.str_expr)
-

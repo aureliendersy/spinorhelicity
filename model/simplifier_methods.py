@@ -49,8 +49,7 @@ def load_equation(input_equation, envir, params):
     # If we get a syntax error then we try to load by allowing for string where the multiplication sign is not apparent
     except SyntaxError:
         f = sp.parse_expr(input_equation, local_dict=envir.func_dict, transformations=transformations)
-    if params.canonical_form:
-        f = reorder_expr(f)
+    f = reorder_expr(f)
     return f
 
 

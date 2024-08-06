@@ -36,27 +36,25 @@ def parke_taylor(bk, pi, pj, max_label):
     return str_bk(bk, pi, pj) + '**4' + '/(' + str_denom + ')'
 
 
-def generate_random_bk_type(n_points, rng, canonical=False):
+def generate_random_bk_type(n_points, rng):
     """
     Generate the bracket type at random, along with its arguments
     :param n_points:
     :param rng:
-    :param canonical
     :return:
     """
 
     bk_type = ab if rng.randint(0, 2) == 0 else sb
-    return generate_random_bk(bk_type, n_points, rng, canonical=canonical)
+    return generate_random_bk(bk_type, n_points, rng)
 
 
-def generate_random_fraction(scaling, n_points, max_terms_add, rng, canonical_form):
+def generate_random_fraction(scaling, n_points, max_terms_add, rng):
     """
     Generate a random fraction involving momenta with the correct little group scaling
     :param scaling:
     :param n_points:
     :param max_terms_add:
     :param rng:
-    :param canonical_form:
     :return:
     """
 
@@ -92,8 +90,7 @@ def generate_random_fraction(scaling, n_points, max_terms_add, rng, canonical_fo
         elif term_type == 4:
             return_expr *= 1/(generate_random_bk(sb, n_points, rng) * generate_random_bk(ab, n_points, rng))
 
-    if canonical_form:
-        return_expr = reorder_expr(return_expr)
+    return_expr = reorder_expr(return_expr)
 
     return return_expr
 
@@ -102,6 +99,7 @@ def poisson_power(lambda_scale, rng):
     """
     Generate a power to be associated with a given bracket expression
     :param lambda_scale:
+    :param rng:
     :return:
     """
 
@@ -110,7 +108,7 @@ def poisson_power(lambda_scale, rng):
     return max(1, result)
 
 
-def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, canonical_form, zero_allowed=True):
+def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, zero_allowed=True):
     """
     Generate a random fraction by multiplying with random brackets
     We choose a given number of brackets for the numerator and denominator
@@ -119,7 +117,6 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
     :param n_points:
     :param max_terms_add:
     :param rng:
-    :param canonical_form:
     :param zero_allowed
     :return:
     """
@@ -134,11 +131,10 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
     return_expr = 1
 
     for i in range(n_num):
-        return_expr *= generate_random_bk_type(n_points, rng, canonical=canonical_form)**poisson_power(l_scaling, rng)
+        return_expr *= generate_random_bk_type(n_points, rng)**poisson_power(l_scaling, rng)
 
     for j in range(n_denom):
-        return_expr *= 1/(generate_random_bk_type(n_points, rng,
-                                                  canonical=canonical_form))**poisson_power(l_scaling, rng)
+        return_expr *= 1/(generate_random_bk_type(n_points, rng))**poisson_power(l_scaling, rng)
 
     sign = 1 if rng.randint(0, 2) == 0 else -1
 
@@ -146,7 +142,7 @@ def generate_random_fraction_unbounded(l_scaling, n_points, max_terms_add, rng, 
 
 
 def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_components=1, l_scale=1, str_out=False,
-                              verbose=False, canonical_form=False, generator_id=1, info_scaling=False, session=None,
+                              verbose=False, generator_id=1, info_scaling=False, session=None,
                               all_momenta=True):
     """
     Generate a random component of a tree level spinor helicity amplitude with a random number of external legs.
@@ -158,7 +154,6 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     :param l_scale:
     :param str_out:
     :param verbose:
-    :param canonical_form:
     :param generator_id:
     :param info_scaling:
     :param session:
@@ -181,12 +176,10 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
 
     # We start by generating a first overall skeleton
     if generator_id == 1:
-        return_expr += generate_random_fraction(-n_pos_h + n_neg_h, n_points, int(max_terms_scale * n_points), rng,
-                                                canonical_form=canonical_form)
+        return_expr += generate_random_fraction(-n_pos_h + n_neg_h, n_points, int(max_terms_scale * n_points), rng)
     else:
         return_expr += generate_random_fraction_unbounded(l_scale, n_points, int(max_terms_scale * n_points),
-                                                          rng, canonical_form=canonical_form,
-                                                          zero_allowed=components == 1)
+                                                          rng, zero_allowed=components == 1)
     denominator = fraction(return_expr)[-1]
     scaling_list = get_expression_detail_lg_scaling(return_expr, [ab, sb], n_points)
     if info_scaling:
@@ -213,7 +206,7 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
     if all_momenta and any([i not in np.array([list(f.args) for f in return_expr.atoms(Function)]).flatten()
                             for i in range(1, n_points+1)]):
         return generate_random_amplitude(npt_list, rng, max_terms_scale, max_components, l_scale, str_out,
-                                         verbose, canonical_form, generator_id, info_scaling, session, all_momenta)
+                                         verbose, generator_id, info_scaling, session, all_momenta)
 
     if verbose:
         print("Generated {}-pt amplitude with {} positive polarizations".format(n_points, n_pos_h))

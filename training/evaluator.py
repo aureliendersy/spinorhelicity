@@ -73,8 +73,8 @@ def check_valid_solution(env, src, tgt, hyp, session):
         # Do the numerical check
         if not valid:
             if env.numerical_check == 1:
-                hyp_mma = sp_to_mma(hyp, env.npt_list, env.bracket_tokens, env.func_dict)
-                tgt_mma = sp_to_mma(tgt, env.npt_list, env.bracket_tokens, env.func_dict)
+                hyp_mma = sp_to_mma(hyp, env.npt_list, env.func_dict)
+                tgt_mma = sp_to_mma(tgt, env.npt_list, env.func_dict)
                 valid, _ = check_numerical_equiv_mma(session, hyp_mma, tgt_mma)
                 if valid:
                     logger.info("Hypothesis is numerically valid")

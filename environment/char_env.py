@@ -81,38 +81,40 @@ class CharEnv(object):
 
     def __init__(self, params):
 
+        # Mathematica Parameters
         self.session = None
         self.mma_path = params.mma_path
         self.numerical_check = params.numerical_check
 
+        # Number of external parameters
         self.npt_list = params.npt_list
         self.max_npt = max(self.npt_list)
 
+        # Representation of integers
         self.int_base = params.int_base
         self.numeral_decomp = params.numeral_decomp
+
+        # Parameters for the amplitude generation
         self.max_len = params.max_len
         self.max_scale = params.max_scale
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
         self.min_scrambles = params.min_scrambles
-        self.save_info_scr = params.save_info_scr
-        self.save_info_scaling = params.save_info_scaling
-        self.canonical_form = params.canonical_form
-        self.bracket_tokens = params.bracket_tokens
         self.generator_id = params.generator_id
         self.l_scale = params.l_scale
+        self.all_momenta = params.all_momenta
+
+        # Parameters for recording the representation of amplitudes and their properties
+        self.save_info_scr = params.save_info_scr
+        self.save_info_scaling = params.save_info_scaling
         self.numerator_only = params.numerator_only
         self.reduced_voc = params.reduced_voc
-        self.all_momenta = params.all_momenta
 
         assert self.max_npt >= 4
         assert abs(self.int_base) >= 2
 
         # Don't need the ab and sb operators if we are using combined brackets
-        if self.bracket_tokens:
-            self.operators = sorted([el for el in list(self.OPERATORS.keys()) if el != 'ab' and el != 'sb'])
-        else:
-            self.operators = sorted(list(self.OPERATORS.keys()))
+        self.operators = sorted([el for el in list(self.OPERATORS.keys()) if el != 'ab' and el != 'sb'])
 
         # Possible constants and variables. The variables used are to denote the momenta.
         # For the constants we use letters to represent the type of identity used
@@ -120,23 +122,21 @@ class CharEnv(object):
         self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
             'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
-        if not self.bracket_tokens:
-            self.special_tokens = []
+
+        if self.reduced_voc:
+            self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
+                                                     for i in range(1, self.max_npt + 1)
+                                                     for j in range(i+1, self.max_npt + 1)])) \
+                                  + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
+                                                       for i in range(1, self.max_npt + 1)
+                                                       for j in range(i+1, self.max_npt + 1)]))
         else:
-            if self.reduced_voc and self.canonical_form:
-                self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
-                                                         for i in range(1, self.max_npt + 1)
-                                                         for j in range(i+1, self.max_npt + 1)])) \
-                                      + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
-                                                           for i in range(1, self.max_npt + 1)
-                                                           for j in range(i+1, self.max_npt + 1)]))
-            else:
-                self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
-                                                         for i in range(1, self.max_npt+1)
-                                                         for j in range(1, self.max_npt+1)]))\
-                                      + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
-                                                           for i in range(1, self.max_npt+1)
-                                                           for j in range(1, self.max_npt+1)]))
+            self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
+                                                     for i in range(1, self.max_npt+1)
+                                                     for j in range(1, self.max_npt+1)]))\
+                                  + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
+                                                       for i in range(1, self.max_npt+1)
+                                                       for j in range(1, self.max_npt+1)]))
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
         if self.numeral_decomp:
@@ -339,7 +339,7 @@ class CharEnv(object):
         # parse children
         parse_list = []
 
-        if not (self.bracket_tokens and op in ['ab', 'sb']):
+        if not op in ['ab', 'sb']:
             for i in range(n_args):
                 if i == 0 or (i < n_args - 1):
                     parse_list.append(op)
@@ -465,7 +465,6 @@ class CharEnv(object):
                                                                          max_terms_scale=self.max_scale,
                                                                          max_components=self.max_terms,
                                                                          l_scale=self.l_scale,
-                                                                         canonical_form=self.canonical_form,
                                                                          generator_id=self.generator_id,
                                                                          info_scaling=self.save_info_scaling,
                                                                          session=self.session,
@@ -476,9 +475,8 @@ class CharEnv(object):
             # Convert to env and scramble
             simple_expr_env = SpinHelExpr(str(simple_expr), n_pt_gen)
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
-                                                     canonical=self.canonical_form, session=self.session,
-                                                     numerator_only=self.numerator_only,
-                                                     min_scrambles=self.min_scrambles)
+                                                    session=self.session, numerator_only=self.numerator_only,
+                                                    min_scrambles=self.min_scrambles)
 
             simple_expr_env.cancel()
 
@@ -492,7 +490,7 @@ class CharEnv(object):
 
             # Save the identity information
             if self.save_info_scr:
-                info_s = convert_momentum_info(info_s, self.max_npt, self.bracket_tokens)
+                info_s = convert_momentum_info(info_s, self.max_npt)
                 prefix_info = self.scr_info_to_prefix(info_s)
             else:
                 prefix_info = None
@@ -506,14 +504,8 @@ class CharEnv(object):
             shuffled_expr = simple_expr_env.sp_expr
 
             # convert back to prefix
-            if self.bracket_tokens:
-                simple_prefix = self.sympy_to_prefix(simple_expr)
-                shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
-            else:
-                simple_expr = convert_to_momentum(simple_expr, list(self.variables.values()))
-                simple_prefix = self.sympy_to_prefix(simple_expr)
-                shuffled_expr = convert_to_momentum(shuffled_expr, list(self.variables.values()))
-                shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
+            simple_prefix = self.sympy_to_prefix(simple_expr)
+            shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
 
             # skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:

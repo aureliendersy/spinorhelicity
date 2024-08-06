@@ -225,12 +225,11 @@ def convert_to_momentum(sp_expr, momentum_list):
     return sp_expr
 
 
-def convert_momentum_info(infos, max_range, skip_bk):
+def convert_momentum_info(infos, max_range):
     """
     Read the identity information vector and convert to the momentum list
     :param infos:
     :param max_range:
-    :param skip_bk
     :return:
     """
     list_info_new = []
@@ -238,7 +237,7 @@ def convert_momentum_info(infos, max_range, skip_bk):
     for info in infos:
         info_new = []
         for element in info:
-            if not(skip_bk and ('ab' in element or 'sb' in element)):
+            if not('ab' in element or 'sb' in element):
                 for i in range(1, max_range + 1):
                     element = element.replace('{}'.format(i), 'p{}'.format(i))
             info_new.append(element)
@@ -319,9 +318,9 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=Tr
                 sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1].split('&')[0][:-1].split(' ')))
             else:
                 sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
-            mma2 = sp_to_mma(sp2, env.npt_list, env.bracket_tokens, env.func_dict)
+            mma2 = sp_to_mma(sp2, env.npt_list, env.func_dict)
             sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
-            mma1 = sp_to_mma(sp1, env.npt_list, env.bracket_tokens, env.func_dict)
+            mma1 = sp_to_mma(sp1, env.npt_list,  env.func_dict)
 
             matches, res_left = check_numerical_equiv_mma(session, mma1, mma2)
 
@@ -379,17 +378,14 @@ def revert_sp_form(sp_expr):
     return sp_expr.subs(replace_dict)
 
 
-def generate_random_bk(bk_fct, n_points, rng, canonical=False):
+def generate_random_bk(bk_fct, n_points, rng):
     """Provided with the bracket type, generate a bracket with random momenta"""
     pi = rng.randint(1, n_points + 1)
     pj = rng.choice([i for i in range(1, n_points + 1) if i not in [pi]])
-    if canonical:
-        if pi < pj:
-            return bk_fct(pi, pj)
-        else:
-            return bk_fct(pj, pi)
-    else:
+    if pi < pj:
         return bk_fct(pi, pj)
+    else:
+        return bk_fct(pj, pi)
 
 
 def reorder_expr(hel_expr):
@@ -421,7 +417,7 @@ def get_n_point(spin_hel_exp):
     return max(set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets]))
 
 
-def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=False):
+def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng):
     """
     Given the scaling list we generate a random appropriate scaling factor
     :param scale_list:
@@ -429,19 +425,18 @@ def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng, canonical=Fal
     :param sbfunc:
     :param n_points
     :param rng
-    :param canonical
     :return:
     """
 
     ret_expr = 1
     for i in range(scale_list[0]):
-        ret_expr *= generate_random_bk(abfunc, n_points, rng, canonical=canonical)
+        ret_expr *= generate_random_bk(abfunc, n_points, rng)
     for j in range(scale_list[1]):
-        ret_expr *= generate_random_bk(sbfunc, n_points, rng, canonical=canonical)
+        ret_expr *= generate_random_bk(sbfunc, n_points, rng)
     for k in range(scale_list[2]):
-        ret_expr *= 1/generate_random_bk(abfunc, n_points, rng, canonical=canonical)
+        ret_expr *= 1/generate_random_bk(abfunc, n_points, rng)
     for l in range(scale_list[3]):
-        ret_expr *= 1/generate_random_bk(sbfunc, n_points, rng, canonical=canonical)
+        ret_expr *= 1/generate_random_bk(sbfunc, n_points, rng)
 
     return ret_expr
 

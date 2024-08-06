@@ -96,8 +96,6 @@ def create_base_parameters(path_model_simplifier, path_model_contrastive, module
         'numeral_decomp': True,
         'int_base': 10,
         'max_len': 2048,
-        'canonical_form': True,
-        'bracket_tokens': True,
         'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,

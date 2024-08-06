@@ -110,7 +110,6 @@ def evaluation_losses(encoded, batch_ids):
     exp_mat = torch.exp(-4*(1-similarity_mat))
     normalization = masks_denom.sum(dim=1)
     denominator = ((exp_mat * masks_denom).sum(dim=1) / normalization).sum()
-    #uniform_loss = torch.log(denominator) / batch_size
     uniform_loss = torch.log(denominator / batch_size)
 
     return alignment_loss, uniform_loss

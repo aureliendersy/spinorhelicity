@@ -250,12 +250,11 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
     return resultsystem
 
 
-def sp_to_mma(sp_expr, npts_list, bracket_tokens=False, func_dict=None):
+def sp_to_mma(sp_expr, npts_list, func_dict=None):
     """
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     :param sp_expr: amplitude expression in sympy format
     :param npts_list: number of external particles
-    :param bracket_tokens: Bool for whether we are using composite tokens
     :param func_dict: Dictionary of ab and sb functionals
     :return:
     """
@@ -266,13 +265,10 @@ def sp_to_mma(sp_expr, npts_list, bracket_tokens=False, func_dict=None):
     else:
         npt_def = None
 
-    # Call the relevant function based on whether we are using a single token for the square and angle brackets
-    if not bracket_tokens:
-        return sp_to_mma_single_token(sp_expr, npt_def)
-    else:
-        if func_dict is None:
-            raise AttributeError("Need the function dictionary to evaluate with bracket tokens")
-        return sp_to_mma_bracket_token(sp_expr, func_dict, npt_def)
+    # Call the relevant function using a single token for the square and angle brackets
+    if func_dict is None:
+        raise AttributeError("Need the function dictionary to evaluate with bracket tokens")
+    return sp_to_mma_bracket_token(sp_expr, func_dict, npt_def)
 
 
 def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
@@ -310,42 +306,6 @@ def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
         rule = func_dict[name_bk](args_npt[int(bracket.name[-2]) - 1], args_npt[int(bracket.name[-1]) - 1])
         dict_replace.update({bracket: rule})
     sp_expr = sp_expr.subs(dict_replace)
-
-    # Convert the sympy string to mathematica and convert the bracket operators to the S@M notation
-    mma_str = sp.mathematica_code(sp_expr)
-    mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
-
-    return mma_str
-
-
-def sp_to_mma_single_token(sp_expr, npt_def=None):
-    """
-    Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
-    Assumes that the relevant variables have been previously initialized
-    Assumes that each token corresponds to a single word
-    :param sp_expr: amplitude expression in sympy format
-    :param npt_def: number of external particles
-    :return:
-    """
-
-    # If we don't have a definite number of external particles
-    if npt_def is None:
-        func_list = list(sp_expr.atoms(sp.Function))
-        momentum_set = set(sum([func.args for func in func_list], ()))
-        n_dep = len(momentum_set)
-        npt = max([int(momentum.name[-1]) for momentum in list(momentum_set)])
-
-        # If we did not get enough momenta show it
-        if n_dep < 4:
-            logger.error(str(sp_expr))
-            logger.error("Got an expression which depends on less than 4 momenta")
-    else:
-        npt = npt_def
-
-    # Replace each bracket token by an appropriate sympy string
-    args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
-    replace_dict_var = {sp.Symbol('p{}'.format(i)): args_npt[i - 1] for i in range(1, npt + 1)}
-    sp_expr = sp_expr.subs(replace_dict_var)
 
     # Convert the sympy string to mathematica and convert the bracket operators to the S@M notation
     mma_str = sp.mathematica_code(sp_expr)
@@ -454,6 +414,5 @@ def create_response_frame(hyp_list, envir):
 
     # Add the latex representation and the mathematica representation
     data_in['Latex String'] = data_in['Sympy String'].apply(latex)
-    data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.bracket_tokens,
-                                                                                   envir.func_dict))
+    data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.func_dict))
     return data_in
