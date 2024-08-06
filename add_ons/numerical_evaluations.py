@@ -10,8 +10,10 @@ Momentas are generated using the S@M Package by Maître, D. and Mastrolia, P.
 import sympy as sp
 from sympy import I
 
+# Define the numerical tolerance
 ZERO_ERROR_POW_LOCAL = 10
 
+# Generated light-like momenta for all incoming massless particles. We have two distinct sets
 MOMENTA_DICT1 = {'4pt1': [2.168045478040097405141269641800320418259852629865936, -1.797278753194948589790282965177089448831570925395903, 0.431015921025208174042754337437197038185532025449617, -1.133329411065872350034886159092258676615480848915334],
                  '4pt2': [2.990889334140360719058390452405564500509081698352757, 0.950448532966487671904593215200594876251231996188987, -2.066013154487146162373749809597695824532348611161416, -1.942590085618294622838408461562373362346378054813246],
                  '4pt3': [-1.198250657185148825269965397737581178778650805528879, 1.077621204508127529151200442451245176447345110043617, -0.434073730662644751411937896172908891013057642504361, -0.293457276937729349711458246866888152393370714460853],
@@ -176,10 +178,10 @@ MOMENTA_DICTS = [MOMENTA_DICT1, MOMENTA_DICT2]
 def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
     """
     Given two sympy expressions we check numerically if they are equal
-    :param tokens:
-    :param hypothesis:
-    :param target:
-    :param npt
+    :param tokens: The bracket tokens that are available
+    :param hypothesis: The hypothesis we have for the amplitude
+    :param target: The target amplitude
+    :param npt: The number of external particles
     :return:
     """
     # Check the n-pt of the expression to check if it is not given
@@ -188,11 +190,17 @@ def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
 
     # Add temporary check on the canonical ordering
     token_sp = [sp.parse_expr(tok) for tok in tokens if tok[-1] > tok[-2]]
+
+    # Create a lambdify version of the amplitude for fast numerical evaluation
     func_hyp = sp.lambdify(token_sp, hypothesis)
     func_tgt = sp.lambdify(token_sp, target)
+
+    # Generate the references to the dictionnary of momenta for the appropriate brackets
     relevant_keys = ['{}pt'.format(npt)+tok for tok in tokens if tok[-1] > tok[-2]]
 
     rel_diff = 0
+
+    # Do the numerical evaluation on both dictionnaries. Retain the absolute difference
     for momenta_vals in MOMENTA_DICTS:
         relevant_coeffs = [momenta_vals[key] for key in relevant_keys]
         hyp_num = sp.N(func_hyp(*relevant_coeffs), ZERO_ERROR_POW_LOCAL+5)
@@ -205,5 +213,6 @@ def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
         else:
             rel_diff += float(diff/abs(tgt_num))
 
+    # Check if the relative difference is below the numerical tolerance 
     valid = rel_diff < 10 ** (-ZERO_ERROR_POW_LOCAL)
     return valid, rel_diff
