@@ -259,11 +259,14 @@ def sp_to_mma(sp_expr, npts_list, bracket_tokens=False, func_dict=None):
     :param func_dict: Dictionary of ab and sb functionals
     :return:
     """
+
+    # Identify the number of external momenta
     if len(npts_list) == 1:
         npt_def = npts_list[0]
     else:
         npt_def = None
 
+    # Call the relevant function based on whether we are using a single token for the square and angle brackets
     if not bracket_tokens:
         return sp_to_mma_single_token(sp_expr, npt_def)
     else:
@@ -300,14 +303,15 @@ def sp_to_mma_bracket_token(sp_expr, func_dict, npt_def=None):
     # Generate the appropriate momenta labels
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
 
+    # Replace each bracket token by an appropriate sympy string
     dict_replace = {}
     for bracket in brackets:
         name_bk = bracket.name[0:2]
         rule = func_dict[name_bk](args_npt[int(bracket.name[-2]) - 1], args_npt[int(bracket.name[-1]) - 1])
         dict_replace.update({bracket: rule})
-
     sp_expr = sp_expr.subs(dict_replace)
 
+    # Convert the sympy string to mathematica and convert the bracket operators to the S@M notation
     mma_str = sp.mathematica_code(sp_expr)
     mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
 
@@ -319,11 +323,12 @@ def sp_to_mma_single_token(sp_expr, npt_def=None):
     Convert a sympy spinor-helicity expression to a form that can be read by the S@M package
     Assumes that the relevant variables have been previously initialized
     Assumes that each token corresponds to a single word
-    :param sp_expr:
-    :param npt_def
+    :param sp_expr: amplitude expression in sympy format
+    :param npt_def: number of external particles
     :return:
     """
 
+    # If we don't have a definite number of external particles
     if npt_def is None:
         func_list = list(sp_expr.atoms(sp.Function))
         momentum_set = set(sum([func.args for func in func_list], ()))
@@ -337,12 +342,12 @@ def sp_to_mma_single_token(sp_expr, npt_def=None):
     else:
         npt = npt_def
 
+    # Replace each bracket token by an appropriate sympy string
     args_npt = [sp.Symbol('a{}{}'.format(npt, i)) for i in range(1, npt + 1)]
-
     replace_dict_var = {sp.Symbol('p{}'.format(i)): args_npt[i - 1] for i in range(1, npt + 1)}
-
     sp_expr = sp_expr.subs(replace_dict_var)
 
+    # Convert the sympy string to mathematica and convert the bracket operators to the S@M notation
     mma_str = sp.mathematica_code(sp_expr)
     mma_str = mma_str.replace('sb', 'Spbb').replace('ab', 'Spaa')
 
@@ -352,14 +357,19 @@ def sp_to_mma_single_token(sp_expr, npt_def=None):
 def check_numerical_equiv_mma(session, mma_hyp, mma_tgt):
     """
     Check the numerical equivalence between the hypothesis and the target
-    :param session:
-    :param mma_hyp:
-    :param mma_tgt:
-    :return:
+    :param session: mathematica session
+    :param mma_hyp: Amplitude Hypothesis in Mathematica notation
+    :param mma_tgt: Target amplitude in Mathematica notation
+    :return: return the validity of the hypothesis and the numerical relative difference to the target
     """
 
+    # Call mathematica with the S@M package to check the numerical difference
     res_diff = session.evaluate(wlexpr('Abs[N[(({})-({}))]]'.format(mma_hyp, mma_tgt)))
+
+    # Call mathematica with the S@M package to check the absolute value of the target amplitude
     res_tgt = session.evaluate(wlexpr('Abs[N[{}]]'.format(mma_tgt)))
+
+    # If the target is close to 0 (e.g target is vanishing) then we define the relative difference as the absolute one
     if res_tgt < 10**(-ZERO_ERROR_POW):
         res_rel = res_diff
     else:
@@ -373,10 +383,12 @@ def check_numerical_equiv_mma(session, mma_hyp, mma_tgt):
             return False, res_tgt
 
     try:
+        # Check whether the difference is smaller than the given error threshold
         valid = res_rel < 10**(-ZERO_ERROR_POW)
     except:
         return False, res_rel
 
+    # If we have an invalid hypothesis we check whether it is simply off by a sign factor
     if not valid:
         res_add = session.evaluate(wlexpr('Abs[N[(({})+({}))]]'.format(mma_hyp, mma_tgt)))
         if res_add/res_tgt < 10**(-ZERO_ERROR_POW):
@@ -386,20 +398,41 @@ def check_numerical_equiv_mma(session, mma_hyp, mma_tgt):
     return valid, res_rel
 
 
-def mma_to_sp_string(mma_expr):
+def mma_to_sp_string_sm(mma_expr):
     """
     Given a Mathematica expression, derived in the S@M package we return a valid Sympy string
-    :param mma_expr:
+    :param mma_expr: Amplitude expression in Mathematica string
     :return:
     """
 
     # Replace the angle brackets (Can have either momenta as arguments or Sp[momenta])
-    sp_str = re.sub(r'Spaa\[Sp\[(\d+)\], Sp\[(\d+)\]\]', r'ab(\1,\2)', mma_expr)
-    sp_str = re.sub(r'Spaa\[(\d+), (\d+)\]', r'ab(\1,\2)', sp_str)
+    sp_str = re.sub(r'Spaa\[Sp\[(\d+)\],\s*Sp\[(\d+)\]\]', r'ab(\1,\2)', mma_expr)
+    sp_str = re.sub(r'Spaa\[(\d+),\s*(\d+)\]', r'ab(\1,\2)', sp_str)
 
     # Replace the square brackets
-    sp_str = re.sub(r'Spbb\[Sp\[(\d+)\], Sp\[(\d+)\]\]', r'sb(\1,\2)', sp_str)
-    sp_str = re.sub(r'Spbb\[(\d+), (\d+)\]', r'sb(\1,\2)', sp_str)
+    sp_str = re.sub(r'Spbb\[Sp\[(\d+)\],\s*Sp\[(\d+)\]\]', r'sb(\1,\2)', sp_str)
+    sp_str = re.sub(r'Spbb\[(\d+),\s*(\d+)\]', r'sb(\1,\2)', sp_str)
+
+    # Replace the power signs
+    sp_str = sp_str.replace('^', '**')
+
+    return sp_str
+
+
+def mma_to_sp_string_bk(mma_expr):
+    """
+    Given a Mathematica expression, with ab[i,j] or sb[i,j] brackets we return a valid Sympy string
+    :param mma_expr: Amplitude expression in Mathematica string
+    :return:
+    """
+
+    # Replace the angle brackets (Can have either momenta as arguments or Sp[momenta])
+    sp_str = re.sub(r'ab\[Sp\[(\d+)\],\s*Sp\[(\d+)\]\]', r'ab(\1,\2)', mma_expr)
+    sp_str = re.sub(r'ab\[(\d+),\s*(\d+)\]', r'ab(\1,\2)', sp_str)
+
+    # Replace the square brackets
+    sp_str = re.sub(r'sb\[Sp\[(\d+)\],\s*Sp\[(\d+)\]\]', r'sb(\1,\2)', sp_str)
+    sp_str = re.sub(r'sb\[(\d+),\s*(\d+)\]', r'sb(\1,\2)', sp_str)
 
     # Replace the power signs
     sp_str = sp_str.replace('^', '**')
@@ -411,12 +444,15 @@ def create_response_frame(hyp_list, envir):
     """
     Given a list of Hypothesis generated in the Streamlit App we return a dataframe with
     the relevant info
-    :param hyp_list:
-    :param envir:
+    :param hyp_list: List of Amplitude hypothesis with corresponding sympy string and score
+    :param envir: Spinor Helicity Environment
     :return:
     """
 
+    # Create the response frame using pandas
     data_in = pd.DataFrame(hyp_list, columns=['Valid Hypothesis', 'Sympy String', 'Score'])
+
+    # Add the latex representation and the mathematica representation
     data_in['Latex String'] = data_in['Sympy String'].apply(latex)
     data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.bracket_tokens,
                                                                                    envir.func_dict))

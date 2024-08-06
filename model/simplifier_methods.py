@@ -4,6 +4,7 @@ Helper functions for the contrastive and simplifier transformers simplification
 import torch
 import numpy as np
 import sympy as sp
+from sympy.parsing.sympy_parser import standard_transformations, implicit_multiplication
 from environment.utils import to_cuda, convert_sp_forms, revert_sp_form, reorder_expr
 from add_ons.numerical_evaluations import check_numerical_equiv_local
 from model.contrastive_learner import build_modules_contrastive
@@ -42,7 +43,12 @@ def load_equation(input_equation, envir, params):
     :param params:
     :return:
     """
-    f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
+    transformations = standard_transformations + (implicit_multiplication,)
+    try:
+        f = sp.parse_expr(input_equation, local_dict=envir.func_dict)
+    # If we get a syntax error then we try to load by allowing for string where the multiplication sign is not apparent
+    except SyntaxError:
+        f = sp.parse_expr(input_equation, local_dict=envir.func_dict, transformations=transformations)
     if params.canonical_form:
         f = reorder_expr(f)
     return f

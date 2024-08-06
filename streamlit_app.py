@@ -14,7 +14,7 @@ from model import MODULE_REGISTRAR
 from model import contrastive_simplifier
 from model.simplifier_methods import all_one_shot_simplify, load_modules, load_equation
 from model.contrastive_simplifier import total_simplification
-from add_ons.mathematica_utils import mma_to_sp_string, create_response_frame
+from add_ons.mathematica_utils import mma_to_sp_string_sm, create_response_frame, mma_to_sp_string_bk
 import sympy as sp
 import numpy as np
 from sympy import latex
@@ -179,7 +179,10 @@ st.caption('This app simplifies spinor-helicity amplitudes which are expressed a
            ' data with 4,5 or 6 massless external particles. The models are trained on expressions that simplify to'
            ' simple linear combinations of rational functions without any spurious poles. We do not explicitly train on'
            ' expressions with arbitrary constants but offer an option to blind constants and attempt a simplification'
-           ' regardless.')
+           ' regardless. The left sidebar tunes the parameters relevant for the simplification and contrastive models.'
+           ' Simplifications are done either in a one-shot mode or iteratively. Expressions < 10 terms can be handled'
+           ' in the one-shot mode, for longer expressions use to the iterative mode.'
+           ' Please refer to {} for more details.')
 
 # Select the N-pt of the amplitude considered and update the session (for cache purposes)
 module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
@@ -230,9 +233,14 @@ init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_
 power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.0)
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
+st.caption("Enter the amplitude either in Fortan syntax eg ab(1,2)**2\*sb(1,2)"
+           " or in Mathematica syntax eg ab[1,2]^2\*sb[1,2] or Spaa[1,2]^2\*Spbb[1,2]."
+           " The amplitude should have uniform scaling under the little group and no spurious poles.")
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
 if "Spaa" in input_eq or "Spbb" in input_eq:
-    input_eq = mma_to_sp_string(input_eq)
+    input_eq = mma_to_sp_string_sm(input_eq)
+if 'ab[' in input_eq or 'sb[' in input_eq:
+    input_eq = mma_to_sp_string_bk(input_eq)
 
 # Put the equation in canonical ordering and display its tex version
 f = load_equation(input_eq, env_s, base_params_simplifier)
