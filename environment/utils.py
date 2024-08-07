@@ -1,4 +1,4 @@
-# Adapted from https://github.com/facebookresearch/SymbolicMathematics under CC BY-NC 4.0
+# Adapted in part from https://github.com/facebookresearch/SymbolicMathematics under CC BY-NC 4.0
 
 """
 Utility functions
@@ -22,7 +22,7 @@ import signal
 from functools import wraps, partial
 from sympy import Function
 from add_ons.mathematica_utils import sp_to_mma, check_numerical_equiv_mma, initialize_numerical_check
-
+from add_ons.numerical_evaluations import check_numerical_equiv_local
 
 class LogFormatter:
 
@@ -208,28 +208,11 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
-def convert_to_momentum(sp_expr, momentum_list):
-    """
-    Convert the momentum in a spinor helicity amplitude from a integer to a momentum label
-    :param sp_expr:
-    :param momentum_list:
-    :return:
-    """
-    func_list = list(sp_expr.atoms(sp.Function))
-
-    replace_dict = {i: momentum_list[i - 1] for i in range(1, len(momentum_list) + 1)}
-    replace_dict_func = {func_list[i]: func_list[i].subs(replace_dict) for i in range(len(func_list))}
-
-    sp_expr = sp_expr.subs(replace_dict_func)
-
-    return sp_expr
-
-
 def convert_momentum_info(infos, max_range):
     """
     Read the identity information vector and convert to the momentum list
-    :param infos:
-    :param max_range:
+    :param infos: the information vector
+    :param max_range: Number of external particles
     :return:
     """
     list_info_new = []
@@ -237,7 +220,7 @@ def convert_momentum_info(infos, max_range):
     for info in infos:
         info_new = []
         for element in info:
-            if not('ab' in element or 'sb' in element):
+            if not ('ab' in element or 'sb' in element):
                 for i in range(1, max_range + 1):
                     element = element.replace('{}'.format(i), 'p{}'.format(i))
             info_new.append(element)
@@ -246,89 +229,52 @@ def convert_momentum_info(infos, max_range):
     return list_info_new
 
 
-def convert_to_bracket_tokens(prefix_expr):
+def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=True, check_method=1):
     """
-    Take as input a prefix expression and convert the brackets into a single token
-    :param prefix_expr:
+    Safeguard check for verifying that all the examples are properly well-defined
+    :param prefix_file_path: Path to training data that contains prefix data
+    :param infos_in_file: Whether scrambling identities information is included
+    :param env: CharEnv
+    :param lib_path: Path to the S@M library
+    :param check_method: Check with Mathematica (1) or with local numerical evaluation (2)
     :return:
     """
 
-    return_expr = []
-    pass_word = 0
-
-    for i, word in enumerate(prefix_expr):
-        if word in ['ab', 'sb']:
-            return_expr.append(word + prefix_expr[i+1].replace('p', '') + prefix_expr[i+2].replace('p', ''))
-            pass_word += 2
-        elif pass_word == 0:
-            return_expr.append(word)
-        else:
-            pass_word -= 1
-
-    return return_expr
-
-
-def convert_to_bracket_file(prefix_file_path):
-    """
-    Read a file with the prefix data and convert it to a new alphabet
-    :param prefix_file_path:
-    :return:
-    """
-
-    print("Reading from {}".format(prefix_file_path))
-
-    out_path = prefix_file_path + '_new_alphabet'
-    new_file = open(out_path, "w")
-
-    counter = 0
-
-    with open(prefix_file_path) as infile:
-        for line in infile:
-            prefix2_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[1][:-1].split(' ')))
-            prefix1_str = ' '.join(convert_to_bracket_tokens(line.split('\t')[0].split(' ')))
-            new_file.write(f'{prefix1_str}\t{prefix2_str}\n')
-            counter += 1
-
-            if counter % 1000 == 0:
-                print("Did {} lines".format(counter))
-
-    new_file.close()
-
-
-def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=True):
-    """
-    Safeguard check for verifying that all the examples are properly well defined
-    :param prefix_file_path:
-    :param infos_in_file:
-    :param env
-    :param lib_path
-    :return:
-    """
-
-    session = initialize_numerical_check(env.max_npt, lib_path=lib_path)
-
-    print("Reading from {}".format(prefix_file_path))
+    if check_method == 1:
+        # Start the Mathematica session
+        session = initialize_numerical_check(env.max_npt, lib_path=lib_path)
+    str_add = "with Mathematica" if  check_method == 1 else "locally"
+    print("Reading from {} and checking {}".format(prefix_file_path, str_add))
 
     counter = 0
     all_correct = True
 
     with open(prefix_file_path) as infile:
         for line in infile:
+            # Convert the prefix expressions to sympy  (account for whether identity info is included)
             if infos_in_file:
                 sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1].split('&')[0][:-1].split(' ')))
             else:
                 sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
-            mma2 = sp_to_mma(sp2, env.npt_list, env.func_dict)
+
             sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
-            mma1 = sp_to_mma(sp1, env.npt_list,  env.func_dict)
 
-            matches, res_left = check_numerical_equiv_mma(session, mma1, mma2)
+            if check_method == 1:
+                # Convert to Mathematica the simple and scrambled amplitudes
+                mma2 = sp_to_mma(sp2, env.npt_list, env.func_dict)
+                mma1 = sp_to_mma(sp1, env.npt_list,  env.func_dict)
+                # Check the numerical equivalence
+                matches, res_left = check_numerical_equiv_mma(session, mma1, mma2)
+            else:
+                # Check the numerical equivalence locally
+                matches, res_left = check_numerical_equiv_local(env.special_tokens, sp1, sp2, npt=env.npt_list[0])
 
+            # Output any discrepancy
             if not matches:
                 print('Residue is {}'.format(res_left))
                 print('Example {} did not match'.format(counter))
-                print('Simple expr {}'.format(mma2))
-                print('Shuffled expr {}'.format(mma1))
+                print('Simple expr {}'.format(sp_to_mma(sp2, env.npt_list,  env.func_dict)))
+                print('Shuffled expr {}'.format(sp_to_mma(sp1, env.npt_list, env.func_dict)))
                 all_correct = False
 
             counter += 1
@@ -346,8 +292,8 @@ def convert_sp_forms(sp_expr, func_dict):
     """
     Given a sympy form using composite tokens, convert it to the regular sympy form
     that uses the ab and sb functionals
-    :param sp_expr:
-    :param func_dict:
+    :param sp_expr: Sympy expression of an amplitude
+    :param func_dict: Dictionary with the ab, sb functionals
     :return:
     """
     replace_dict = {}
@@ -363,8 +309,8 @@ def convert_sp_forms(sp_expr, func_dict):
 
 def revert_sp_form(sp_expr):
     """
-    Given a sympy form using ab and sb functionals, revert it to the regular sympy form u
-    :param sp_expr:
+    Given a sympy form using ab and sb functionals, revert it to the regular sympy form
+    :param sp_expr: Sympy expression of an amplitude
     :return:
     """
     replace_dict = {}
@@ -398,6 +344,7 @@ def reorder_expr(hel_expr):
     func_list = list(hel_expr.atoms(Function))
     replace_dict = {}
     for fun in func_list:
+        # If non-canonical ordering we swap the momenta and multiply by -1
         if fun.args[0] > fun.args[1]:
             new_func = fun.func(fun.args[1], fun.args[0])
             replace_dict.update({fun: new_func*(-1)})
@@ -417,33 +364,9 @@ def get_n_point(spin_hel_exp):
     return max(set([int(bracket.name[-1]) for bracket in brackets] + [int(bracket.name[-2]) for bracket in brackets]))
 
 
-def random_scale_factor(scale_list, abfunc, sbfunc, n_points, rng):
-    """
-    Given the scaling list we generate a random appropriate scaling factor
-    :param scale_list:
-    :param abfunc:
-    :param sbfunc:
-    :param n_points
-    :param rng
-    :return:
-    """
-
-    ret_expr = 1
-    for i in range(scale_list[0]):
-        ret_expr *= generate_random_bk(abfunc, n_points, rng)
-    for j in range(scale_list[1]):
-        ret_expr *= generate_random_bk(sbfunc, n_points, rng)
-    for k in range(scale_list[2]):
-        ret_expr *= 1/generate_random_bk(abfunc, n_points, rng)
-    for l in range(scale_list[3]):
-        ret_expr *= 1/generate_random_bk(sbfunc, n_points, rng)
-
-    return ret_expr
-
-
 def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
     """
-    Given a list of factors build the correct spin helicity expression
+    Given a list of factors builds the correct spinor-helicity expression
     Assumes canonical form already
     :param scale_list:
     :param abfunc:
@@ -451,7 +374,6 @@ def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
     :param n_points:
     :return:
     """
-
     bk_list = [abfunc(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]\
             + [sbfunc(i, j) for i in range(1, n_points) for j in range(i+1, n_points+1)]
 
@@ -463,43 +385,30 @@ def build_scale_factor(scale_list, abfunc, sbfunc, n_points):
     return ret_expr
 
 
-def add_scaling_lg(lg_scale_vector, bk_add, num):
-    """
-    Add the correct little group scaling to the existing vector
-    :param lg_scale_vector:
-    :param bk_add:
-    :param num:
-    :return:
-    """
-
-    sign = 1 if bk_add.func.__name__ == 'sb' else -1
-    sign = sign if num else -sign
-
-    for arg in bk_add.args:
-        lg_scale_vector[arg - 1] += sign
-
-    return lg_scale_vector
-
-
 def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
     """
     Fast method to get the scaling for only numerator terms
-    :param sp_numerator:
-    :param func_dict:
-    :param npt:
+    :param sp_numerator: Sympy expression for the numerator of a spinor-helicity amplitude
+    :param func_dict: Dictionary of functionals ab and sb
+    :param npt: Number of external particles
     :return:
     """
 
+    # Initialize the return vectors
     scalings = [0] * npt
     mass_dim = 0
 
+    # If we have an addition of terms we take the first one only (they should all have the same scaling)
     if isinstance(sp_numerator, sp.Add):
         term = sp_numerator.args[0]
     else:
         term = sp_numerator
 
+    # For an integer the scaling is 0
     if isinstance(term, sp.Integer):
         return [mass_dim] + scalings
+
+    # If the term is a single bracket then update the scalings vectors appropriately based on its type
     elif isinstance(term, func_dict[0]):
         momentas = term.args
         scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + 1
@@ -511,6 +420,7 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
         scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] - 1
         mass_dim += 1
 
+    # If we have a bracket raised to some power
     elif isinstance(term, sp.Pow):
         func, power = term.args
         mass_dim += power
@@ -523,11 +433,16 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
         scalings[int(momentas[0]) - 1] = scalings[int(momentas[0]) - 1] + sign * power
         scalings[int(momentas[1]) - 1] = scalings[int(momentas[1]) - 1] + sign * power
 
+    # If we have a multiplication of brackets
     elif isinstance(term, sp.Mul):
 
+        # Loop through all brackets and update appropriately
         for arg in term.args:
+
+            # If the brackets are raised to some power
             if isinstance(arg, sp.Pow):
                 func, power = arg.args
+            # Overall integers don't change the scaling
             elif isinstance(arg, sp.Integer):
                 continue
             else:
@@ -549,11 +464,12 @@ def get_numerator_lg_scaling(sp_numerator, func_dict, npt=5):
 def get_expression_lg_scaling(sp_expression, func_dict, npt=5):
     """
     Fast method to get the scaling for an expression
-    :param sp_expression:
-    :param func_dict:
-    :param npt:
+    :param sp_expression: Sympy expression for a spinor-helicity amplitude
+    :param func_dict: Dictionary of functionals ab and sb
+    :param npt: Number of external particles
     :return:
     """
+    # Split into numerator and denominator and get the scaling of both
     num, denom = sp.fraction(sp_expression)
     num_scalings = np.array(get_numerator_lg_scaling(num, func_dict, npt))
     denom_scalings = np.array(get_numerator_lg_scaling(denom, func_dict, npt))
@@ -563,10 +479,11 @@ def get_expression_lg_scaling(sp_expression, func_dict, npt=5):
 
 def get_expression_detail_lg_scaling(sp_expression, func_dict, npt=5):
     """
-    Fast method to get the scaling for an expression
-    :param sp_expression:
-    :param func_dict:
-    :param npt:
+    Fast method to get the scaling for an expression. Returns the scalings of the numerator and denominator
+    independently
+    :param sp_expression: Sympy expression for a spinor-helicity amplitude
+    :param func_dict: Dictionary of functionals ab and sb
+    :param npt: Number of external particles
     :return:
     """
     num, denom = sp.fraction(sp_expression)

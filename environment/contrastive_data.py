@@ -29,6 +29,7 @@ def convert_single_numerator_prefix(prefix_form):
     :return:
     """
 
+    # If we have an integer greater than 10 we skip
     if '10' in prefix_form:
         return prefix_form, False
 
@@ -36,8 +37,10 @@ def convert_single_numerator_prefix(prefix_form):
     skip_tok = 0
 
     for i, token in enumerate(prefix_form):
+        # Don't output integer or multiplication tokens
         if token == 'INT+' or token == 'mul' or token == '1' or i == skip_tok:
             continue
+        # For power tokens we repeat the token the appropriate number of times
         elif token == 'pow':
             power = int(prefix_form[i+3])
             skip_tok = i + 3
@@ -50,7 +53,7 @@ def convert_single_numerator_prefix(prefix_form):
 
 def get_scaling_id(scale_lst):
     """
-    For a given list of scaling coefficients we can get a unique id
+    For a given list of little group scaling coefficients we create a unique id
     :param scale_lst:
     :return:
     """
@@ -100,7 +103,7 @@ def convert_spinor_data(filepath, ids_tokens, env, check_ids=False):
     file_size = os.path.getsize(filepath)
     pbar = tqdm(total=file_size, unit="MB")
 
-    # Define the path where we ouput the data
+    # Define the path where we output the data
     outpath = filepath.replace('data', 'data_contrastive')
     print('Writing data in {}'.format(outpath))
 
@@ -178,7 +181,7 @@ def create_batched_split(env, params, pathin, size_set):
     """
     Given a path to a file we create a train, valid and test set
     The validation and test sets are not part of the train set and created by selecting examples
-     that have similar little group scaling
+    that have similar little group scaling
     :param env:
     :param params:
     :param pathin:
@@ -304,16 +307,21 @@ def convert_file_to_permutation_inv(inputpath):
     """
     Given an input file we open it and read it line by line.
     For each line we extract the prefix expressions (separated by tabs) and convert them into
-    a form that is permutation invariant. Then we write back the obtained result
+    a form that is permutation invariant. Then we write back the obtained result.
+    For now not used in practice but consider for future work
     :param inputpath:
     :return:
     """
-    outpath = inputpath + '.perm'
+
+    # Read the input data
     print(f"Reading data from {inputpath} ...")
     with io.open(inputpath, mode='r', encoding='utf-8') as f:
         lines = [line for line in f]
     total_size = len(lines)
     print(f"Read {total_size} lines.")
+
+    # Define the output path
+    outpath = inputpath + '.perm'
     print(f"Writing data to {outpath} ...")
     f_out = io.open(outpath, mode='w', encoding='utf-8')
 
@@ -322,14 +330,18 @@ def convert_file_to_permutation_inv(inputpath):
         if i % 100000 == 0:
             print(i, end='...', flush=True)
         parts_line = line.replace('\n', '').split('|')
+
+        # Retain the individual numerator prefixes
         prefix_parts = parts_line[-1].split('\t')
         convert_prefix = []
 
         skip_line = False
         for prefix_part in prefix_parts:
+            # Convert the prefix to a permutation invariant form
             convert_pre, success = convert_single_numerator_prefix(prefix_part.split(' '))
             if success:
                 convert_prefix.append(' '.join(convert_pre))
+            # If we cannot convert (e.g integer greater than 10 is present then we skip this example  line)
             else:
                 skip_line = True
         if skip_line:
@@ -364,12 +376,12 @@ class EnvDatasetContrastive(EnvDataset):
         if self.params.export_data and not self.batch_scalings:
             raise ValueError('Not generating data directly for contrastive learning for now')
 
-        # generation, or reloading from file
+        # Generation, or reloading from file
         if self.path is not None:
             assert os.path.isfile(self.path)
             logger.info(f"Loading data from {self.path} ...")
             with io.open(self.path, mode='r', encoding='utf-8') as f:
-                # either reload the entire file, or the first N lines (for the training set)
+                # Either reload the entire file, or the first N lines (for the training set)
                 if not self.train:
                     lines = [line.rstrip().split('|') for line in f]
                 else:
@@ -436,11 +448,16 @@ class EnvDatasetContrastive(EnvDataset):
             if batch_index:
                 self.ref_group_indices.remove(index)
 
+            # Take a new scaling group if the reference is empty or 5% of the time randomly
             if len(self.ref_group_indices) == 0 or self.rng.randint(20) == 0:
                 self.ref_group_indices = None
+
+        # In evaluation mode we can just read through the batch in the natural order
         elif self.batch_scalings and not self.train:
             _, samples = self.data[index]
         else:
             samples = self.data[index]
+
+        # Return the different numerator terms considered
         split_samples = [sample.split() for sample in samples]
         return split_samples

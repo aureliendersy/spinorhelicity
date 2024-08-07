@@ -12,7 +12,9 @@ logger = getLogger()
 
 
 class FFNHead(nn.Module):
-
+    """
+    Head given by feedforward network  - comes after the Encoder transformer
+    """
     def __init__(self, embed_dim, layer_nums, norm=None):
         super().__init__()
         self.activation = nn.ReLU()
@@ -22,6 +24,7 @@ class FFNHead(nn.Module):
 
         layer_list = []
 
+        # For each layer we add the normalization required and the neuron layer
         for i in range(self.layer_nums):
             layer_list.append(('layer_%d' % (i + 1), nn.Linear(self.embed_dim, self.embed_dim)))
 

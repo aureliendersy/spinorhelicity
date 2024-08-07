@@ -62,6 +62,7 @@ def build_modules(env, params):
     return modules
 
 
+# Download links to the trained models
 MODULE_REGISTRAR = {'4-pt': 'https://drive.google.com/uc?export=download&id=1lq46Hc_eF8khsoC4k-lsMjZpaY0Pco29',
                     '5-pt': 'https://drive.google.com/uc?export=download&id=1hSyRKcsMjxgVZ3DB1EkwD0OFHxoId4FZ',
                     '6-pt': 'https://drive.google.com/uc?export=download&id=1nN8-nCTd08poS1ZCye0HnyLSxhs2SGCb',

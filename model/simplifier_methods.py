@@ -6,7 +6,7 @@ import numpy as np
 import sympy as sp
 from sympy.parsing.sympy_parser import standard_transformations, implicit_multiplication
 from environment.utils import to_cuda, convert_sp_forms, revert_sp_form, reorder_expr
-from add_ons.numerical_evaluations import check_numerical_equiv_local
+from add_ons.numerical_evaluations import check_numerical_equiv_local, ZERO_ERROR_POW_LOCAL
 from model.contrastive_learner import build_modules_contrastive
 from model import build_modules
 
@@ -94,7 +94,10 @@ def one_shot_simplify(envir, module_transfo, f_eq, params_in, blind_const=False,
             const_list = None
         x1, len1 = one_hot_encode_sp(eq_to_simplify, envir)
     except AssertionError:
-        raise AssertionError("Equation not encoded correctly with amplitude type selected !")
+        raise AssertionError("Amplitude not encoded correctly with amplitude type selected !")
+    if len1.item() > module_transfo[0].n_max_positions:
+        raise IndexError("Amplitude too long to fit in the simplifier model, use the iterative simplification !")
+
     x1, len1 = to_cuda(x1, len1)
 
     # Recover the sympy version of the input equation apt for the numerical check
@@ -269,7 +272,7 @@ def retain_valid_hypothesis(hyps_list, term_init, rng_active):
     for (match, hyp, diff) in hyps_list:
 
         # If the relative difference is 4 we just have the wrong overall sign (since we check on two datasets)
-        if diff == 4:
+        if abs(diff - 4) < 2 * 10 ** (-ZERO_ERROR_POW_LOCAL):
             hyp = -hyp
             match = True
         if match:

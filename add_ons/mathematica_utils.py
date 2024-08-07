@@ -228,7 +228,7 @@ def solve_diophantine_system_mma(coefficients, session, eqvar, prev_sol=None):
 
     else:
         # For a fast solution. Not always random anymore but necessary if we have to solve a system with too many sols
-        # If we have access to previous solutions we can input them there to ensure that we dont get back the same thing
+        # If we have access to previous solutions we can input them there to ensure that we don't get back the same thing
         if prev_sol is not None and len(prev_sol) > 0:
             add_str = ','.join([' || '.join(eqvar[i] + '!={}'.format(sol) for i, sol in enumerate(prev))
                                 for prev in prev_sol])
