@@ -96,7 +96,6 @@ def create_base_parameters(path_model_simplifier, path_model_contrastive, module
         'numeral_decomp': True,
         'int_base': 10,
         'max_len': 2048,
-        'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
@@ -171,13 +170,14 @@ def load_models_env(params_simplifier, params_contrastive):
 
 
 # Front End - Title and Disclaimer
-st.title("Spinor Helicity Simplification")
+st.title("Spinor-Helicity Simplification")
 st.caption("This app simplifies spinor-helicity expressions.  Enter the input in the syntax of Fortran"
            " (ab(1,2)**2\*sb(1,2)), Mathematica (ab[1,2]^2\*sb[1,2]), or S@M (Spaa[1,2]^2\*Spbb[1,2])."
            " All terms should have uniform scaling in mass dimension and little group,"
            " with purely monomial denominators.  Specify the number of external particles and the mode of"
-           " simplification, with additional tunable parameters on the sidebar.  Typically, shorter expressions"
-           " can be handled in one-shot mode, while longer ones require iterative mode. See \cite{} for details.")
+           " simplification, with additional tunable parameters on the sidebar. One-shot and iterative mode are"
+           " effective for shorter (<10 terms) and longer (<40 terms) expressions, respectively."
+           " Apply even longer expressions at your own risk. See \cite{} for details.")
 
 # Select the N-pt of the amplitude considered and update the session (for cache purposes)
 module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
@@ -218,8 +218,8 @@ st.sidebar.divider()
 
 # Choose the inference parameters (sidebar)
 beam_size = st.sidebar.slider('Beam Size (Beam Search and Nucleus Sampling)', min_value=1, max_value=20, step=1, value=5)
-nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.005, value=0.925)
-temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.05, value=1.25)
+nucleus_p = st.sidebar.slider('Nucleus Cutoff (Nucleus Sampling)', min_value=0.8, max_value=1.0, step=0.005, value=0.95)
+temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5, max_value=4.0, step=0.05, value=1.5)
 
 # Parameters for the iterative simplification
 st.sidebar.divider()
@@ -283,6 +283,8 @@ if st.button("Click Here to Simplify") and any(sample_methods):
             st.download_button(label="Download Data", data=response_frame.to_csv().encode('utf-8'),
                                file_name='hypothesis.csv', mime='text/csv')
         except AssertionError as e:
+            st.write("Error: {}".format(e))
+        except IndexError as e:
             st.write("Error: {}".format(e))
 
     elif simplification_method == "Iterative simplification":
