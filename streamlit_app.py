@@ -235,7 +235,7 @@ if 'ab[' in input_eq or 'sb[' in input_eq:
     input_eq = mma_to_sp_string_bk(input_eq)
 
 # Put the equation in canonical ordering and display its tex version
-f = load_equation(input_eq, env_s, base_params_simplifier)
+f = load_equation(input_eq, env_s)
 f = f.cancel()
 
 # Don't display the equation if it is too long (choice of length is arbitrary)

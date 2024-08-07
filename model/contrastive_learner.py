@@ -29,8 +29,10 @@ class FFNHead(nn.Module):
             layer_list.append(('layer_%d' % (i + 1), nn.Linear(self.embed_dim, self.embed_dim)))
 
             if i + 1 < self.layer_nums:
+                # Can opt for a batch norm layer
                 if self.norm_layer == 'batchnorm':
                     layer_list.append(('batch_norm_%d' % (i+1), nn.BatchNorm1d(self.embed_dim)))
+                # Or can also decide for a Layer Norm
                 elif self.norm_layer == 'layernorm':
                     layer_list.append(('layer_norm_%d' % (i+1),nn.LayerNorm(self.embed_dim, eps=1e-12)))
                 layer_list.append(('activation_%d' % (i + 1), self.activation))

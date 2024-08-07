@@ -497,19 +497,27 @@ class TransformerModel(nn.Module):
             scores = F.log_softmax(scores, dim=-1)  # (bs * beam_size, n_words)
             assert scores.size() == (bs * beam_size, n_words)
 
+            # Nucleus sampling decoding strategy
             if stochastic:
                 _scores = torch.exp(scores)
+
+                # Sort the token scores and calculate the cumulative
                 sort_scores, sort_idx = torch.sort(_scores, dim=-1, descending=True)
                 cumul_scores = torch.cumsum(sort_scores, dim=-1)
+
+                # Retain the tokens whose cumulative score is just below the nucleus cutoff
                 nucleus = cumul_scores < nucl_p
                 nucleus = torch.cat([nucleus.new_ones(nucleus.shape[:-1] + (1,)), nucleus[..., :-1]], dim=-1)
                 sort_scores[~nucleus] = float(0.0)
+
+                # Sample the next token word based on the tokens present in the nucleus
                 next_words = sort_idx.gather(-1, sort_scores.multinomial(num_samples=1, replacement=True,
                                                                          generator=rng_gen))
-                # next_words = _scores.multinomial(num_samples=1, replacement=True)  # (bs*beam_size, 1)
                 next_scores = (scores.gather(1, next_words) + beam_scores[:, None]).view(bs, beam_size)  # (bs*beam_size, 1)
                 next_words = next_words.view(bs, beam_size)
                 assert next_scores.size() == next_words.size() == (bs, beam_size)
+
+            # Beam search decoding
             else:
                 # select next words with scores
                 _scores = scores + beam_scores[:, None].expand_as(scores)  # (bs * beam_size, n_words)
@@ -564,7 +572,6 @@ class TransformerModel(nn.Module):
                 next_batch_beam.extend(next_sent_beam)
 
                 assert len(next_batch_beam) == beam_size * (sent_id + 1)
-
 
             # sanity check / prepare next batch
             assert len(next_batch_beam) == bs * beam_size
