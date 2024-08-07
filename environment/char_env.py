@@ -19,7 +19,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy.core.cache import clear_cache
 from sympy.calculus.util import AccumBounds
 from environment.bracket_env import ab, sb
-from environment.utils import timeout, TimeoutError, convert_to_momentum, convert_momentum_info
+from environment.utils import timeout, TimeoutError, convert_momentum_info
 from environment.helicity_generator import generate_random_amplitude
 from environment.spin_helicity_env import SpinHelExpr
 from add_ons.mathematica_utils import initialize_solver_session
@@ -100,7 +100,6 @@ class CharEnv(object):
         self.max_terms = params.max_terms
         self.max_scrambles = params.max_scrambles
         self.min_scrambles = params.min_scrambles
-        self.generator_id = params.generator_id
         self.l_scale = params.l_scale
         self.all_momenta = params.all_momenta
 
@@ -117,12 +116,14 @@ class CharEnv(object):
         self.operators = sorted([el for el in list(self.OPERATORS.keys()) if el != 'ab' and el != 'sb'])
 
         # Possible constants and variables. The variables used are to denote the momenta.
+        # (Leave for possible future work - not required in the minimal vocabulary)
         # For the constants we use letters to represent the type of identity used
         self.constants = ['S', 'M', 'M+', 'M-', 'ID+', 'ID-', 'Z+', 'Z-']
         self.func_dict = {'ab': ab, 'sb': sb}
         self.variables = OrderedDict({
             'p{}'.format(i): sp.Symbol('p{}'.format(i)) for i in range(1, self.max_npt + 1)})
 
+        # When using a reduced vocabulary we generate only the bracket with canonical ordering of  momenta
         if self.reduced_voc:
             self.special_tokens = list(filter(None, ['ab{}{}'.format(i, j) if i != j else None
                                                      for i in range(1, self.max_npt + 1)
@@ -137,6 +138,7 @@ class CharEnv(object):
                                   + list(filter(None, ['sb{}{}'.format(i, j) if i != j else None
                                                        for i in range(1, self.max_npt+1)
                                                        for j in range(1, self.max_npt+1)]))
+        # Define the symbols and tokens required to represent integers
         self.symbols = ['INT+', 'INT-']
         self.elements = [str(i) for i in range(abs(self.int_base))]
         if self.numeral_decomp:
@@ -149,18 +151,19 @@ class CharEnv(object):
             assert k not in self.local_dict
             self.local_dict[k] = v
 
-        # vocabulary
-
+        # Complete word vocabulary - in practice we use the reduced version for training the models
         if self.reduced_voc and not (self.save_info_scr or self.save_info_scaling):
             self.words = SPECIAL_WORDS2 + self.operators + self.symbols + self.elements + self.special_tokens
         else:
             self.words = SPECIAL_WORDS + self.constants + list(self.variables.keys()) +\
                          self.operators + self.symbols + self.elements + self.special_tokens
+
+        # Define the mapping between tokens and their respective IDs
         self.id2word = {i: s for i, s in enumerate(self.words)}
         self.word2id = {s: i for i, s in self.id2word.items()}
         assert len(self.words) == len(set(self.words))
 
-        # number of words / indices
+        # Number of words / indices
         self.n_words = params.n_words = len(self.words)
         self.eos_index = params.eos_index = 0
         self.pad_index = params.pad_index = 1
@@ -226,14 +229,22 @@ class CharEnv(object):
         """
         base = self.int_base
         val = 0
+
+        # Check that the list starts with an integer marker
         if not (base >= 2 and lst[0] in ['INT+', 'INT-']):
             raise InvalidPrefixExpression(f"Invalid integer in prefix expression")
         i = 0
+
+        # Parse the list and break when we don't have an integer marker
         for x in lst[1:]:
             if not (x.isdigit() or x[0] == '-' and x[1:].isdigit()):
                 break
+
+            # Update the integer value with the number encountered
             val = val * base + int(x)
             i += 1
+
+        # Add the minus sign if required
         if base > 0 and lst[0] == 'INT-':
             val = -val
         return val, i + 1
@@ -247,18 +258,26 @@ class CharEnv(object):
         :param order: Order in base 10 of int_in
         :return:
         """
+
+        # If we get a zero we move to the next decimal
         if int(int_in) == 0:
             return self.numeral_decomp_builder(rem_int[0], int_sign, rem_int[1:], order + 1)
+        # If we have no more digits to consider don't return anything extra
         if len(rem_int) == 0:
             return_val = []
+        # If we still have digits we append the return value
         else:
             return_val = self.numeral_decomp_builder(rem_int[0], int_sign, rem_int[1:], order + 1)
+        # If we have a number smaller than 10
         if order == 0:
             return ['add', int_sign, int_in] + return_val
+
         add_term = ['add'] if len(rem_int) > 0 else []
         coeff_term = ['mul', int_sign, int_in] if (int(int_in) != 1 or int_sign != 'INT+') else []
+        # If we have a number between 10 and 100
         if order == 1:
             return add_term + coeff_term + ['INT+', '10'] + return_val
+        # If we have a number greater than 100
         else:
             return add_term + coeff_term + ['pow', 'INT+', '10'] + self.write_int(order) + return_val
 
@@ -290,8 +309,7 @@ class CharEnv(object):
 
     def _prefix_to_infix(self, expr):
         """
-        Parse an expression in prefix mode, and output it in either:
-          - infix mode (returns human readable string)
+        Parse an expression in prefix mode, and output it in infix mode (returns human readable string)
         """
         if len(expr) == 0:
             raise InvalidPrefixExpression("Empty prefix list.")
@@ -322,7 +340,7 @@ class CharEnv(object):
         """
         Convert an infix expression to SymPy.
         """
-
+        # Parse the infix string with sympy directly
         expr = parse_expr(infix, evaluate=True, local_dict=self.func_dict)
         if expr.has(AccumBounds):
             logger.error('Expression {} failed. Was {} originally'.format(expr, infix))
@@ -356,17 +374,20 @@ class CharEnv(object):
         """
         Convert a SymPy expression to a prefix one.
         """
+        # For declared sympy symbols or bracket tokens
         if isinstance(expr, sp.Symbol):
             return [str(expr)]
+        # Parse integer numbers
         elif isinstance(expr, sp.Integer):
             return self.write_int(int(str(expr)))
+        # In the special case where we have an overall rational number for instance
         elif isinstance(expr, sp.Rational):
             return ['div'] + self.write_int(int(expr.p)) + self.write_int(int(expr.q))
         # SymPy operator
         for op_type, op_name in self.SYMPY_OPERATORS.items():
             if isinstance(expr, op_type):
                 return self._sympy_to_prefix(op_name, expr)
-        # unknown operator
+        # Unknown operator
         raise UnknownSymPyOperator(f"Unknown SymPy operator: {expr}")
 
     def scr_info_to_prefix(self, info_s):
@@ -378,10 +399,13 @@ class CharEnv(object):
         prefix_ret = []
         for info_vec in info_s:
             for info_w in info_vec:
+                # If the information is an identity token marker
                 if info_w in self.constants:
                     prefix_ret.append(info_w)
+                # If the information is using a momentum token
                 elif info_w in self.variables:
                     prefix_ret.extend(self.sympy_to_prefix(sp.parse_expr(info_w)))
+                # If the information is another token (e.g a bracket token)
                 else:
                     prefix_ret.extend(self.sympy_to_prefix(sp.parse_expr(info_w, local_dict=self.func_dict)))
 
@@ -454,60 +478,58 @@ class CharEnv(object):
     @timeout(1000)
     def gen_hel_ampl(self, rng):
         """
-        Generate pairs of (function, primitive).
-        Start by generating a random function f, and use SymPy to compute F.
+        Generate a spinor helicity amplitude and an equivalent scrambled version of it
         """
 
         try:
-            # start_time = time.time()
             # Generate a simple spinor helicity expression
+            # Also retain some information about the amplitude (number of particles and little group scaling)
             simple_expr, n_pt_gen, scale_inf = generate_random_amplitude(self.npt_list, rng,
                                                                          max_terms_scale=self.max_scale,
                                                                          max_components=self.max_terms,
                                                                          l_scale=self.l_scale,
-                                                                         generator_id=self.generator_id,
                                                                          info_scaling=self.save_info_scaling,
                                                                          session=self.session,
                                                                          all_momenta=self.all_momenta)
             if simple_expr is None:
                 return None
 
-            # Convert to env and scramble
+            # Convert the amplitude to the SpinorHelicity Environment and scramble it
             simple_expr_env = SpinHelExpr(str(simple_expr), n_pt_gen)
             info_s = simple_expr_env.random_scramble(rng, max_scrambles=self.max_scrambles, out_info=self.save_info_scr,
-                                                    session=self.session, numerator_only=self.numerator_only,
-                                                    min_scrambles=self.min_scrambles)
+                                                     session=self.session, numerator_only=self.numerator_only,
+                                                     min_scrambles=self.min_scrambles)
 
+            # Put the resulting amplitude into a fraction form with a single common denominator
             simple_expr_env.cancel()
 
             # If the scrambled expression drops a momentum then we discard it from the training set
-            # We do this if we could have an ambiguity as to the type of n point expression
+            # We do this if we could have an ambiguity when generating amplitude with different number of particles
             if len(self.npt_list) > 1\
                     and any([i not in np.array([list(f.args)
                                                 for f in simple_expr_env.sp_expr.atoms(sp.Function)]).flatten()
                              for i in range(1, simple_expr_env.n_point + 1)]):
                 return None
 
-            # Save the identity information
+            # Save the identity information if required
             if self.save_info_scr:
                 info_s = convert_momentum_info(info_s, self.max_npt)
                 prefix_info = self.scr_info_to_prefix(info_s)
             else:
                 prefix_info = None
 
-            # Save the scaling information
+            # Save the scaling information if required
             if self.save_info_scaling:
                 prefix_info_scale = self.scale_info_to_prefix(scale_inf)
             else:
                 prefix_info_scale = None
 
+            # Convert the simple and scrambled amplitudes to prefix notation
             shuffled_expr = simple_expr_env.sp_expr
-
-            # convert back to prefix
             simple_prefix = self.sympy_to_prefix(simple_expr)
             shuffled_prefix = self.sympy_to_prefix(shuffled_expr)
 
-            # skip too long sequences
+            # Skip too long sequences
             if max(len(simple_prefix), len(shuffled_prefix)) > self.max_len:
                 logger.info("Rejected Equation as was too long for {} identities"
                             .format(len([info for info in info_s if 'ID' not in ''.join(info)
@@ -518,10 +540,10 @@ class CharEnv(object):
             # We consider (ab and ab^2) to be of equal complexity here)
             num_bk_simple = ''.join(simple_prefix).count('sb') + ''.join(simple_prefix).count('ab')
             num_bk_shuffle = ''.join(shuffled_prefix).count('sb') + ''.join(shuffled_prefix).count('ab')
-
             if num_bk_shuffle <= num_bk_simple:
                 return None
 
+        # If we spend too long to generate we skip
         except TimeoutError:
             raise
         except (ValueError, AttributeError, UnknownSymPyOperator, ValueErrorExpression) as e:
@@ -531,13 +553,14 @@ class CharEnv(object):
             logger.error("An unknown exception of type {0} occurred in line {1} for expression \"{2}\". Arguments:{3!r}.".format(type(e).__name__, sys.exc_info()[-1].tb_lineno, simple_expr, e.args))
             return None
 
+        # If required we append the identity and scaling information to the prefix output
         out_prefix = simple_prefix
         if self.save_info_scr:
             out_prefix = out_prefix + ['&'] + prefix_info
         if self.save_info_scaling:
             out_prefix = out_prefix + ['&'] + prefix_info_scale
 
-        # define input / output
+        # Define input / output
         return shuffled_prefix, out_prefix
 
     @staticmethod
@@ -650,11 +673,11 @@ class EnvDataset(Dataset):
         assert (train is True) == (rng is None)
         assert task in CharEnv.TRAINING_TASKS
 
-        # batching
+        # Batching
         self.num_workers = params.num_workers
         self.batch_size = params.batch_size
 
-        # dataset size: infinite iterator for train, finite for valid / test (default of 5000 if no file provided)
+        # Dataset size: infinite iterator for train, finite for valid / test (default of 5000 if no file provided)
         if self.train:
             self.size = 1 << 60
         else:
@@ -666,18 +689,18 @@ class EnvDataset(Dataset):
 
     def open_dataset(self):
         self.env = CharEnv(self.params)
-        # Data generation - Need session for the zero identity
+        # Data generation - Need Mathematica session for the zero identity
         if self.params.export_data and self.params.mma_path != 'NotRequired':
             session = initialize_solver_session(kernel_path=self.params.mma_path)
             self.env.add_mathematica_session(session)
         else:
             self.env.session = 'NotRequired'
-        # generation, or reloading from file
+        # Generation, or reloading from file
         if self.path is not None:
             assert os.path.isfile(self.path)
             logger.info(f"Loading data from {self.path} ...")
             with io.open(self.path, mode='r', encoding='utf-8') as f:
-                # either reload the entire file, or the first N lines (for the training set)
+                # Either reload the entire file, or the first N lines (for the training set)
                 if not self.train:
                     lines = [line.rstrip().split('|') for line in f]
                 else:
@@ -766,7 +789,6 @@ class EnvDataset(Dataset):
         x, y = None, None
 
         while True:
-
             try:
                 if self.task == 'spin_hel':
                     xy = self.env.gen_hel_ampl(self.rng)
