@@ -11,7 +11,7 @@ import sympy as sp
 from sympy import I
 
 # Define the numerical tolerance
-ZERO_ERROR_POW_LOCAL = 10
+ZERO_ERROR_POW_LOCAL = 9
 
 # Generated light-like momenta for all incoming massless particles. We have two distinct sets
 MOMENTA_DICT1 = {'4pt1': [2.168045478040097405141269641800320418259852629865936, -1.797278753194948589790282965177089448831570925395903, 0.431015921025208174042754337437197038185532025449617, -1.133329411065872350034886159092258676615480848915334],
@@ -199,12 +199,11 @@ def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
     relevant_keys = ['{}pt'.format(npt)+tok for tok in tokens if tok[-1] > tok[-2]]
 
     rel_diff = 0
-
     # Do the numerical evaluation on both dictionnaries. Retain the absolute difference
     for momenta_vals in MOMENTA_DICTS:
         relevant_coeffs = [momenta_vals[key] for key in relevant_keys]
-        hyp_num = sp.N(func_hyp(*relevant_coeffs), ZERO_ERROR_POW_LOCAL+5)
-        tgt_num = sp.N(func_tgt(*relevant_coeffs), ZERO_ERROR_POW_LOCAL+5)
+        hyp_num = sp.N(func_hyp(*relevant_coeffs))
+        tgt_num = sp.N(func_tgt(*relevant_coeffs))
         diff = abs(tgt_num - hyp_num)
 
         # If the target is close to 0 then we simply add the difference instead of the relative difference
@@ -214,5 +213,5 @@ def check_numerical_equiv_local(tokens, hypothesis, target, npt=None):
             rel_diff += float(diff/abs(tgt_num))
 
     # Check if the relative difference is below the numerical tolerance
-    valid = rel_diff < 10 ** (-ZERO_ERROR_POW_LOCAL)
+    valid = rel_diff < 2 * 10 ** (-ZERO_ERROR_POW_LOCAL)
     return valid, rel_diff

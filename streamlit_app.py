@@ -224,8 +224,8 @@ temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5,
 # Parameters for the iterative simplification
 st.sidebar.divider()
 st.sidebar.write("Iterative simplification parameters")
-init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_value=1.0, step=0.01, value=0.95)
-power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.0)
+init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_value=1.0, step=0.01, value=0.9)
+power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.5)
 
 # Field for the input equation (accepts sympy strings or S@M Mathematica syntax)
 input_eq = st.text_input("Input Equation", "(-ab(1,2)**2*sb(1,2)*sb(1,5)-ab(1,3)*ab(2,4)*sb(1,3)*sb(4,5)+ab(1,3)*ab(2,4)*sb(1,4)*sb(3,5)-ab(1,3)*ab(2,4)*sb(1,5)*sb(3,4))*ab(1,2)/(ab(1,5)*ab(2,3)*ab(3,4)*ab(4,5)*sb(1,2)*sb(1,5))")
