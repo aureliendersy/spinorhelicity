@@ -223,7 +223,7 @@ temperature = st.sidebar.slider('Temperature (Nucleus Sampling)', min_value=0.5,
 
 # Parameters for the iterative simplification
 st.sidebar.divider()
-st.sidebar.write("Iterative simplification parameters")
+st.sidebar.write("Sequential simplification parameters")
 init_cutoff = st.sidebar.slider('Initial Similarity Cutoff', min_value=0.5, max_value=1.0, step=0.01, value=0.9)
 power_decay = st.sidebar.slider('Similarity Cutoff Decay', min_value=0.0, max_value=2.5, step=0.25, value=0.5)
 
@@ -246,7 +246,7 @@ else:
 st.divider()
 
 # Choose which simplification method to apply
-simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Iterative simplification"),
+simplification_method = st.selectbox("Simplification Method", ("One-shot simplification", "Sequential simplification"),
                                      index=0)
 
 # By default we decide to be blind to constants
@@ -255,7 +255,7 @@ with checkboxes[0]:
     blind_constants = st.checkbox("Blind Constants", value=True)
 
 # For the iterative method by default we do a fast inference (1st solution found is returned)
-if simplification_method == "Iterative simplification":
+if simplification_method == "Sequential simplification":
     with checkboxes[1]:
         fast_inf = st.checkbox("Fast Inference", value=True)
 
@@ -287,7 +287,7 @@ if st.button("Click Here to Simplify") and any(sample_methods):
         except IndexError as e:
             st.write("Error: {}".format(e))
 
-    elif simplification_method == "Iterative simplification":
+    elif simplification_method == "Sequential simplification":
         # Initialize the two different loggers and associated empty text boxes
         streamlit_logger = get_logger(contrastive_simplifier.__name__)
         streamlit_logger2 = get_logger(contrastive_simplifier.__name__+'2')

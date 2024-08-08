@@ -100,7 +100,7 @@ def one_shot_simplify(envir, module_transfo, f_eq, params_in, blind_const=False,
 
     # If the amplitude doesn't fit inside the network
     if len1.item() > module_transfo[0].n_max_positions:
-        raise IndexError("Amplitude too long to fit in the simplifier model, use the iterative simplification !")
+        raise IndexError("Amplitude too long to fit in the simplifier model, use the sequential simplification !")
 
     x1, len1 = to_cuda(x1, len1)
 
