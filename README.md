@@ -50,6 +50,7 @@ Model | Link
 ## Data generation
 Data generation can be done through the main.py script and main_contrastive.py scripts.
 For instance setting trainer and environment parameters as
+```
         # trainer parameters
         'export_data': True,
         'reload_data': '',
@@ -63,6 +64,7 @@ For instance setting trainer and environment parameters as
         'save_info_scr': True,
         'save_info_scaling': True,
         'numerator_only': True,
+```
 will generate 5-pt amplitudes with at most 3 numerators terms and scramble them using 1-3 identities (applied only on the numerators). The identities used and the little group scaling are also saved. The various parameters can be adjusted to generate different amplitudes.
 
 
@@ -70,11 +72,14 @@ The data generation part outputs a data.prefix file that needs to be converted t
 
 ## Training
 To train the model we set 
+```
         'export_data': False,
         'reload_data': 'task,path_train,path_valid,path_test',
         'reload_model': '',
+```
         
 and can tune the model hyperparameters (and similarly for the parameters in contrastive_main.py)
+```
         # model parameters
         'emb_dim': 512,
         'n_enc_layers': 3,
@@ -84,9 +89,11 @@ and can tune the model hyperparameters (and similarly for the parameters in cont
         'attention_dropout': 0,
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
+```
 
 ## Evaluation
 To evaluate the model (on the test set for instance) we can set 
+```
         'eval_only': True
         'test_file': True,
         'numerical_check': 2,
@@ -96,8 +103,9 @@ To evaluate the model (on the test set for instance) we can set
         'beam_size': 5,
         'beam_length_penalty': 1,
         'beam_early_stopping': True,
+```
         'nucleus_sampling': False,
         'nucleus_p': 0.95,
         'temperature': 1.5,
         'scaling_eval': False,
-which will use beam search with a size of 5. Activate the 'nucleus_sampling' to use nucleus sampling. Note that the numerical equivalence is checked locally here. If 'numerical_check' is set to 1 the numerical equivalence will be done through a mathematica session.
+which will use beam search with a size of 5. Activate the 'nucleus_sampling' flag to use nucleus sampling. Note that the numerical equivalence is checked locally here. If 'numerical_check' is set to 1 the numerical equivalence will be done through a mathematica session.
