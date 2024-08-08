@@ -1,15 +1,15 @@
-# Spinorhelicity
+# Spinor-Helicity Simplification
 
 In this repository we provide an environment for simplifying spinor-helicity amplitudes, which are mathemtical expressions written in terms of square and angle brackets. 
-Provided an input amplitude $\mathcal{M}$ our machine learning pipeline reduces it to its simplified form $\overline{M}$
+Provided an input amplitude $\mathcal{M}$ our machine learning pipeline reduces it to its simplified form $\overline{M}$. We provide an interactive app for using the models along with our complete pipeline for generating the training data and training the various models.
 
 
 
 ## Requirements
 
-We make use of different librarires in this project (torch, numpy, sympy, streamlit, ...)
+We make use of different librarires in this project (torch, numpy, sympy, streamlit, ...). Please check the 'requirements.txt' file for the complete list.
 
-To install requirements:
+Alternatively to install requirements:
 
 ```setup
 pip install -r requirements.txt
@@ -35,8 +35,6 @@ Dataset | Link
 4pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1iyqkbEbK_id280Qa2Mg-s0PB7AR3ZmEd)
 5pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1_EwvLjoxqZB1xY6r9BVbgzhkWzUce_lg)
 6pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1pENQIZhbwRKn4yl3VwvG0L-zdN0z5_Bo)
-
-
 
 Model | Link 
 --- | --- 
