@@ -1,10 +1,13 @@
 # Spinorhelicity
 
-We provide the necessary environment for dealing with spinor helicity amplitudes in Python. We allow simple manipulations, generation and shuffling of tree level amplitudes. We provide a script for training transformer models on those amplitudes, with the goal of recovering the simplified expression.
+In this repository we provide an environment for simplifying spinor-helicity amplitudes, which are mathemtical expressions written in terms of square and angle brackets. 
+Provided an input amplitude $\mathcal{M}$ our machine learning pipeline reduces it to its simplified form $\overline{M}$
 
-Our approach follows closely the work of https://github.com/facebookresearch/SymbolicMathematics where we keep a similar pipeline.
+
 
 ## Requirements
+
+We make use of different librarires in this project
 
 To install requirements:
 
