@@ -1,22 +1,24 @@
+"""
+Main file for generating/training/evaluating the simplifier model
+"""
+
 import sys
 import numpy as np
 import torch
 import json
-from environment.utils import initialize_exp, AttrDict, convert_to_bracket_file, check_numerical_equiv_file
+from environment.utils import initialize_exp, AttrDict
 from environment import build_env
 from add_ons.slurm import init_signal_handler, init_distributed_mode
 from model import build_modules, check_model_params
 import environment
 from training.trainer import Trainer
 from training.evaluator import Evaluator
-from add_ons.mathematica_utils import initialize_numerical_check, end_wolfram_session, initialize_solver_session
+from add_ons.mathematica_utils import initialize_numerical_check, end_wolfram_session
 
 np.seterr(all='raise')
 
 
 def main(params):
-    #convert_to_bracket_file("/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt8_exp2/data.prefix.counts.test")
-    #exit()
 
     init_distributed_mode(params)
     logger = initialize_exp(params)
@@ -24,9 +26,6 @@ def main(params):
     environment.utils.CUDA = not params.cpu
 
     env = build_env(params)
-
-    #check_numerical_equiv_file('/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/Test_data_spin_hel/test/data.prefix', env, params.lib_path)
-    #exit()
 
     modules = build_modules(env, params)
     trainer = Trainer(modules, env, params)
@@ -95,8 +94,8 @@ if __name__ == '__main__':
     parameters = AttrDict({
 
         # Name
-        'exp_name': 'Test_eval_spin_hel',
-        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/dumped/',
+        'exp_name': 'Test_data_spin_hel',
+        'dump_path': 'path', # Define your path
         'exp_id': '5pt_test',
         'save_periodic': 0,
         'tasks': 'spin_hel',
@@ -108,14 +107,11 @@ if __name__ == '__main__':
         'max_terms': 3,
         'max_scrambles': 3,
         'min_scrambles': 1,
-        'save_info_scr': False,
-        'save_info_scaling': False,
+        'save_info_scr': True,
+        'save_info_scaling': True,
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 1000,
-        'canonical_form': True,
-        'bracket_tokens': True,
-        'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
@@ -132,23 +128,16 @@ if __name__ == '__main__':
         'sinusoidal_embeddings': False,
         'share_inout_emb': True,
         'positional_encoding': True,
-        #'reload_model': '',
-        #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/n5_i1_3_1000/checkpoint.pth',
-        #'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/checkpoint.pth',
-        'reload_model': '/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Trained_Models/Run2/Simplifier_Models/5pt/n5_i1_3_l1000_10Mex.pth',
+        'reload_model': '', # Define the path to your model to reload it
 
         # Trainer param
-        #'export_data': True,
-        'export_data': False,
-        #'reload_data': '',
-        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000,/Users/aurelien/PycharmProjects/spinorhelicity/temp_data/data.prefix.counts.test_1000',
-        #'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments/npt5/data.prefix.counts.valid',
-        'reload_data': 'spin_hel,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/Run2/n5_i1_3/test_n5_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/Run2/n5_i1_3/test_n5_i1_3_1000,/Users/aurelien/PycharmProjects/spinorhelicity/final_notebooks/Data/Run2/n5_i1_3/test_n5_i1_3_1000',
+        'export_data': True, # Set to False if not generating data
+        'reload_data': '', # When training on evaluating set  data paths
         'reload_size': '',
         'epoch_size': 1000,
         'max_epoch': 10,
-        'amp': -1,
-        'fp16': False,
+        'amp': -1,  # Change if using apex
+        'fp16': False, # Change if using mixed precision
         'accumulate_gradients': 1,
         'optimizer': "adam,lr=0.0001",
         'clip_grad_norm': 5,
@@ -159,11 +148,10 @@ if __name__ == '__main__':
         'batch_size': 2,
 
         # Evaluation
-        'eval_only': True,
-        #'eval_only': False,
+        'eval_only': False, # Change if evaluating network
         'test_file': True,
         'valid_file': False,
-        'numerical_check': 2,
+        'numerical_check': 2, # Change if evaluating with Mathematica and not lcoally
         'eval_verbose': 0,
         'eval_verbose_print': False,
         'beam_eval': False,
@@ -172,18 +160,17 @@ if __name__ == '__main__':
         'beam_early_stopping': True,
         'nucleus_sampling': False,
         'nucleus_p': 0.95,
-        'temperature': 2,
-        'scaling_eval': True,
+        'temperature': 1.5,
+        'scaling_eval': False,
 
         # SLURM/GPU param
-        'cpu': True,
+        'cpu': True, # Change if you have a GPU
         'local_rank': -1,
         'master_port': -1,
         'num_workers': 1,
         'debug_slurm': False,
-        'lib_path': '/Users/aurelien/Documents/Package_lib/Spinors-1.0',
-        #'mma_path': 'NotRequired',
-        'mma_path': None,
+        'lib_path': '', # Path to Spinors-1.0 library
+        'mma_path': None, # Change None if you need to specify your path to Mathematica (not needed when training)
     })
 
     check_model_params(parameters)

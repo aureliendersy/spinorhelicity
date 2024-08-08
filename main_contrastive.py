@@ -1,7 +1,10 @@
+"""
+Main file for generating/training the embedding model
+"""
 import numpy as np
 import json
 from environment.utils import AttrDict
-from environment.contrastive_data import convert_spinor_data, create_batched_split, convert_file_to_permutation_inv
+from environment.contrastive_data import convert_spinor_data, create_batched_split
 from add_ons.slurm import init_signal_handler, init_distributed_mode
 import environment
 from environment.utils import initialize_exp
@@ -19,13 +22,12 @@ def main(params):
     environment.utils.CUDA = not params.cpu
     env = build_env(params)
 
-    #convert_file_to_permutation_inv('/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/npt5_contrastive_final/data_contrastive.prefix.counts.train')
-    #exit()
-
     if params.export_data:
-        pass
-        #convert_spinor_data(params.prefix_path, ['M', 'S'], env)
-        #exit()
+        pass # Uncomment if you need to generate data from a prefix file
+        convert_spinor_data(params.prefix_path, ['M', 'S'], env)
+        exit()
+
+    # To generate the train/valid/test split from a file with numerators in prefix form
     if params.batch_scalings and params.export_data:
         create_batched_split(env, params, params.prefix_path, 10000)
         exit()
@@ -78,7 +80,7 @@ if __name__ == '__main__':
 
         # Name
         'exp_name': 'n5_i1',
-        'dump_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/',
+        'dump_path': 'path', # Define your own path
         'exp_id': 'train',
         'save_periodic': 0,
         'tasks': 'contrastive',
@@ -95,9 +97,6 @@ if __name__ == '__main__':
         'int_base': 10,
         'numeral_decomp': True,
         'max_len': 1000,
-        'canonical_form': True,
-        'bracket_tokens': True,
-        'generator_id': 2,
         'l_scale': 0.75,
         'numerator_only': True,
         'reduced_voc': True,
@@ -116,22 +115,20 @@ if __name__ == '__main__':
         'share_inout_emb': True,
         'positional_encoding': True,
         'norm_ffn': 'layernorm',
-        'reload_model': '',
+        'reload_model': '', # Define the model if you want to reload it
 
         # Data param
-        #'export_data': True,
-        'export_data': False,
-        'prefix_path': '/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000',
+        'export_data': True, # Uncomment if training
+        'prefix_path': 'prefix_path', # Prefix file required for generating the training data
         'mma_path': None,
 
         # Trainer param
-        #'reload_data': False,
-        'reload_data': 'contrastive,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.train,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.valid,/Users/aurelien/PycharmProjects/spinorhelicity/experiments_contrastive/n5_i1/dat_dir/data_contrastive.prefix.counts.1000.test',
+        'reload_data': False, # Replace with path to data when training
         'reload_size': '',
-        'epoch_size': 5000,
+        'epoch_size': 50,
         'max_epoch': 500,
-        'amp': -1,
-        'fp16': False,
+        'amp': -1, # Change if using apex
+        'fp16': False, # Change if using mixed precision
         'accumulate_gradients': 1,
         'optimizer': "adam,lr=0.0001",
         'clip_grad_norm': 5,
@@ -139,7 +136,6 @@ if __name__ == '__main__':
         'validation_metrics': '',
         'reload_checkpoint': '',
         'env_base_seed': 1,
-        #'env_base_seed': -1,
         'batch_size': 32,
         'temp_contrastive': 0.25,
         'batch_scalings': True,
@@ -149,7 +145,7 @@ if __name__ == '__main__':
         'numerical_check': 0,
 
         # SLURM/GPU param
-        'cpu': True,
+        'cpu': True, # Change if using GPU
         'local_rank': -1,
         'master_port': -1,
         'num_workers': 0,
