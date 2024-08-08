@@ -9,11 +9,12 @@ Provided an input amplitude $\mathcal{M}$ our machine learning pipeline reduces 
 
 We make use of different librarires in this project (torch, numpy, sympy, streamlit, ...). Please check the 'requirements.txt' file for the complete list.
 
-Install the requirements using your favourite package manager, alternatively you can use:
+Install the requirements using your favourite package manager, alternatively you can use
 
 ```setup
 pip install -r requirements.txt
 ```
+in a fresh environment using Python 3.9.13
 
 ## Trying out the model
 To interact directly with the trained model please clone the repository, making sure that all of the required dependencies are correctly installed.
