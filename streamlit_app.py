@@ -4,6 +4,7 @@ Test desired model on a given input expression
 
 
 import torch
+import os
 import streamlit as st
 import logging
 from streamlit.logger import get_logger
@@ -59,13 +60,13 @@ def load_model(module_npt_name):
     path_contrastive_res = path_in_contrastive.resolve()
     path_contrastive = '/'.join(list(path_contrastive_res.parts))
 
-    # If the Simplifier model is not present we download it from Drive
-    if not path_in_simplifier.exists():
+    # If the Simplifier model is not present (or incorrectly downloaded -- too small) we download it from Drive
+    if not path_in_simplifier.exists() or os.path.getsize(path_in_simplifier)/10**6 < 100:
         download_path_simplifier = MODULE_REGISTRAR[module_npt_name]
         gdown.download(download_path_simplifier, path_simplifier, quiet=False)
 
-    # If the Contrastive model is not present we download it from Drive
-    if not path_in_contrastive.exists():
+    # If the Contrastive model is not present (or incorrectly downloaded -- too small) we download it from Drive
+    if not path_in_contrastive.exists() or os.path.getsize(path_in_contrastive)/10**6 < 50:
         download_path_contrastive = MODULE_REGISTRAR[module_npt_name+'-contrastive']
         gdown.download(download_path_contrastive, path_contrastive, quiet=False)
 
