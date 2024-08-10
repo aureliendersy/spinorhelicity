@@ -402,7 +402,7 @@ def mma_to_sp_string_bk(mma_expr):
 
 def create_response_frame(hyp_list, envir):
     """
-    Given a list of Hypothesis generated in the Streamlit App we return a dataframe with
+    Given a list of Hypothesis generated in the Streamlit App One Shot simplification mode we return a dataframe with
     the relevant info
     :param hyp_list: List of Amplitude hypothesis with corresponding sympy string and score
     :param envir: Spinor Helicity Environment
@@ -414,5 +414,6 @@ def create_response_frame(hyp_list, envir):
 
     # Add the latex representation and the mathematica representation
     data_in['Latex String'] = data_in['Sympy String'].apply(latex)
-    data_in['Mathematica String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.func_dict))
+    data_in['S@M String'] = data_in['Sympy String'].apply(sp_to_mma, args=(envir.npt_list, envir.func_dict))
+    data_in['Mathematica String'] = data_in['S@M String'].apply(lambda x: x.replace("Spaa", "ab").replace("Spbb", "sb"))
     return data_in

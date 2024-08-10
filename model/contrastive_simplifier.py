@@ -6,9 +6,11 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 import sympy as sp
+from sympy import latex
 import time
 
 from environment.utils import to_cuda
+from add_ons.mathematica_utils import sp_to_mma
 from model.simplifier_methods import (blind_constants, extract_num_denom, all_one_shot_simplify, fast_one_shot_simplify,
                                       retain_valid_hypothesis, count_numerator_terms)
 import torch
@@ -394,5 +396,17 @@ def total_simplification(envirs, params, input_equation, modules, rng_gen, inf_m
     log_frame = pd.DataFrame(simplification_log)
     data_out = pd.concat([data_out, log_frame], ignore_index=True)
     data_out['Time Taken'] = exec_time
+
+    # Add different output formats
+    data_out["Initial equation Latex"] = data_out["Initial equation"].apply(latex)
+    data_out["Final equation Latex"] = data_out["Final equation"].apply(latex)
+    data_out["Initial equation S@M"] = data_out["Initial equation"].apply(
+        sp_to_mma, args=(envirs[-1].npt_list, envirs[-1].func_dict))
+    data_out["Final equation S@M"] = data_out["Final equation"].apply(
+        sp_to_mma, args=(envirs[-1].npt_list, envirs[-1].func_dict))
+    data_out['Initial equation Mathematica'] = data_out['Initial equation S@M'].apply(
+        lambda x: x.replace("Spaa", "ab").replace("Spbb", "sb"))
+    data_out['Final equation Mathematica'] = data_out['Final equation S@M'].apply(
+        lambda x: x.replace("Spaa", "ab").replace("Spbb", "sb"))
 
     return simple_form, data_out
