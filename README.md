@@ -4,6 +4,10 @@ In this repository we provide an environment for simplifying spinor-helicity amp
 Provided an input amplitude $\mathcal{M}$ our machine learning pipeline reduces it to its simplified form $\overline{M}$. We provide an interactive app for using the models along with our complete pipeline for generating the training data and training the various models.
 
 
+--- 
+Reference:  [**Learning the Simplicity of Scattering Amplitudes**](https://arxiv.org/abs/2408.04720)
+
+
 
 ## Requirements
 
