@@ -178,8 +178,11 @@ st.caption("This app simplifies spinor-helicity expressions.  Enter the input in
            " with purely monomial denominators.  Specify the number of external particles and the mode of"
            " simplification, with additional tunable parameters on the sidebar. One-shot and iterative mode are"
            " effective for shorter (<10 terms) and longer (<40 terms) expressions, respectively."
-           " Apply even longer expressions at your own risk. See http://arxiv.org/abs/2408.04720 for details."
-           "For faster performance we encourage a local download from https://github.com/aureliendersy/spinorhelicity")
+           " Apply even longer expressions at your own risk. See [our paper](http://arxiv.org/abs/2408.04720)"
+           " for details."
+           " For faster performance we encourage a local download"
+           " from this [GitHub repository](https://github.com/aureliendersy/spinorhelicity).")
+st.caption("For any inquiries or further information, please contact [Aurélien Dersy](mailto:adersy@g.harvard.edu)")
 
 # Select the N-pt of the amplitude considered and update the session (for cache purposes)
 module_npt = st.selectbox("Amplitude Type", ("4-pt", "5-pt", "6-pt"), index=1)
