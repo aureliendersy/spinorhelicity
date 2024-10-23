@@ -46,7 +46,7 @@ def encode_term(envir_c, term, encoder_c):
 
 def normalize_term(term_in):
     """
-    Given a term in the numerator return the same term normalize (constant 1 or -1)
+    Given a term in the numerator return the same term normalized (constant 1 or -1)
     :param term_in: sympy term to be normalized
     :return:
     """
@@ -55,8 +55,8 @@ def normalize_term(term_in):
     if isinstance(term_in, sp.Integer):
         return term_in/abs(term_in)
 
-    # If we get a bracket functional it is already normalized
-    if isinstance(term_in, sp.Function):
+    # If we get a bracket functional raised to some power it is already normalized
+    if isinstance(term_in, sp.Function) or isinstance(term_in, sp.Pow):
         return term_in
 
     if not isinstance(term_in, sp.Mul):
