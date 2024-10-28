@@ -358,7 +358,7 @@ class SpinHelExpr:
         :param rng: Numpy random state
         :param verbose: Whether to print scrambling moves information
         :param out_info: Whether to return the scrambling moves utilized
-        :param reduced: If reduced then we don't use the addition of zero or the multiplication by unity identitites
+        :param reduced: If reduced then we don't use the addition of zero or the multiplication by unity identities
         :param session: Mathematica session
         :param numerator_only: Whether to only scramble the numerator terms
         :return:
@@ -430,7 +430,7 @@ class SpinHelExpr:
 
                 # Choose randomly the number of additional arguments and pick them
                 arg_add = rng.randint(0, self.n_point - 3)
-                mom_add = list(rng.choice([i for i in range(1, self.n_point + 1) if i != args_bk], arg_add,
+                mom_add = list(rng.choice([i for i in range(1, self.n_point + 1) if i not in args_bk], arg_add,
                                           replace=False))
 
                 info_s.append(['M', str(rdm_bracket)] + [str(el) for el in mom_add])

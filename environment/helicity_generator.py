@@ -6,7 +6,7 @@ import numpy as np
 import random
 from itertools import combinations
 from environment.bracket_env import ab, sb
-from add_ons.mathematica_utils import solve_diophantine_systems
+from add_ons.mathematica_utils import solve_diophantine_systems, solve_diophantine_system
 from environment.utils import reorder_expr, generate_random_bk, build_scale_factor, get_expression_detail_lg_scaling
 from sympy import latex, Function, sympify, fraction, cancel
 from logging import getLogger
@@ -132,7 +132,10 @@ def generate_random_amplitude(npt_list, rng=None, max_terms_scale=1, max_compone
             raise TypeError('Need a valid Mathematica Session to generate multiple terms and respect scaling')
 
         # Solve the little group scaling equation for the numerator
-        coeff_add_num_list = solve_diophantine_systems(n_points, scaling_list[0], components-1, session)
+        if session == 'NotRequired' and components == 2:
+            coeff_add_num_list = [solve_diophantine_system(n_points, scaling_list[0], session)]
+        else:
+            coeff_add_num_list = solve_diophantine_systems(n_points, scaling_list[0], components-1, session)
 
         # If we are not able to solve the diophantine equation (with required number of solutions)
         if coeff_add_num_list is None:

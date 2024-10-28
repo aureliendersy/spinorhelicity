@@ -255,7 +255,7 @@ def check_numerical_equiv_file(prefix_file_path, env, lib_path, infos_in_file=Tr
             if infos_in_file:
                 sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1].split('&')[0][:-1].split(' ')))
             else:
-                sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1][:-1].split(' ')))
+                sp2 = env.infix_to_sympy(env.prefix_to_infix(line.split('\t')[1].split(' ')[:-1]))
 
             sp1 = env.infix_to_sympy(env.prefix_to_infix((line.split('|')[-1]).split('\t')[0].split(' ')))
 
