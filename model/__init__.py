@@ -65,7 +65,7 @@ def build_modules(env, params):
 # Download links to the trained models
 MODULE_REGISTRAR = {'4-pt': 'https://drive.google.com/uc?export=download&id=1lq46Hc_eF8khsoC4k-lsMjZpaY0Pco29',
                     '5-pt': 'https://drive.google.com/uc?export=download&id=1hSyRKcsMjxgVZ3DB1EkwD0OFHxoId4FZ',
-                    '6-pt': 'https://drive.google.com/uc?export=download&id=1nN8-nCTd08poS1ZCye0HnyLSxhs2SGCb',
-                    '4-pt-contrastive':'https://drive.google.com/uc?export=download&id=1g_YAeH1v_hWDPTiSZnwrbqGwnicLRRhz',
-                    '5-pt-contrastive': 'https://drive.google.com/uc?export=download&id=10hZ2GhrNNOkWp-Z3Z5iQw3jbVEh5N4ei',
-                    '6-pt-contrastive': 'https://drive.google.com/uc?export=download&id=1AvdizkQkhtCcDdsZwh13vuKcd00HceYA'}
+                    '6-pt': 'https://drive.google.com/uc?export=download&id=1JFhH-6UPXvLdFb3Gd-DFhCS7hGmgXQJw',
+                    '4-pt-contrastive':'https://drive.google.com/uc?export=download&id=1jG3dwWmsy2exiBV9ip4p7Fy-KyA0-raz',
+                    '5-pt-contrastive': 'https://drive.google.com/uc?export=download&id=1zl_T-dPjqbkVn8677Oqlw-Pfufv8RMKC',
+                    '6-pt-contrastive': 'https://drive.google.com/uc?export=download&id=1uFzMdGRNeq_WA9oLVBMGJ9ajIcjETziA'}
