@@ -37,20 +37,20 @@ Dataset | Link
 --- | --- 
 4pt (3 identities max)| [Link](https://drive.google.com/uc?export=download&id=18idYRLv1Kzt4dcGS7s5YYONAbMsQTxD9)
 5pt (3 identities max) | [Link](https://drive.google.com/uc?export=download&id=1eLbgC9F5j0zPcN3xV8-e8fH-BK1t3utF)
-6pt (3 identities max) | [Link](https://drive.google.com/uc?export=download&id=150oi6ov9dSzeyCdevCNEg1cdSYzOWEgx)
+6pt (3 identities max) | [Link](https://drive.google.com/uc?export=download&id=1nrGG92Gl7xlW6l754SnZzuFL_ZfswtOC)
 5pt (5 identities max) | [Link](https://drive.google.com/uc?export=download&id=1WyOz-5IPSRaNxqcxlV_s6nbp3aXGEo6f)
 4pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1iyqkbEbK_id280Qa2Mg-s0PB7AR3ZmEd)
 5pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1_EwvLjoxqZB1xY6r9BVbgzhkWzUce_lg)
-6pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1pENQIZhbwRKn4yl3VwvG0L-zdN0z5_Bo)
+6pt (numerators) | [Link](https://drive.google.com/uc?export=download&id=1IaqR3a3zX3vTtNi0bGO69JI7c7rYge9U)
 
 Model | Link 
 --- | --- 
 4pt Simplifier Model | [Link](https://drive.google.com/uc?export=download&id=1lq46Hc_eF8khsoC4k-lsMjZpaY0Pco29)
 5pt Simplifier Model | [Link](https://drive.google.com/uc?export=download&id=1hSyRKcsMjxgVZ3DB1EkwD0OFHxoId4FZ)
-6pt Simplifier Model | [Link](https://drive.google.com/uc?export=download&id=1nN8-nCTd08poS1ZCye0HnyLSxhs2SGCb)
-4pt Embedding Model | [Link](https://drive.google.com/uc?export=download&id=1g_YAeH1v_hWDPTiSZnwrbqGwnicLRRhz)
-5pt Embedding Model | [Link](https://drive.google.com/uc?export=download&id=10hZ2GhrNNOkWp-Z3Z5iQw3jbVEh5N4ei)
-6pt Embedding Model| [Link](https://drive.google.com/uc?export=download&id=1AvdizkQkhtCcDdsZwh13vuKcd00HceYA)
+6pt Simplifier Model | [Link](https://drive.google.com/uc?export=download&id=1JFhH-6UPXvLdFb3Gd-DFhCS7hGmgXQJw)
+4pt Embedding Model | [Link](https://drive.google.com/uc?export=download&id=1jG3dwWmsy2exiBV9ip4p7Fy-KyA0-raz)
+5pt Embedding Model | [Link](https://drive.google.com/uc?export=download&id=1zl_T-dPjqbkVn8677Oqlw-Pfufv8RMKC)
+6pt Embedding Model| [Link](https://drive.google.com/uc?export=download&id=1uFzMdGRNeq_WA9oLVBMGJ9ajIcjETziA)
 
 ## Data generation
 Data generation can be done through the main.py script and main_contrastive.py scripts.
